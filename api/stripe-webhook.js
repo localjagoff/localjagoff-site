@@ -38,14 +38,14 @@ export default async function handler(req, res) {
     const size = session.metadata.size;
     const qty = parseInt(session.metadata.qty || 1);
 
-    // ✅ Your variant IDs
+    // ✅ CORRECT sync variant IDs (your actual product)
     const variantMap = {
-      S: 24509,
-      M: 24504,
-      L: 24514,
-      XL: 24519,
-      XXL: 24524,
-      XXXL: 24529
+      S: "69e1a9d43f2c67",
+      M: "69e1a9d43f2cc5",
+      L: "69e1a9d43f2d12",
+      XL: "69e1a9d43f2d52",
+      XXL: "69e1a9d43f2da4",
+      XXXL: "69e1a9d43f2de9"
     };
 
     const variantId = variantMap[size];
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
             },
             items: [
               {
-                variant_id: variantId,
+                sync_variant_id: variantId,
                 quantity: qty
               }
             ]
