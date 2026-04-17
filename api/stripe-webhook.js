@@ -11,7 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export default async function handler(req, res) {
   const sig = req.headers['stripe-signature'];
 
-  // Get raw body
   const buf = await new Promise((resolve) => {
     const chunks = [];
     req.on('data', (chunk) => chunks.push(chunk));
@@ -31,21 +30,20 @@ export default async function handler(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 🔥 Handle successful checkout
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
     const size = session.metadata.size;
     const qty = parseInt(session.metadata.qty || 1);
 
-    // ✅ CORRECT sync variant IDs (your actual product)
+    // ✅ CORRECT numeric IDs
     const variantMap = {
-      S: "69e1a9d43f2c67",
-      M: "69e1a9d43f2cc5",
-      L: "69e1a9d43f2d12",
-      XL: "69e1a9d43f2d52",
-      XXL: "69e1a9d43f2da4",
-      XXXL: "69e1a9d43f2de9"
+      S: 5271015784,
+      M: 5271015785,
+      L: 5271015786,
+      XL: 5271015787,
+      XXL: 5271015788,
+      XXXL: 5271015789
     };
 
     const variantId = variantMap[size];
