@@ -1,26 +1,42 @@
 import Stripe from 'stripe';
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   const sig = req.headers['stripe-signature'];
 
+  // Get raw body
+  const buf = await new Promise((resolve) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(
-      req.body,
+      buf,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
+    console.error('Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // 🔥 When payment completes
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
     const size = session.metadata.size;
+    const qty = parseInt(session.metadata.qty || 1);
 
     const variantMap = {
       S: 24509,
@@ -33,29 +49,35 @@ export default async function handler(req, res) {
 
     const variantId = variantMap[size];
 
-    await fetch('https://api.printful.com/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        recipient: {
-          name: session.customer_details.name,
-          address1: session.customer_details.address.line1,
-          city: session.customer_details.address.city,
-          state_code: session.customer_details.address.state,
-          country_code: session.customer_details.address.country,
-          zip: session.customer_details.address.postal_code
+    try {
+      await fetch('https://api.printful.com/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
+          'Content-Type': 'application/json'
         },
-        items: [
-          {
-            variant_id: variantId,
-            quantity: 1
-          }
-        ]
-      })
-    });
+        body: JSON.stringify({
+          recipient: {
+            name: session.customer_details.name,
+            address1: session.customer_details.address.line1,
+            city: session.customer_details.address.city,
+            state_code: session.customer_details.address.state,
+            country_code: session.customer_details.address.country,
+            zip: session.customer_details.address.postal_code
+          },
+          items: [
+            {
+              variant_id: variantId,
+              quantity: qty
+            }
+          ]
+        })
+      });
+
+      console.log('Order sent to Printful');
+    } catch (err) {
+      console.error('Printful error:', err);
+    }
   }
 
   res.status(200).json({ received: true });
