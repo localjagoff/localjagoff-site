@@ -1,33 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Local Jagoff</title>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: black;
-      color: gold;
-      padding: 50px;
-    }
-    button {
-      padding: 15px 25px;
-      font-size: 18px;
-      background: gold;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
-</head>
 <body>
 
   <h1>LOCAL JAGOFF</h1>
   <p>Pittsburgh attitude. No apologies.</p>
 
+  <hr>
+
   <h2>Certified Jagoff Tee</h2>
   <p>$26.99</p>
 
-  <button>Buy Now</button>
+  <label for="size">Size:</label>
+  <select id="size">
+    <option value="S">Small</option>
+    <option value="M">Medium</option>
+    <option value="L">Large</option>
+    <option value="XL">XL</option>
+    <option value="XXL">XXL</option>
+  </select>
+
+  <br><br>
+
+  <label for="qty">Quantity:</label>
+  <input type="number" id="qty" value="1" min="1" max="10">
+
+  <br><br>
+
+  <button onclick="buyNow()">Buy Now</button>
+
+  <script>
+  async function buyNow() {
+    const size = document.getElementById('size').value;
+    const qty = document.getElementById('qty').value;
+
+    const res = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ size, qty })
+    });
+
+    const data = await res.json();
+    window.location.href = data.url;
+  }
+  </script>
 
 </body>
-</html>
