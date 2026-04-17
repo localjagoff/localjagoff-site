@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     const variantId = variantMap[size];
 
     try {
-      await fetch('https://api.printful.com/orders', {
+      const response = await fetch('https://api.printful.com/orders', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -59,6 +59,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           recipient: {
             name: session.customer_details.name,
+            email: session.customer_details.email,
+            phone: session.customer_details.phone || "0000000000",
             address1: session.customer_details.address.line1,
             city: session.customer_details.address.city,
             state_code: session.customer_details.address.state,
@@ -74,7 +76,9 @@ export default async function handler(req, res) {
         })
       });
 
-      console.log('Order sent to Printful');
+      const data = await response.json();
+      console.log('PRINTFUL RESPONSE:', data);
+
     } catch (err) {
       console.error('Printful error:', err);
     }
