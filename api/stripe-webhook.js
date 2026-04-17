@@ -31,13 +31,14 @@ export default async function handler(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 🔥 When payment completes
+  // 🔥 Handle successful checkout
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
     const size = session.metadata.size;
     const qty = parseInt(session.metadata.qty || 1);
 
+    // ✅ Your variant IDs
     const variantMap = {
       S: 24509,
       M: 24504,
@@ -50,31 +51,34 @@ export default async function handler(req, res) {
     const variantId = variantMap[size];
 
     try {
-      const response = await fetch('https://api.printful.com/orders', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          recipient: {
-            name: session.customer_details.name,
-            email: session.customer_details.email,
-            phone: session.customer_details.phone || "0000000000",
-            address1: session.customer_details.address.line1,
-            city: session.customer_details.address.city,
-            state_code: session.customer_details.address.state,
-            country_code: session.customer_details.address.country,
-            zip: session.customer_details.address.postal_code
+      const response = await fetch(
+        'https://api.printful.com/orders?store_id=18032822',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
+            'Content-Type': 'application/json'
           },
-          items: [
-            {
-              variant_id: variantId,
-              quantity: qty
-            }
-          ]
-        })
-      });
+          body: JSON.stringify({
+            recipient: {
+              name: session.customer_details.name,
+              email: session.customer_details.email,
+              phone: session.customer_details.phone || "0000000000",
+              address1: session.customer_details.address.line1,
+              city: session.customer_details.address.city,
+              state_code: session.customer_details.address.state,
+              country_code: session.customer_details.address.country,
+              zip: session.customer_details.address.postal_code
+            },
+            items: [
+              {
+                variant_id: variantId,
+                quantity: qty
+              }
+            ]
+          })
+        }
+      );
 
       const data = await response.json();
       console.log('PRINTFUL RESPONSE:', data);
