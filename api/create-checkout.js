@@ -25,10 +25,7 @@ export default async function handler(req, res) {
       mode: 'payment',
       success_url: 'https://localjagoff.com',
       cancel_url: 'https://localjagoff.com',
-      metadata: { 
-  size,
-  qty
-}
+      metadata: { size, qty }
     });
 
     res.status(200).json({ url: session.url });
