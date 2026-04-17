@@ -58,6 +58,7 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
+            external_id: session.id,
             recipient: {
               name: session.customer_details.name,
               email: session.customer_details.email,
