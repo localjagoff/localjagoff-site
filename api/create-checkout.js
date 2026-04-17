@@ -20,7 +20,7 @@ export default async function handler(req, res) {
             product_data: {
               name: `Certified Jagoff Tee (${size})`,
             },
-            unit_amount: 2699,
+            unit_amount: 100,
           },
           quantity: parseInt(qty),
         },
