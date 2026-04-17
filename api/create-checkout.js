@@ -10,6 +10,23 @@ export default async function handler(req, res) {
 
     const { size, qty } = req.body;
 
+    // 🧠 Pricing per size (in cents)
+    const priceMap = {
+      S: 2500,
+      M: 2500,
+      L: 2500,
+      XL: 2500,
+      XXL: 2800,
+      XXXL: 3100
+    };
+
+    // 🚨 Basic validation
+    if (!priceMap[size]) {
+      return res.status(400).json({ error: 'Invalid size selected' });
+    }
+
+    const quantity = parseInt(qty || 1);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
 
@@ -20,31 +37,30 @@ export default async function handler(req, res) {
             product_data: {
               name: `Certified Jagoff Tee (${size})`,
             },
-            unit_amount: 100,
+            unit_amount: priceMap[size],
           },
-          quantity: parseInt(qty),
+          quantity: quantity,
         },
       ],
 
       mode: 'payment',
 
+      // 🔥 This is important (you were missing full config)
+      shipping_address_collection: {
+        allowed_countries: ['US'],
+      },
+
+      // 👇 Helps Stripe pre-fill + ensures email exists
+      customer_creation: 'always',
+
       success_url: 'https://localjagoff.com',
       cancel_url: 'https://localjagoff.com',
 
+      // 🔗 This connects to your webhook
       metadata: {
-        size,
-        qty
+        size: size,
+        qty: quantity.toString(),
       },
-
-      // 🔥 THIS FIXES YOUR ISSUE
-      shipping_address_collection: {
-        allowed_countries: ['US']
-      },
-
-      // 🔥 Optional but recommended
-      phone_number_collection: {
-        enabled: true
-      }
     });
 
     res.status(200).json({ url: session.url });
