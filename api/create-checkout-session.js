@@ -7,8 +7,19 @@ export default async function handler(req, res) {
     const { name, price, variantId } = req.body;
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
+
+      payment_method_types: ["card"],
+
+      shipping_address_collection: {
+        allowed_countries: ["US"],
+      },
+
+      phone_number_collection: {
+        enabled: true,
+      },
+
+      customer_creation: "always",
 
       line_items: [
         {
