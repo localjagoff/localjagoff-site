@@ -5,14 +5,13 @@ export default function CartPage() {
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
-    setCart(JSON.parse(localStorage.getItem("cart")) || []);
+    const stored = JSON.parse(localStorage.getItem("cart")) || [];
+    setCart(stored);
   }, []);
 
-  const update = (c) => {
-    setCart(c);
-    localStorage.setItem("cart", JSON.stringify(c));
-
-    // 🔥 update navbar live
+  const updateCart = (updated) => {
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
@@ -22,60 +21,93 @@ export default function CartPage() {
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const add = (i) => {
-    const c = [...cart];
-    c[i].quantity++;
-    update(c);
+  const increaseQty = (index) => {
+    const updated = [...cart];
+    updated[index].quantity += 1;
+    updateCart(updated);
   };
 
-  const sub = (i) => {
-    const c = [...cart];
-    if (c[i].quantity > 1) c[i].quantity--;
-    else c.splice(i, 1);
-    update(c);
+  const decreaseQty = (index) => {
+    const updated = [...cart];
+    if (updated[index].quantity > 1) {
+      updated[index].quantity -= 1;
+    } else {
+      updated.splice(index, 1);
+    }
+    updateCart(updated);
   };
 
   const total = cart.reduce(
-    (s, item) => s + item.quantity * Number(item.price),
+    (sum, item) => sum + Number(item.price) * item.quantity,
     0
   );
 
+  const checkout = async () => {
+    try {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items: cart }),
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error(data);
+        alert("Checkout failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Checkout error");
+    }
+  };
+
   return (
-    <div style={{ background: "#000", color: "#fff", minHeight: "100vh" }}>
+    <div style={styles.page}>
       <Navbar />
 
       <div style={styles.container}>
-        {/* LEFT */}
-        <div style={styles.items}>
-          <div style={styles.header}>
-            <h1>YOUR CART</h1>
-            <button style={styles.clear} onClick={clearCart}>
-              CLEAR
-            </button>
+        {/* LEFT SIDE */}
+        <div style={styles.left}>
+          <div style={styles.headerRow}>
+            <h1 style={styles.title}>YOUR CART</h1>
+            {cart.length > 0 && (
+              <button style={styles.clearBtn} onClick={clearCart}>
+                CLEAR
+              </button>
+            )}
           </div>
 
           {cart.length === 0 && <p>Your cart is empty</p>}
 
           {cart.map((item, i) => (
-            <div key={item.key} style={styles.item}>
+            <div key={i} style={styles.item}>
               <img
                 src={item.image || "https://via.placeholder.com/80"}
-                style={styles.img}
+                style={styles.image}
               />
 
               <div style={styles.details}>
                 <h3>{item.name}</h3>
-                <p style={styles.sub}>{item.size}</p>
-                <p>${item.price}</p>
+                <p style={styles.price}>${item.price}</p>
               </div>
 
-              {/* 🔥 FIXED BUTTONS */}
               <div style={styles.qty}>
-                <button style={styles.qtyBtn} onClick={() => sub(i)}>
+                <button
+                  style={styles.qtyBtn}
+                  onClick={() => decreaseQty(i)}
+                >
                   −
                 </button>
                 <span style={styles.qtyNum}>{item.quantity}</span>
-                <button style={styles.qtyBtn} onClick={() => add(i)}>
+                <button
+                  style={styles.qtyBtn}
+                  onClick={() => increaseQty(i)}
+                >
                   +
                 </button>
               </div>
@@ -83,12 +115,18 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* RIGHT */}
-        <div style={styles.summary}>
+        {/* RIGHT SIDE */}
+        <div style={styles.right}>
           <h2>Total</h2>
           <h1>${total.toFixed(2)}</h1>
 
-          <button style={styles.checkout}>CHECKOUT</button>
+          <button
+            style={styles.checkoutBtn}
+            onClick={checkout}
+            disabled={cart.length === 0}
+          >
+            CHECKOUT
+          </button>
         </div>
       </div>
     </div>
@@ -96,25 +134,46 @@ export default function CartPage() {
 }
 
 const styles = {
+  page: {
+    background: "#000",
+    color: "#fff",
+    minHeight: "100vh",
+  },
+
   container: {
     maxWidth: "1100px",
     margin: "0 auto",
+    padding: "40px 20px",
     display: "flex",
     gap: "40px",
-    padding: "40px 20px",
     flexWrap: "wrap",
   },
 
-  items: { flex: 2 },
+  left: {
+    flex: 2,
+  },
 
-  header: {
+  right: {
+    flex: 1,
+    background: "#111",
+    padding: "25px",
+    border: "1px solid #222",
+    height: "fit-content",
+    minWidth: "260px",
+  },
+
+  headerRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "20px",
   },
 
-  clear: {
+  title: {
+    margin: 0,
+  },
+
+  clearBtn: {
     background: "none",
     border: "1px solid #333",
     color: "#aaa",
@@ -130,7 +189,7 @@ const styles = {
     padding: "15px 0",
   },
 
-  img: {
+  image: {
     width: "80px",
     height: "80px",
     objectFit: "cover",
@@ -141,15 +200,14 @@ const styles = {
     flex: 1,
   },
 
-  sub: {
-    color: "#aaa",
-    fontSize: "14px",
+  price: {
+    color: "#ccc",
   },
 
   qty: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
+    gap: "10px",
   },
 
   qtyBtn: {
@@ -167,16 +225,7 @@ const styles = {
     textAlign: "center",
   },
 
-  summary: {
-    flex: 1,
-    background: "#111",
-    padding: "25px",
-    border: "1px solid #222",
-    height: "fit-content",
-    minWidth: "280px",
-  },
-
-  checkout: {
+  checkoutBtn: {
     marginTop: "20px",
     width: "100%",
     padding: "15px",
