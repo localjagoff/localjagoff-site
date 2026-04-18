@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
@@ -15,36 +17,15 @@ export default function ProductPage() {
       const res = await fetch(`/api/get-product?id=${id}`);
       const data = await res.json();
 
-      setProduct(data);
-      setSelectedVariant(data.variants?.[0] || null);
+      if (data && data.variants) {
+        setProduct(data);
+        setSelectedVariant(data.variants[0]);
+      }
     };
 
     fetchProduct();
   }, [id]);
 
-  const handleBuy = async () => {
-    if (!selectedVariant) return;
-
-    const res = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: product.name,
-        price: selectedVariant.retail_price,
-        variantId: selectedVariant.id,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    }
-  };
-
-  // 🔴 Prevent build crash + loading state
   if (!product || !selectedVariant) {
     return (
       <div style={{ background: "black", color: "white", padding: "40px" }}>
@@ -76,7 +57,25 @@ export default function ProductPage() {
       <br /><br />
 
       <button
-        onClick={handleBuy}
+        onClick={async () => {
+          const res = await fetch("/api/create-checkout-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: product.name,
+              price: selectedVariant.retail_price,
+              variantId: selectedVariant.id,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (data.url) {
+            window.location.href = data.url;
+          }
+        }}
         style={{ background: "yellow", padding: "10px" }}
       >
         BUY NOW
