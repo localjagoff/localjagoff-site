@@ -13,6 +13,8 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    console.log("PRINTFUL PRODUCT:", JSON.stringify(data, null, 2));
+
     const product = data.result;
 
     if (!product) {
