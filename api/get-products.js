@@ -11,16 +11,21 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 🔥 THIS IS THE IMPORTANT FIX
-    const products = data.result.map((item) => ({
-      id: item.sync_product.id, // ✅ use THIS instead of old id
-      name: item.sync_product.name,
-      thumbnail_url: item.sync_product.thumbnail_url,
-      retail_price:
-        item.sync_variants?.[0]?.retail_price || "25.00",
-    }));
+    // 🔍 Debug (optional but useful)
+    console.log("FULL PRINTFUL RESPONSE:", JSON.stringify(data, null, 2));
+
+    const products = (data.result || [])
+      .filter(item => item && item.sync_product) // ✅ prevent crashes
+      .map(item => ({
+        id: item.sync_product.id,
+        name: item.sync_product.name,
+        thumbnail_url: item.sync_product.thumbnail_url,
+        retail_price:
+          item.sync_variants?.[0]?.retail_price || "25.00",
+      }));
 
     res.status(200).json(products);
+
   } catch (err) {
     console.error("GET PRODUCTS ERROR:", err);
     res.status(500).json({ error: err.message });
