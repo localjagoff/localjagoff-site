@@ -5,7 +5,8 @@ export default function CartPage() {
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
-    setCart(JSON.parse(localStorage.getItem("cart")) || []);
+    const stored = JSON.parse(localStorage.getItem("cart")) || [];
+    setCart(stored);
   }, []);
 
   const update = (c) => {
@@ -41,9 +42,13 @@ export default function CartPage() {
 
           {cart.map((item, i) => (
             <div key={i} style={styles.item}>
+              {/* 🔥 IMAGE FIX */}
               <img
-                src={item.image || "/placeholder.png"}
+                src={item.image || "https://via.placeholder.com/80x80?text=Item"}
                 style={styles.img}
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/80x80?text=Item";
+                }}
               />
 
               <div style={{ flex: 1 }}>
@@ -93,6 +98,7 @@ const styles = {
     width: "80px",
     height: "80px",
     objectFit: "cover",
+    background: "#111",
   },
   qty: {
     display: "flex",
