@@ -1,9 +1,13 @@
 export default async function handler(req, res) {
-  const { id } = req.query;
-
   try {
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing product id" });
+    }
+
     const response = await fetch(
-      `https://api.printful.com/store/products/${id}?store_id=18032822`,
+      `https://api.printful.com/store/products/${id}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -12,28 +16,23 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
-    const product = data.result;
 
-    if (!product) {
-      return res.status(200).json({
-        name: "Unknown Product",
-        thumbnail_url: "",
-        variants: []
-      });
+    if (!data.result) {
+      return res.status(404).json({ error: "Product not found" });
     }
 
+    const product = data.result.sync_product;
+    const variants = data.result.sync_variants;
+
     res.status(200).json({
-      name: product.sync_product.name,
-      thumbnail_url: product.sync_product.thumbnail_url,
-      variants: product.sync_variants.map(v => ({
-        id: v.id,
-        size: v.size,
-        price: v.retail_price
-      }))
+      name: product.name,
+      thumbnail_url: product.thumbnail_url,
+      retail_price: variants?.[0]?.retail_price || "0.00",
+      variants: variants || [],
     });
 
   } catch (err) {
-    console.error('GET PRODUCT ERROR:', err);
+    console.error("GET PRODUCT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 }
