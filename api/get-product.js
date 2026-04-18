@@ -13,13 +13,35 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 👇 ADD THIS
-    console.log('PRINTFUL PRODUCT:', JSON.stringify(data, null, 2));
+    const p = data.result;
 
-    res.status(200).json(data);
+    // 🧠 Handle BOTH structures safely
+    const name =
+      p?.name ||
+      p?.sync_product?.name ||
+      'Unknown Product';
+
+    const thumbnail =
+      p?.thumbnail_url ||
+      p?.sync_product?.thumbnail_url ||
+      '';
+
+    const price =
+      p?.variants?.[0]?.retail_price ||
+      p?.sync_variants?.[0]?.retail_price ||
+      '25.00';
+
+    const product = {
+      id: p.id,
+      name,
+      thumbnail_url: thumbnail,
+      retail_price: price
+    };
+
+    res.status(200).json(product);
 
   } catch (err) {
-    console.error(err);
+    console.error('GET PRODUCT ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 }
