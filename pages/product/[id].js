@@ -14,8 +14,8 @@ export default function ProductPage() {
     if (!id) return;
 
     fetch(`/api/get-product?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         setProduct(data);
         if (data.variants?.length) {
           setSelectedVariant(data.variants[0]);
@@ -26,27 +26,31 @@ export default function ProductPage() {
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    const existing = cart.find(
-      (item) =>
-        item.variantId === selectedVariant.variant_id &&
-        item.productId === product.id // 🔥 FIX
-    );
+    // 🔥 UNIQUE KEY
+    const key = `${product.id}-${selectedVariant.variant_id}`;
+
+    const existing = cart.find(item => item.key === key);
 
     if (existing) {
       existing.quantity += quantity;
     } else {
       cart.push({
-        productId: product.id, // 🔥 FIX
-        name: product.name,
-        price: selectedVariant.retail_price,
+        key, // 🔥 guarantees uniqueness
+        productId: product.id,
         variantId: selectedVariant.variant_id,
+        name: product.name,
         size: selectedVariant.name,
+        price: selectedVariant.retail_price,
         quantity,
         image: product.thumbnail_url,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+
+    // 🔥 trigger navbar update
+    window.dispatchEvent(new Event("cartUpdated"));
+
     alert("Added to cart");
   };
 
@@ -76,10 +80,11 @@ export default function ProductPage() {
             ))}
           </select>
 
+          {/* 🔥 FIXED QTY UI */}
           <div style={styles.qty}>
-            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-            <span>{quantity}</span>
-            <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            <button style={styles.qtyBtn} onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
+            <span style={styles.qtyNum}>{quantity}</span>
+            <button style={styles.qtyBtn} onClick={() => setQuantity(quantity + 1)}>+</button>
           </div>
 
           <button style={styles.cart} onClick={addToCart}>
@@ -103,7 +108,26 @@ const styles = {
   image: { width: "400px", maxWidth: "100%" },
   details: { flex: 1 },
   select: { margin: "20px 0", padding: "10px", width: "100%" },
-  qty: { display: "flex", gap: "10px", marginBottom: "20px" },
+
+  qty: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "20px",
+  },
+  qtyBtn: {
+    width: "40px",
+    height: "40px",
+    background: "#222",
+    color: "#fff",
+    border: "1px solid #333",
+    cursor: "pointer",
+  },
+  qtyNum: {
+    minWidth: "30px",
+    textAlign: "center",
+  },
+
   cart: {
     padding: "12px",
     background: "yellow",
