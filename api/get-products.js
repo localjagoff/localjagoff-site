@@ -11,12 +11,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    console.log("PRINTFUL PRODUCTS:", JSON.stringify(data.result, null, 2)); // 👈 debug
+
     const products = data.result.map(product => ({
       id: product.id,
-      sync_product_id: product.sync_product_id, // 👈 CRITICAL
+      sync_product_id: product.sync_product_id, // 👈 THIS IS THE KEY
       name: product.name,
       thumbnail_url: product.thumbnail_url,
-      retail_price: product.variants[0]?.retail_price || '25.00'
+      retail_price: product.variants?.[0]?.retail_price || '25.00'
     }));
 
     res.status(200).json(products);
