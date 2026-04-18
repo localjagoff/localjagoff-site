@@ -2,28 +2,43 @@ export default async function handler(req, res) {
   try {
     const { id } = req.query;
 
-    const response = await fetch(
+    const headers = {
+      Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+    };
+
+    // ✅ 1. Get product info
+    const productRes = await fetch(
       `https://api.printful.com/store/products/${id}?store_id=${process.env.PRINTFUL_STORE_ID}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-        },
-      }
+      { headers }
     );
 
-    const data = await response.json();
+    const productData = await productRes.json();
 
-    if (!data.result) {
+    if (!productData.result) {
       return res.status(400).json({
-        error: "No product found",
-        debug: data,
+        error: "Product not found",
+        debug: productData,
       });
     }
 
-    const product = data.result;
+    const product = productData.result;
 
-    // ✅ THIS is your correct structure (what worked before)
-    const variants = (product.variants || []).map((v) => ({
+    // ✅ 2. Get variants PROPERLY
+    const variantRes = await fetch(
+      `https://api.printful.com/store/products/${id}/variants?store_id=${process.env.PRINTFUL_STORE_ID}`,
+      { headers }
+    );
+
+    const variantData = await variantRes.json();
+
+    if (!variantData.result) {
+      return res.status(400).json({
+        error: "Variants not found",
+        debug: variantData,
+      });
+    }
+
+    const variants = variantData.result.map((v) => ({
       variant_id: v.id,
       name: v.name,
       retail_price: v.retail_price,
