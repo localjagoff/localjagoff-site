@@ -1,7 +1,9 @@
 export default async function handler(req, res) {
   try {
+    const STORE_ID = "18032822";
+
     const response = await fetch(
-      'https://api.printful.com/store/products?store_id=18032822',
+      `https://api.printful.com/store/products?store_id=${STORE_ID}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -15,13 +17,12 @@ export default async function handler(req, res) {
       id: item.id,
       name: item.name,
       thumbnail_url: item.thumbnail_url,
-      retail_price: item.variants?.[0]?.retail_price || '25.00',
+      retail_price: item.variants?.[0]?.retail_price || "0.00",
     }));
 
     res.status(200).json(products);
-
   } catch (err) {
-    console.error('GET PRODUCTS ERROR:', err);
+    console.error("GET PRODUCTS ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 }
