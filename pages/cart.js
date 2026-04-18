@@ -31,33 +31,33 @@ export default function CartPage() {
     0
   );
 
-  const checkout = async () => {
-    const res = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ items: cart }),
-    });
-
-    const data = await res.json();
-    window.location.href = data.url;
-  };
-
   return (
-    <div style={styles.container}>
+    <div style={styles.page}>
       <Navbar />
 
-      <div style={styles.wrapper}>
+      <div style={styles.container}>
+        {/* LEFT SIDE */}
         <div style={styles.items}>
-          <h1>YOUR CART</h1>
+          <h1 style={styles.title}>YOUR CART</h1>
+
+          {cart.length === 0 && <p>Your cart is empty</p>}
 
           {cart.map((item, i) => (
             <div key={i} style={styles.item}>
-              <div>
+              {/* IMAGE */}
+              <img
+                src={item.image || "/placeholder.png"}
+                style={styles.image}
+              />
+
+              {/* DETAILS */}
+              <div style={styles.details}>
                 <h3>{item.name}</h3>
-                <p>{item.size}</p>
+                <p style={styles.sub}>{item.size}</p>
                 <p>${item.price}</p>
               </div>
 
+              {/* QTY */}
               <div style={styles.qty}>
                 <button onClick={() => subQty(i)}>-</button>
                 <span>{item.quantity}</span>
@@ -67,13 +67,16 @@ export default function CartPage() {
           ))}
         </div>
 
+        {/* RIGHT SIDE SUMMARY */}
         <div style={styles.summary}>
-          <h2>Total</h2>
-          <h1>${total.toFixed(2)}</h1>
+          <h2>Order Summary</h2>
 
-          <button style={styles.checkout} onClick={checkout}>
-            CHECKOUT
-          </button>
+          <div style={styles.totalRow}>
+            <span>Total</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
+
+          <button style={styles.checkout}>CHECKOUT</button>
         </div>
       </div>
     </div>
@@ -81,34 +84,83 @@ export default function CartPage() {
 }
 
 const styles = {
-  container: { background: "#000", color: "#fff", minHeight: "100vh", padding: "20px" },
-  wrapper: { display: "flex", gap: "40px", flexWrap: "wrap" },
-  items: { flex: 2 },
-  summary: {
-    flex: 1,
-    background: "#111",
-    padding: "20px",
-    border: "1px solid #222",
-    height: "fit-content",
+  page: {
+    background: "#000",
+    color: "#fff",
+    minHeight: "100vh",
   },
+
+  container: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    padding: "40px 20px",
+    display: "flex",
+    gap: "40px",
+    flexWrap: "wrap",
+  },
+
+  items: {
+    flex: 2,
+  },
+
+  title: {
+    marginBottom: "30px",
+  },
+
   item: {
     display: "flex",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "20px",
+    padding: "20px 0",
     borderBottom: "1px solid #222",
-    padding: "15px 0",
   },
+
+  image: {
+    width: "80px",
+    height: "80px",
+    objectFit: "cover",
+    background: "#111",
+  },
+
+  details: {
+    flex: 1,
+  },
+
+  sub: {
+    color: "#aaa",
+    fontSize: "14px",
+  },
+
   qty: {
     display: "flex",
     alignItems: "center",
     gap: "10px",
   },
-  checkout: {
+
+  summary: {
+    flex: 1,
+    background: "#111",
+    padding: "25px",
+    border: "1px solid #222",
+    height: "fit-content",
+    minWidth: "280px",
+  },
+
+  totalRow: {
+    display: "flex",
+    justifyContent: "space-between",
     marginTop: "20px",
+    fontSize: "18px",
+  },
+
+  checkout: {
+    marginTop: "30px",
     width: "100%",
     padding: "15px",
     background: "yellow",
     color: "#000",
     fontWeight: "bold",
     border: "none",
+    cursor: "pointer",
   },
 };
