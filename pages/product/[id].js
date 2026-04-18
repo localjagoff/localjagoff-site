@@ -6,56 +6,62 @@ export default function ProductPage() {
   const { id } = router.query;
 
   const [product, setProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
 
   useEffect(() => {
     if (!id) return;
 
     fetch(`/api/get-product?id=${id}`)
       .then(res => res.json())
-      .then(data => setProduct(data));
+      .then(data => {
+        setProduct(data);
+        if (data.variants?.length > 0) {
+          setSelectedVariant(data.variants[0].id);
+        }
+      });
   }, [id]);
 
-  if (!product) {
-    return <p style={{ padding: 20 }}>Loading jagoff product...</p>;
-  }
+  if (!product) return <p>Loading jagoff merch...</p>;
 
   return (
-    <div style={{ padding: 20, color: 'white', background: 'black', minHeight: '100vh' }}>
-      
-      {/* 🔥 PRODUCT NAME */}
+    <div style={{ padding: 40, color: 'white' }}>
       <h1>{product.name}</h1>
 
-      {/* 🖼️ IMAGE */}
-      {product.thumbnail_url && (
-        <img
-          src={product.thumbnail_url}
-          alt={product.name}
-          style={{ width: 300, marginBottom: 20 }}
-        />
-      )}
+      <img
+        src={product.thumbnail_url}
+        style={{ width: 300 }}
+      />
 
-      {/* 💰 PRICE */}
-      <h2>${product.retail_price}</h2>
+      <br /><br />
 
-      {/* 📏 SIZE */}
-      <div style={{ marginTop: 10 }}>
-        <label>Size: </label>
-        <select>
-          <option>M</option>
-          <option>L</option>
-          <option>XL</option>
-        </select>
-      </div>
+      <select
+        onChange={(e) => setSelectedVariant(e.target.value)}
+        value={selectedVariant || ''}
+      >
+        {product.variants.map(v => (
+          <option key={v.id} value={v.id}>
+            {v.size} - ${v.price}
+          </option>
+        ))}
+      </select>
 
-      {/* 🟡 BUTTON */}
+      <br /><br />
+
       <button
+        onClick={async () => {
+          const res = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variantId: selectedVariant }),
+          });
+
+          const data = await res.json();
+          window.location.href = data.url;
+        }}
         style={{
-          marginTop: 20,
           background: 'yellow',
-          color: 'black',
-          padding: '10px 20px',
+          padding: '12px 24px',
           fontWeight: 'bold',
-          border: 'none',
           cursor: 'pointer'
         }}
       >
