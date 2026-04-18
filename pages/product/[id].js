@@ -24,18 +24,20 @@ export default function ProductPage() {
   }, [id]);
 
   const addToCart = () => {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const currentCart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    // 🔥 UNIQUE KEY
-    const key = `${product.id}-${selectedVariant.variant_id}`;
+    // 🔥 TRUE UNIQUE KEY
+    const uniqueKey = `${product.id}-${selectedVariant.variant_id}-${selectedVariant.name}`;
 
-    const existing = cart.find(item => item.key === key);
+    const existingIndex = currentCart.findIndex(
+      item => item.key === uniqueKey
+    );
 
-    if (existing) {
-      existing.quantity += quantity;
+    if (existingIndex !== -1) {
+      currentCart[existingIndex].quantity += quantity;
     } else {
-      cart.push({
-        key, // 🔥 guarantees uniqueness
+      currentCart.push({
+        key: uniqueKey,
         productId: product.id,
         variantId: selectedVariant.variant_id,
         name: product.name,
@@ -46,9 +48,9 @@ export default function ProductPage() {
       });
     }
 
-    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("cart", JSON.stringify(currentCart));
 
-    // 🔥 trigger navbar update
+    // 🔥 force navbar refresh
     window.dispatchEvent(new Event("cartUpdated"));
 
     alert("Added to cart");
@@ -80,11 +82,20 @@ export default function ProductPage() {
             ))}
           </select>
 
-          {/* 🔥 FIXED QTY UI */}
           <div style={styles.qty}>
-            <button style={styles.qtyBtn} onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
-            <span style={styles.qtyNum}>{quantity}</span>
-            <button style={styles.qtyBtn} onClick={() => setQuantity(quantity + 1)}>+</button>
+            <button
+              style={styles.qtyBtn}
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              −
+            </button>
+            <span>{quantity}</span>
+            <button
+              style={styles.qtyBtn}
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              +
+            </button>
           </div>
 
           <button style={styles.cart} onClick={addToCart}>
@@ -121,11 +132,6 @@ const styles = {
     background: "#222",
     color: "#fff",
     border: "1px solid #333",
-    cursor: "pointer",
-  },
-  qtyNum: {
-    minWidth: "30px",
-    textAlign: "center",
   },
 
   cart: {
