@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = "18032822";
 
-    const response = await fetch(
+    const listResponse = await fetch(
       `https://api.printful.com/store/products?store_id=${STORE_ID}`,
       {
         headers: {
@@ -11,21 +11,38 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+    const listData = await listResponse.json();
 
-    // 🔥 IMPORTANT: use sync_variants, NOT variants
-    const products = data.result.map((item) => ({
-      id: item.id,
-      name: item.name,
-      thumbnail_url: item.thumbnail_url,
+    // 🔥 Now fetch FULL product data for each item
+    const detailedProducts = await Promise.all(
+      listData.result.map(async (item) => {
+        const detailRes = await fetch(
+          `https://api.printful.com/store/products/${item.id}?store_id=${STORE_ID}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+            },
+          }
+        );
 
-      retail_price:
-        item.sync_variants && item.sync_variants.length > 0
-          ? item.sync_variants[0].retail_price
-          : "0.00",
-    }));
+        const detailData = await detailRes.json();
 
-    res.status(200).json(products);
+        const product = detailData.result.sync_product;
+        const variants = detailData.result.sync_variants;
+
+        return {
+          id: product.id,
+          name: product.name,
+          thumbnail_url: product.thumbnail_url,
+          retail_price:
+            variants && variants.length > 0
+              ? variants[0].retail_price
+              : "0.00",
+        };
+      })
+    );
+
+    res.status(200).json(detailedProducts);
   } catch (err) {
     console.error("GET PRODUCTS ERROR:", err);
     res.status(500).json({ error: err.message });
