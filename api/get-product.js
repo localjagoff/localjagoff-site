@@ -13,9 +13,17 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    console.log("PRINTFUL RESPONSE:", JSON.stringify(data, null, 2));
+    const product = data.result;
 
-    res.status(200).json(data); // 👈 return FULL response
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json({
+      name: product.sync_product.name,
+      thumbnail_url: product.sync_product.thumbnail_url,
+      retail_price: product.sync_variants[0].retail_price,
+    });
 
   } catch (err) {
     console.error('GET PRODUCT ERROR:', err);
