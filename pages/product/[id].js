@@ -9,18 +9,24 @@ export default function ProductPage() {
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [related, setRelated] = useState([]);
 
   useEffect(() => {
     if (!id) return;
 
     fetch(`/api/get-product?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         setProduct(data);
-        if (data.variants?.length > 0) {
+        if (data.variants?.length) {
           setSelectedVariant(data.variants[0]);
         }
       });
+
+    // 🔥 fetch other products for "related"
+    fetch("/api/get-products")
+      .then(res => res.json())
+      .then(data => setRelated(data));
   }, [id]);
 
   const addToCart = () => {
@@ -40,6 +46,7 @@ export default function ProductPage() {
         variantId: selectedVariant.variant_id,
         size: selectedVariant.name,
         quantity,
+        image: product.thumbnail_url, // ✅ FIXED
       });
     }
 
@@ -47,88 +54,68 @@ export default function ProductPage() {
     alert("Added to cart");
   };
 
-  const buyNow = async () => {
-    const res = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: [
-          {
-            name: product.name,
-            price: selectedVariant.retail_price,
-            variantId: selectedVariant.variant_id,
-            size: selectedVariant.name,
-            quantity,
-          },
-        ],
-      }),
-    });
-
-    const data = await res.json();
-    window.location.href = data.url;
-  };
-
-  if (!product || !selectedVariant) {
-    return (
-      <div style={styles.loading}>
-        <Navbar />
-        Loading...
-      </div>
-    );
-  }
+  if (!product || !selectedVariant) return <div>Loading...</div>;
 
   return (
-    <div style={styles.container}>
+    <div style={{ background: "#000", color: "#fff", minHeight: "100vh" }}>
       <Navbar />
 
-      <button style={styles.back} onClick={() => router.push("/")}>
-        ← Back to Shop
-      </button>
+      <div style={styles.container}>
+        {/* PRODUCT */}
+        <div style={styles.top}>
+          <img src={product.thumbnail_url} style={styles.image} />
 
-      <div style={styles.wrapper}>
-        <img
-          src={product.thumbnail_url}
-          style={styles.image}
-        />
+          <div style={styles.details}>
+            <h1>{product.name}</h1>
+            <h2>${selectedVariant.retail_price}</h2>
 
-        <div style={styles.details}>
-          <h1>{product.name}</h1>
-          <h2>${selectedVariant.retail_price}</h2>
+            <select
+              style={styles.select}
+              onChange={(e) =>
+                setSelectedVariant(product.variants[e.target.value])
+              }
+            >
+              {product.variants.map((v, i) => (
+                <option key={i} value={i}>
+                  {v.name} - ${v.retail_price}
+                </option>
+              ))}
+            </select>
 
-          <select
-            style={styles.select}
-            onChange={(e) =>
-              setSelectedVariant(product.variants[e.target.value])
-            }
-          >
-            {product.variants.map((v, i) => (
-              <option key={i} value={i}>
-                {v.name} - ${v.retail_price}
-              </option>
-            ))}
-          </select>
+            {/* QTY */}
+            <div style={styles.qty}>
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
+              <span>{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            </div>
 
-          {/* 🔥 QUANTITY */}
-          <div style={styles.qty}>
-            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-            <span>{quantity}</span>
-            <button onClick={() => setQuantity(quantity + 1)}>+</button>
+            <div style={styles.buttons}>
+              <button style={styles.cart} onClick={addToCart}>
+                ADD TO CART
+              </button>
+            </div>
           </div>
+        </div>
 
-          <p style={{ color: "#aaa" }}>
-            Premium quality gear built for jagoffs everywhere.
-          </p>
+        {/* 🔥 RELATED PRODUCTS */}
+        <div style={styles.relatedSection}>
+          <h2>You May Also Like</h2>
 
-          <div style={styles.buttons}>
-            <button style={styles.cart} onClick={addToCart}>
-              ADD TO CART
-            </button>
-
-            <button style={styles.buy} onClick={buyNow}>
-              BUY NOW
-            </button>
+          <div style={styles.grid}>
+            {related
+              .filter((p) => p.id !== product.id)
+              .slice(0, 4)
+              .map((item) => (
+                <div
+                  key={item.id}
+                  style={styles.card}
+                  onClick={() => router.push(`/product/${item.id}`)}
+                >
+                  <img src={item.thumbnail_url} style={styles.cardImg} />
+                  <p>{item.name}</p>
+                  <p>${item.retail_price}</p>
+                </div>
+              ))}
           </div>
         </div>
       </div>
@@ -137,20 +124,60 @@ export default function ProductPage() {
 }
 
 const styles = {
-  container: { background: "#000", color: "#fff", minHeight: "100vh", padding: "20px" },
-  wrapper: { display: "flex", gap: "40px", flexWrap: "wrap" },
-  image: { width: "500px", maxWidth: "100%" },
-  details: { flex: 1, minWidth: "300px" },
-  select: { padding: "10px", margin: "20px 0", width: "100%" },
+  container: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    padding: "40px 20px",
+  },
+  top: {
+    display: "flex",
+    gap: "40px",
+    flexWrap: "wrap",
+  },
+  image: {
+    width: "400px",
+    maxWidth: "100%",
+  },
+  details: {
+    flex: 1,
+  },
+  select: {
+    margin: "20px 0",
+    padding: "10px",
+    width: "100%",
+  },
   qty: {
     display: "flex",
-    alignItems: "center",
-    gap: "15px",
+    gap: "10px",
     marginBottom: "20px",
   },
-  buttons: { display: "flex", gap: "10px" },
-  cart: { flex: 1, padding: "12px", background: "#333", color: "#fff", border: "none" },
-  buy: { flex: 1, padding: "12px", background: "yellow", color: "#000", border: "none", fontWeight: "bold" },
-  back: { marginBottom: "20px", background: "none", color: "#fff", border: "none" },
-  loading: { background: "#000", color: "#fff", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" },
+  buttons: {
+    display: "flex",
+    gap: "10px",
+  },
+  cart: {
+    padding: "12px",
+    background: "#333",
+    color: "#fff",
+    border: "none",
+  },
+
+  // RELATED
+  relatedSection: {
+    marginTop: "60px",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))",
+    gap: "20px",
+    marginTop: "20px",
+  },
+  card: {
+    background: "#111",
+    padding: "10px",
+    cursor: "pointer",
+  },
+  cardImg: {
+    width: "100%",
+  },
 };
