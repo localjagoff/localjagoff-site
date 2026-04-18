@@ -50,7 +50,7 @@ export default function Home() {
         {products.map(product => (
           <Link
             key={product.id}
-            href={`/product/${product.sync_product_id}`} // 👈 FIXED
+            href={`/product/${product.id}`}
           >
             <div style={{
               background: '#111',
