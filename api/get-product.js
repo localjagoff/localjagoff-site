@@ -17,18 +17,31 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    if (!data.result) {
-      return res.status(404).json({ error: "Product not found" });
+    console.log("PRINTFUL RESPONSE:", JSON.stringify(data, null, 2));
+
+    // 🔴 HARD SAFETY CHECKS
+    if (!data || !data.result) {
+      return res.status(500).json({
+        error: "Invalid Printful response",
+        debug: data,
+      });
     }
 
-    const product = data.result.sync_product;
-    const variants = data.result.sync_variants;
+    const product = data.result.sync_product || null;
+    const variants = data.result.sync_variants || [];
+
+    if (!product) {
+      return res.status(500).json({
+        error: "Missing product data",
+        debug: data,
+      });
+    }
 
     res.status(200).json({
-      name: product.name,
-      thumbnail_url: product.thumbnail_url,
-      retail_price: variants?.[0]?.retail_price || "0.00",
-      variants: variants || [],
+      name: product.name || "Unknown Product",
+      thumbnail_url: product.thumbnail_url || "",
+      retail_price: variants[0]?.retail_price || "0.00",
+      variants: variants,
     });
 
   } catch (err) {
