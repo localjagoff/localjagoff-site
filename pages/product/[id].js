@@ -24,21 +24,17 @@ export default function ProductPage() {
   }, [id]);
 
   const addToCart = () => {
-    const currentCart = JSON.parse(localStorage.getItem("cart")) || [];
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    // 🔥 TRUE UNIQUE KEY
-    const uniqueKey = `${product.id}-${selectedVariant.variant_id}-${selectedVariant.name}`;
-
-    const existingIndex = currentCart.findIndex(
-      item => item.key === uniqueKey
+    // ✅ ONLY USE VARIANT ID
+    const existing = cart.find(
+      item => item.variantId === selectedVariant.variant_id
     );
 
-    if (existingIndex !== -1) {
-      currentCart[existingIndex].quantity += quantity;
+    if (existing) {
+      existing.quantity += quantity;
     } else {
-      currentCart.push({
-        key: uniqueKey,
-        productId: product.id,
+      cart.push({
         variantId: selectedVariant.variant_id,
         name: product.name,
         size: selectedVariant.name,
@@ -48,9 +44,7 @@ export default function ProductPage() {
       });
     }
 
-    localStorage.setItem("cart", JSON.stringify(currentCart));
-
-    // 🔥 force navbar refresh
+    localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
 
     alert("Added to cart");
@@ -83,19 +77,9 @@ export default function ProductPage() {
           </select>
 
           <div style={styles.qty}>
-            <button
-              style={styles.qtyBtn}
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            >
-              −
-            </button>
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
             <span>{quantity}</span>
-            <button
-              style={styles.qtyBtn}
-              onClick={() => setQuantity(quantity + 1)}
-            >
-              +
-            </button>
+            <button onClick={() => setQuantity(quantity + 1)}>+</button>
           </div>
 
           <button style={styles.cart} onClick={addToCart}>
@@ -119,21 +103,7 @@ const styles = {
   image: { width: "400px", maxWidth: "100%" },
   details: { flex: 1 },
   select: { margin: "20px 0", padding: "10px", width: "100%" },
-
-  qty: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "20px",
-  },
-  qtyBtn: {
-    width: "40px",
-    height: "40px",
-    background: "#222",
-    color: "#fff",
-    border: "1px solid #333",
-  },
-
+  qty: { display: "flex", gap: "10px", marginBottom: "20px" },
   cart: {
     padding: "12px",
     background: "yellow",
