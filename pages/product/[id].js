@@ -14,6 +14,7 @@ export default function ProductPage({ product }) {
       body: JSON.stringify({
         name: product.name,
         price: selectedVariant.retail_price,
+        variantId: selectedVariant.id,
       }),
     });
 
@@ -21,6 +22,8 @@ export default function ProductPage({ product }) {
 
     if (data.url) {
       window.location.href = data.url;
+    } else {
+      alert("Checkout failed");
     }
   };
 
@@ -46,7 +49,10 @@ export default function ProductPage({ product }) {
 
       <br /><br />
 
-      <button onClick={handleBuy} style={{ background: "yellow", padding: "10px" }}>
+      <button
+        onClick={handleBuy}
+        style={{ background: "yellow", padding: "10px" }}
+      >
         BUY NOW
       </button>
     </div>
