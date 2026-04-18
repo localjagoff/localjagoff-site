@@ -2,43 +2,28 @@ export default async function handler(req, res) {
   try {
     const { id } = req.query;
 
-    const headers = {
-      Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-    };
-
-    // ✅ 1. Get product info
-    const productRes = await fetch(
-      `https://api.printful.com/store/products/${id}?store_id=${process.env.PRINTFUL_STORE_ID}`,
-      { headers }
+    const response = await fetch(
+      `https://api.printful.com/store/products/@${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+        },
+      }
     );
 
-    const productData = await productRes.json();
+    const data = await response.json();
 
-    if (!productData.result) {
+    if (!data.result) {
       return res.status(400).json({
         error: "Product not found",
-        debug: productData,
+        debug: data,
       });
     }
 
-    const product = productData.result;
+    const product = data.result;
 
-    // ✅ 2. Get variants PROPERLY
-    const variantRes = await fetch(
-      `https://api.printful.com/store/products/${id}/variants?store_id=${process.env.PRINTFUL_STORE_ID}`,
-      { headers }
-    );
-
-    const variantData = await variantRes.json();
-
-    if (!variantData.result) {
-      return res.status(400).json({
-        error: "Variants not found",
-        debug: variantData,
-      });
-    }
-
-    const variants = variantData.result.map((v) => ({
+    // ✅ THIS is where variants actually live
+    const variants = (product.sync_variants || []).map((v) => ({
       variant_id: v.id,
       name: v.name,
       retail_price: v.retail_price,
