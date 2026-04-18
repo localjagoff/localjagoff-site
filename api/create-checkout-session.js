@@ -14,20 +14,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing variantId' });
     }
 
-    // 🔥 Get product/variant from your API
     const productRes = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/get-product?id=${variantId}`
     );
 
     const product = await productRes.json();
 
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+    if (!product || !product.retail_price) {
+      return res.status(400).json({ error: 'Invalid product data' });
     }
 
-    const price = parseFloat(product.retail_price) * 100;
+    const priceNumber = Number(product.retail_price);
 
-    // 🧾 Create Stripe session
+    if (isNaN(priceNumber)) {
+      return res.status(400).json({ error: 'Price is NaN' });
+    }
+
+    const price = Math.round(priceNumber * 100);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
