@@ -12,23 +12,24 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
-
-    console.log("PRINTFUL PRODUCT:", JSON.stringify(data, null, 2));
-
     const product = data.result;
 
     if (!product) {
       return res.status(200).json({
         name: "Unknown Product",
         thumbnail_url: "",
-        retail_price: "25.00"
+        variants: []
       });
     }
 
     res.status(200).json({
-      name: product.sync_product?.name || "Unknown Product",
-      thumbnail_url: product.sync_product?.thumbnail_url || "",
-      retail_price: product.sync_variants?.[0]?.retail_price || "25.00",
+      name: product.sync_product.name,
+      thumbnail_url: product.sync_product.thumbnail_url,
+      variants: product.sync_variants.map(v => ({
+        id: v.id,
+        size: v.size,
+        price: v.retail_price
+      }))
     });
 
   } catch (err) {
