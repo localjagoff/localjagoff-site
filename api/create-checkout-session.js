@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const { items } = req.body;
 
-    const line_items = items.map((item) => ({
+    const line_items = items.map(item => ({
       price_data: {
         currency: "usd",
         product_data: {
@@ -40,8 +40,9 @@ export default async function handler(req, res) {
     });
 
     res.status(200).json({ url: session.url });
+
   } catch (err) {
-    console.error("STRIPE ERROR:", err);
+    console.error("CHECKOUT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 }
