@@ -3,52 +3,50 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  const { variantId } = req.body;
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const response = await fetch(
-      `https://api.printful.com/store/products?store_id=18032822`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-        },
-      }
+    const { variantId } = req.body;
+
+    if (!variantId) {
+      return res.status(400).json({ error: 'Missing variantId' });
+    }
+
+    // 🔥 Get product/variant from your API
+    const productRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/get-product?id=${variantId}`
     );
 
-    const data = await response.json();
+    const product = await productRes.json();
 
-    let selectedVariant = null;
-
-    for (const product of data.result) {
-      for (const variant of product.variants || []) {
-        if (variant.id == variantId) {
-          selectedVariant = variant;
-          break;
-        }
-      }
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
     }
 
-    if (!selectedVariant) {
-      return res.status(400).json({ error: 'Variant not found' });
-    }
+    const price = parseFloat(product.retail_price) * 100;
 
+    // 🧾 Create Stripe session
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
       payment_method_types: ['card'],
+      mode: 'payment',
+
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: selectedVariant.name,
+              name: product.name || 'Product',
             },
-            unit_amount: Math.round(parseFloat(selectedVariant.retail_price) * 100),
+            unit_amount: price,
           },
           quantity: 1,
         },
       ],
-      success_url: 'https://www.localjagoff.com/success',
-      cancel_url: 'https://www.localjagoff.com',
+
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/product/${variantId}`,
     });
 
     res.status(200).json({ url: session.url });
