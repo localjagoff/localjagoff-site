@@ -3,7 +3,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://api.printful.com/store/products/${id}`,
+      `https://api.printful.com/store/sync/products/${id}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -12,30 +12,13 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
-
     const p = data.result;
-
-    // 🧠 Handle BOTH structures safely
-    const name =
-      p?.name ||
-      p?.sync_product?.name ||
-      'Unknown Product';
-
-    const thumbnail =
-      p?.thumbnail_url ||
-      p?.sync_product?.thumbnail_url ||
-      '';
-
-    const price =
-      p?.variants?.[0]?.retail_price ||
-      p?.sync_variants?.[0]?.retail_price ||
-      '25.00';
 
     const product = {
       id: p.id,
-      name,
-      thumbnail_url: thumbnail,
-      retail_price: price
+      name: p.name,
+      thumbnail_url: p.thumbnail_url,
+      retail_price: p.sync_variants[0]?.retail_price || '25.00'
     };
 
     res.status(200).json(product);
