@@ -13,11 +13,16 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    // 🔥 IMPORTANT: use sync_variants, NOT variants
     const products = data.result.map((item) => ({
       id: item.id,
       name: item.name,
       thumbnail_url: item.thumbnail_url,
-      retail_price: item.variants?.[0]?.retail_price || "0.00",
+
+      retail_price:
+        item.sync_variants && item.sync_variants.length > 0
+          ? item.sync_variants[0].retail_price
+          : "0.00",
     }));
 
     res.status(200).json(products);
