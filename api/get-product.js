@@ -3,7 +3,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://api.printful.com/store/sync/products/${id}`,
+      `https://api.printful.com/store/products/${id}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -13,10 +13,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    console.log("PRINTFUL SINGLE PRODUCT:", JSON.stringify(data, null, 2));
+
     const product = data.result;
 
-    // ✅ SAFETY CHECK
-    if (!product || !product.sync_product) {
+    if (!product) {
       return res.status(200).json({
         name: "Unknown Product",
         thumbnail_url: "",
@@ -24,17 +25,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ SAFE ACCESS (no crashes)
-    const price =
-      product.sync_variants &&
-      product.sync_variants.length > 0
-        ? product.sync_variants[0].retail_price
-        : "25.00";
-
     res.status(200).json({
-      name: product.sync_product.name,
-      thumbnail_url: product.sync_product.thumbnail_url,
-      retail_price: price,
+      name: product.name,
+      thumbnail_url: product.thumbnail_url,
+      retail_price: product.variants?.[0]?.retail_price || "25.00"
     });
 
   } catch (err) {
