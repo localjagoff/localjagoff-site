@@ -11,21 +11,17 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    if (!data.result) {
-      return res.status(500).json(data);
-    }
-
-    const products = data.result.map(item => ({
+    const products = data.result.map((item) => ({
       id: item.id,
       name: item.name,
       thumbnail_url: item.thumbnail_url,
-      retail_price: item.variants?.[0]?.retail_price || "25.00"
+      retail_price: item.variants?.[0]?.retail_price || '25.00',
     }));
 
     res.status(200).json(products);
 
   } catch (err) {
-    console.error("GET PRODUCTS ERROR:", err);
+    console.error('GET PRODUCTS ERROR:', err);
     res.status(500).json({ error: err.message });
   }
 }
