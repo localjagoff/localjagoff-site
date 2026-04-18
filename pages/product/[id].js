@@ -6,7 +6,6 @@ export default function ProductPage() {
   const { id } = router.query;
 
   const [product, setProduct] = useState(null);
-  const [size, setSize] = useState('M');
 
   useEffect(() => {
     if (!id) return;
@@ -16,56 +15,45 @@ export default function ProductPage() {
       .then(data => setProduct(data));
   }, [id]);
 
-  if (!product) return <p style={{ padding: 20 }}>Loading...</p>;
+  if (!product) {
+    return <p style={{ padding: 20 }}>Loading jagoff product...</p>;
+  }
 
   return (
-    <div style={{ padding: 40, color: 'white', background: '#000', minHeight: '100vh' }}>
+    <div style={{ padding: 20, color: 'white', background: 'black', minHeight: '100vh' }}>
       
+      {/* 🔥 PRODUCT NAME */}
       <h1>{product.name}</h1>
 
-      <img
-        src={product.thumbnail_url}
-        style={{ width: 300, marginBottom: 20 }}
-      />
+      {/* 🖼️ IMAGE */}
+      {product.thumbnail_url && (
+        <img
+          src={product.thumbnail_url}
+          alt={product.name}
+          style={{ width: 300, marginBottom: 20 }}
+        />
+      )}
 
+      {/* 💰 PRICE */}
       <h2>${product.retail_price}</h2>
 
-      {/* SIZE SELECTOR */}
-      <div style={{ margin: '20px 0' }}>
-        <label>Size:</label>
-        <select
-          value={size}
-          onChange={(e) => setSize(e.target.value)}
-          style={{ marginLeft: 10 }}
-        >
-          <option>S</option>
+      {/* 📏 SIZE */}
+      <div style={{ marginTop: 10 }}>
+        <label>Size: </label>
+        <select>
           <option>M</option>
           <option>L</option>
           <option>XL</option>
-          <option>XXL</option>
         </select>
       </div>
 
-      {/* BUY BUTTON */}
+      {/* 🟡 BUTTON */}
       <button
-        onClick={async () => {
-          const res = await fetch('/api/create-checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productId: product.id,
-              size,
-              price: product.retail_price
-            })
-          });
-
-          const data = await res.json();
-          window.location.href = data.url;
-        }}
         style={{
-          padding: '12px 24px',
+          marginTop: 20,
           background: 'yellow',
           color: 'black',
+          padding: '10px 20px',
           fontWeight: 'bold',
           border: 'none',
           cursor: 'pointer'
@@ -73,7 +61,6 @@ export default function ProductPage() {
       >
         BUY NOW
       </button>
-
     </div>
   );
 }
