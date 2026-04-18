@@ -24,13 +24,22 @@ export default function ProductPage() {
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: selectedVariant.retail_price,
-      variantId: selectedVariant.variant_id,
-      size: selectedVariant.name,
-    });
+    const existing = cart.find(
+      (item) => item.variantId === selectedVariant.variant_id
+    );
+
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: selectedVariant.retail_price,
+        variantId: selectedVariant.variant_id,
+        size: selectedVariant.name,
+        quantity: 1,
+      });
+    }
 
     localStorage.setItem("cart", JSON.stringify(cart));
     alert("Added to cart");
@@ -43,9 +52,15 @@ export default function ProductPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        name: `${product.name} (${selectedVariant.name})`,
-        price: selectedVariant.retail_price,
-        variantId: selectedVariant.variant_id,
+        items: [
+          {
+            name: product.name,
+            price: selectedVariant.retail_price,
+            variantId: selectedVariant.variant_id,
+            size: selectedVariant.name,
+            quantity: 1,
+          },
+        ],
       }),
     });
 
@@ -53,17 +68,16 @@ export default function ProductPage() {
     window.location.href = data.url;
   };
 
-  if (!product) return <div style={styles.loading}>Loading...</div>;
+  if (!product || !selectedVariant)
+    return <div style={styles.loading}>Loading...</div>;
 
   return (
     <div style={styles.container}>
-      {/* BACK BUTTON */}
       <button style={styles.back} onClick={() => router.push("/")}>
         ← Back to Shop
       </button>
 
       <div style={styles.wrapper}>
-        {/* IMAGE */}
         <div style={styles.imageContainer}>
           <img
             src={product.thumbnail_url}
@@ -72,34 +86,28 @@ export default function ProductPage() {
           />
         </div>
 
-        {/* DETAILS */}
         <div style={styles.details}>
           <h1 style={styles.title}>{product.name}</h1>
 
-          <p style={styles.price}>
-            ${selectedVariant?.retail_price || "0.00"}
-          </p>
+          <p style={styles.price}>${selectedVariant.retail_price}</p>
 
-          {/* SIZE SELECT */}
           <select
             style={styles.select}
             onChange={(e) =>
               setSelectedVariant(product.variants[e.target.value])
             }
           >
-            {product.variants?.map((variant, index) => (
+            {product.variants.map((variant, index) => (
               <option key={index} value={index}>
                 {variant.name} - ${variant.retail_price}
               </option>
             ))}
           </select>
 
-          {/* DESCRIPTION (CUSTOMIZE THESE) */}
           <p style={styles.description}>
-            {getDescription(product.name)}
+            Premium quality gear built for jagoffs everywhere.
           </p>
 
-          {/* BUTTONS */}
           <div style={styles.buttonGroup}>
             <button style={styles.cart} onClick={addToCart}>
               ADD TO CART
@@ -115,19 +123,6 @@ export default function ProductPage() {
   );
 }
 
-/* 🔥 CUSTOM DESCRIPTIONS */
-function getDescription(name) {
-  if (name.includes("Hoodie")) {
-    return "Heavyweight comfort. Built for cold Pittsburgh nights. Clean look, jagoff attitude.";
-  }
-
-  if (name.includes("T-Shirt")) {
-    return "Soft, breathable, and ready for everyday nonsense. Wear it proud.";
-  }
-
-  return "Premium quality gear built for jagoffs everywhere.";
-}
-
 const styles = {
   container: {
     backgroundColor: "#000",
@@ -135,7 +130,6 @@ const styles = {
     minHeight: "100vh",
     padding: "20px",
   },
-
   back: {
     marginBottom: "20px",
     background: "none",
@@ -143,72 +137,57 @@ const styles = {
     border: "none",
     cursor: "pointer",
   },
-
   wrapper: {
     display: "flex",
     flexWrap: "wrap",
     gap: "40px",
   },
-
   imageContainer: {
-    flex: "1",
+    flex: 1,
     minWidth: "300px",
   },
-
   image: {
     width: "100%",
   },
-
   details: {
-    flex: "1",
+    flex: 1,
     minWidth: "300px",
   },
-
   title: {
     fontSize: "32px",
-    marginBottom: "10px",
   },
-
   price: {
     fontSize: "24px",
     marginBottom: "15px",
   },
-
   select: {
     padding: "10px",
     marginBottom: "20px",
     width: "100%",
   },
-
   description: {
     color: "#aaa",
     marginBottom: "20px",
   },
-
   buttonGroup: {
     display: "flex",
     gap: "10px",
   },
-
   cart: {
     flex: 1,
     padding: "12px",
     backgroundColor: "#333",
     color: "#fff",
     border: "none",
-    cursor: "pointer",
   },
-
   buy: {
     flex: 1,
     padding: "12px",
     backgroundColor: "yellow",
     color: "#000",
-    border: "none",
     fontWeight: "bold",
-    cursor: "pointer",
+    border: "none",
   },
-
   loading: {
     backgroundColor: "#000",
     color: "#fff",
