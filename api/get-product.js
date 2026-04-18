@@ -13,16 +13,23 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    const productData = data.result;
+
     const product = {
-      id: data.result.id,
-      name: data.result.name,
-      thumbnail_url: data.result.thumbnail_url,
-      retail_price: data.result.variants[0]?.retail_price || '25.00'
+      id: productData.id,
+      name: productData.sync_product.name,
+
+      // 👇 IMPORTANT FIX
+      thumbnail_url: productData.sync_product.thumbnail_url,
+
+      retail_price:
+        productData.sync_variants[0]?.retail_price || '25.00'
     };
 
     res.status(200).json(product);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 }
