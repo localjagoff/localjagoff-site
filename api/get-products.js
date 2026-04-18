@@ -13,7 +13,6 @@ export default async function handler(req, res) {
 
     const listData = await listResponse.json();
 
-    // 🔥 Now fetch FULL product data for each item
     const detailedProducts = await Promise.all(
       listData.result.map(async (item) => {
         const detailRes = await fetch(
@@ -40,6 +39,12 @@ export default async function handler(req, res) {
               : "0.00",
         };
       })
+    );
+
+    // ✅ PRODUCTION CACHING 
+    res.setHeader(
+      "Cache-Control",
+      "s-maxage=60, stale-while-revalidate=300"
     );
 
     res.status(200).json(detailedProducts);
