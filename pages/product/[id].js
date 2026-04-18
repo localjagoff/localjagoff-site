@@ -8,6 +8,7 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -16,7 +17,7 @@ export default function ProductPage() {
       .then((res) => res.json())
       .then((data) => {
         setProduct(data);
-        if (data.variants && data.variants.length > 0) {
+        if (data.variants?.length > 0) {
           setSelectedVariant(data.variants[0]);
         }
       });
@@ -30,7 +31,7 @@ export default function ProductPage() {
     );
 
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity += quantity;
     } else {
       cart.push({
         id: product.id,
@@ -38,7 +39,7 @@ export default function ProductPage() {
         price: selectedVariant.retail_price,
         variantId: selectedVariant.variant_id,
         size: selectedVariant.name,
-        quantity: 1,
+        quantity,
       });
     }
 
@@ -59,7 +60,7 @@ export default function ProductPage() {
             price: selectedVariant.retail_price,
             variantId: selectedVariant.variant_id,
             size: selectedVariant.name,
-            quantity: 1,
+            quantity,
           },
         ],
       }),
@@ -69,13 +70,14 @@ export default function ProductPage() {
     window.location.href = data.url;
   };
 
-  if (!product || !selectedVariant)
+  if (!product || !selectedVariant) {
     return (
       <div style={styles.loading}>
         <Navbar />
         Loading...
       </div>
     );
+  }
 
   return (
     <div style={styles.container}>
@@ -86,18 +88,14 @@ export default function ProductPage() {
       </button>
 
       <div style={styles.wrapper}>
-        <div style={styles.imageContainer}>
-          <img
-            src={product.thumbnail_url}
-            alt={product.name}
-            style={styles.image}
-          />
-        </div>
+        <img
+          src={product.thumbnail_url}
+          style={styles.image}
+        />
 
         <div style={styles.details}>
-          <h1 style={styles.title}>{product.name}</h1>
-
-          <p style={styles.price}>${selectedVariant.retail_price}</p>
+          <h1>{product.name}</h1>
+          <h2>${selectedVariant.retail_price}</h2>
 
           <select
             style={styles.select}
@@ -105,18 +103,25 @@ export default function ProductPage() {
               setSelectedVariant(product.variants[e.target.value])
             }
           >
-            {product.variants.map((variant, index) => (
-              <option key={index} value={index}>
-                {variant.name} - ${variant.retail_price}
+            {product.variants.map((v, i) => (
+              <option key={i} value={i}>
+                {v.name} - ${v.retail_price}
               </option>
             ))}
           </select>
 
-          <p style={styles.description}>
+          {/* 🔥 QUANTITY */}
+          <div style={styles.qty}>
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
+            <span>{quantity}</span>
+            <button onClick={() => setQuantity(quantity + 1)}>+</button>
+          </div>
+
+          <p style={{ color: "#aaa" }}>
             Premium quality gear built for jagoffs everywhere.
           </p>
 
-          <div style={styles.buttonGroup}>
+          <div style={styles.buttons}>
             <button style={styles.cart} onClick={addToCart}>
               ADD TO CART
             </button>
@@ -132,77 +137,20 @@ export default function ProductPage() {
 }
 
 const styles = {
-  container: {
-    backgroundColor: "#000",
-    color: "#fff",
-    minHeight: "100vh",
-    padding: "20px",
-  },
-  back: {
-    marginBottom: "20px",
-    background: "none",
-    color: "#fff",
-    border: "none",
-    cursor: "pointer",
-  },
-  wrapper: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "40px",
-  },
-  imageContainer: {
-    flex: 1,
-    minWidth: "300px",
-  },
-  image: {
-    width: "100%",
-  },
-  details: {
-    flex: 1,
-    minWidth: "300px",
-  },
-  title: {
-    fontSize: "32px",
-  },
-  price: {
-    fontSize: "24px",
-    marginBottom: "15px",
-  },
-  select: {
-    padding: "10px",
-    marginBottom: "20px",
-    width: "100%",
-  },
-  description: {
-    color: "#aaa",
-    marginBottom: "20px",
-  },
-  buttonGroup: {
-    display: "flex",
-    gap: "10px",
-  },
-  cart: {
-    flex: 1,
-    padding: "12px",
-    backgroundColor: "#333",
-    color: "#fff",
-    border: "none",
-  },
-  buy: {
-    flex: 1,
-    padding: "12px",
-    backgroundColor: "yellow",
-    color: "#000",
-    fontWeight: "bold",
-    border: "none",
-  },
-  loading: {
-    backgroundColor: "#000",
-    color: "#fff",
-    height: "100vh",
+  container: { background: "#000", color: "#fff", minHeight: "100vh", padding: "20px" },
+  wrapper: { display: "flex", gap: "40px", flexWrap: "wrap" },
+  image: { width: "500px", maxWidth: "100%" },
+  details: { flex: 1, minWidth: "300px" },
+  select: { padding: "10px", margin: "20px 0", width: "100%" },
+  qty: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "column",
+    gap: "15px",
+    marginBottom: "20px",
   },
+  buttons: { display: "flex", gap: "10px" },
+  cart: { flex: 1, padding: "12px", background: "#333", color: "#fff", border: "none" },
+  buy: { flex: 1, padding: "12px", background: "yellow", color: "#000", border: "none", fontWeight: "bold" },
+  back: { marginBottom: "20px", background: "none", color: "#fff", border: "none" },
+  loading: { background: "#000", color: "#fff", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" },
 };
