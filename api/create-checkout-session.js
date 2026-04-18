@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
 
       metadata: {
-        cart: JSON.stringify(items), // 🔥 critical for webhook
+        cart: JSON.stringify(items),
       },
     });
 
