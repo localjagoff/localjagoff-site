@@ -1,11 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
-export default function ProductPage({ product }) {
-  const [selectedVariant, setSelectedVariant] = useState(
-    product.variants[0]
-  );
+export default function ProductPage() {
+  const router = useRouter();
+  const { id } = router.query;
+
+  const [product, setProduct] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchProduct = async () => {
+      const res = await fetch(`/api/get-product?id=${id}`);
+      const data = await res.json();
+
+      setProduct(data);
+      setSelectedVariant(data.variants?.[0] || null);
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const handleBuy = async () => {
+    if (!selectedVariant) return;
+
     const res = await fetch("/api/create-checkout-session", {
       method: "POST",
       headers: {
@@ -22,10 +41,17 @@ export default function ProductPage({ product }) {
 
     if (data.url) {
       window.location.href = data.url;
-    } else {
-      alert("Checkout failed");
     }
   };
+
+  // 🔴 Prevent build crash + loading state
+  if (!product || !selectedVariant) {
+    return (
+      <div style={{ background: "black", color: "white", padding: "40px" }}>
+        Loading jagoff product...
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "black", color: "white", padding: "40px" }}>
