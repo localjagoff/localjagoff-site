@@ -48,7 +48,7 @@ export default function Home() {
         )}
 
         {products.map(product => (
-          <Link key={product.id} href={`/product/${product.id}`}>
+          <Link key=href={`/product/${product.sync_product_id}`}>
             <div style={{
               background: '#111',
               border: '1px solid #222',
