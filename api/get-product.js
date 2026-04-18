@@ -26,9 +26,9 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({
-      name: product.name,
-      thumbnail_url: product.thumbnail_url,
-      retail_price: product.variants?.[0]?.retail_price || "25.00",
+      name: product.sync_product?.name || "Unknown Product",
+      thumbnail_url: product.sync_product?.thumbnail_url || "",
+      retail_price: product.sync_variants?.[0]?.retail_price || "25.00",
     });
 
   } catch (err) {
