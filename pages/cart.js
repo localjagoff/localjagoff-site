@@ -42,7 +42,10 @@ export default function CartPage() {
     0
   );
 
+  // 🔥 FULL DEBUG CHECKOUT FUNCTION
   const checkout = async () => {
+    console.log("🚀 CHECKOUT CLICKED");
+
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -52,16 +55,20 @@ export default function CartPage() {
         body: JSON.stringify({ items: cart }),
       });
 
+      console.log("📡 STATUS:", res.status);
+
       const data = await res.json();
 
+      console.log("📦 DATA:", data);
+
       if (data.url) {
+        console.log("➡️ REDIRECTING TO STRIPE");
         window.location.href = data.url;
       } else {
-        console.error(data);
         alert("Checkout failed");
       }
     } catch (err) {
-      console.error(err);
+      console.error("❌ CHECKOUT ERROR:", err);
       alert("Checkout error");
     }
   };
@@ -71,10 +78,10 @@ export default function CartPage() {
       <Navbar />
 
       <div style={styles.container}>
-        {/* LEFT SIDE */}
+        {/* LEFT */}
         <div style={styles.left}>
           <div style={styles.headerRow}>
-            <h1 style={styles.title}>YOUR CART</h1>
+            <h1>YOUR CART</h1>
             {cart.length > 0 && (
               <button style={styles.clearBtn} onClick={clearCart}>
                 CLEAR
@@ -97,17 +104,11 @@ export default function CartPage() {
               </div>
 
               <div style={styles.qty}>
-                <button
-                  style={styles.qtyBtn}
-                  onClick={() => decreaseQty(i)}
-                >
+                <button style={styles.qtyBtn} onClick={() => decreaseQty(i)}>
                   −
                 </button>
-                <span style={styles.qtyNum}>{item.quantity}</span>
-                <button
-                  style={styles.qtyBtn}
-                  onClick={() => increaseQty(i)}
-                >
+                <span>{item.quantity}</span>
+                <button style={styles.qtyBtn} onClick={() => increaseQty(i)}>
                   +
                 </button>
               </div>
@@ -115,7 +116,7 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT */}
         <div style={styles.right}>
           <h2>Total</h2>
           <h1>${total.toFixed(2)}</h1>
@@ -169,10 +170,6 @@ const styles = {
     marginBottom: "20px",
   },
 
-  title: {
-    margin: 0,
-  },
-
   clearBtn: {
     background: "none",
     border: "1px solid #333",
@@ -218,11 +215,6 @@ const styles = {
     border: "1px solid #333",
     cursor: "pointer",
     fontSize: "18px",
-  },
-
-  qtyNum: {
-    minWidth: "20px",
-    textAlign: "center",
   },
 
   checkoutBtn: {
