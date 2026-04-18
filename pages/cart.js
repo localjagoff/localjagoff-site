@@ -5,42 +5,36 @@ export default function CartPage() {
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(stored);
+    setCart(JSON.parse(localStorage.getItem("cart")) || []);
   }, []);
 
-  const updateCart = (newCart) => {
+  const update = (newCart) => {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
   };
 
-  const addQty = (index) => {
-    const updated = [...cart];
-    updated[index].quantity += 1;
-    updateCart(updated);
+  const addQty = (i) => {
+    const c = [...cart];
+    c[i].quantity++;
+    update(c);
   };
 
-  const removeQty = (index) => {
-    const updated = [...cart];
-    if (updated[index].quantity > 1) {
-      updated[index].quantity -= 1;
-    } else {
-      updated.splice(index, 1);
-    }
-    updateCart(updated);
+  const subQty = (i) => {
+    const c = [...cart];
+    if (c[i].quantity > 1) c[i].quantity--;
+    else c.splice(i, 1);
+    update(c);
   };
 
-  const getTotal = () =>
-    cart
-      .reduce((sum, item) => sum + item.quantity * Number(item.price), 0)
-      .toFixed(2);
+  const total = cart.reduce(
+    (sum, item) => sum + item.quantity * Number(item.price),
+    0
+  );
 
-  const checkoutAll = async () => {
+  const checkout = async () => {
     const res = await fetch("/api/create-checkout-session", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ items: cart }),
     });
 
@@ -52,52 +46,68 @@ export default function CartPage() {
     <div style={styles.container}>
       <Navbar />
 
-      <h1>YOUR CART</h1>
+      <div style={styles.wrapper}>
+        <div style={styles.items}>
+          <h1>YOUR CART</h1>
 
-      {cart.length === 0 && <p>Your cart is empty</p>}
+          {cart.map((item, i) => (
+            <div key={i} style={styles.item}>
+              <div>
+                <h3>{item.name}</h3>
+                <p>{item.size}</p>
+                <p>${item.price}</p>
+              </div>
 
-      {cart.map((item, index) => (
-        <div key={index} style={styles.item}>
-          <div>
-            <h2>{item.name}</h2>
-            <p>Size: {item.size}</p>
-            <p>${item.price}</p>
-          </div>
-
-          <div>
-            <button onClick={() => removeQty(index)}>-</button>
-            <span style={{ margin: "0 10px" }}>{item.quantity}</span>
-            <button onClick={() => addQty(index)}>+</button>
-          </div>
+              <div style={styles.qty}>
+                <button onClick={() => subQty(i)}>-</button>
+                <span>{item.quantity}</span>
+                <button onClick={() => addQty(i)}>+</button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
 
-      <h2>Total: ${getTotal()}</h2>
+        <div style={styles.summary}>
+          <h2>Total</h2>
+          <h1>${total.toFixed(2)}</h1>
 
-      <button style={styles.checkout} onClick={checkoutAll}>
-        CHECKOUT
-      </button>
+          <button style={styles.checkout} onClick={checkout}>
+            CHECKOUT
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 const styles = {
-  container: {
-    background: "#000",
-    color: "#fff",
-    minHeight: "100vh",
+  container: { background: "#000", color: "#fff", minHeight: "100vh", padding: "20px" },
+  wrapper: { display: "flex", gap: "40px", flexWrap: "wrap" },
+  items: { flex: 2 },
+  summary: {
+    flex: 1,
+    background: "#111",
     padding: "20px",
+    border: "1px solid #222",
+    height: "fit-content",
   },
   item: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "15px",
+    borderBottom: "1px solid #222",
+    padding: "15px 0",
+  },
+  qty: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
   },
   checkout: {
+    marginTop: "20px",
+    width: "100%",
+    padding: "15px",
     background: "yellow",
     color: "#000",
-    padding: "15px",
-    width: "100%",
     fontWeight: "bold",
     border: "none",
   },
