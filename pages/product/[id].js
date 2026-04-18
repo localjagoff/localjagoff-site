@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Navbar from "../../components/Navbar";
 
 export default function ProductPage() {
   const router = useRouter();
@@ -69,10 +70,17 @@ export default function ProductPage() {
   };
 
   if (!product || !selectedVariant)
-    return <div style={styles.loading}>Loading...</div>;
+    return (
+      <div style={styles.loading}>
+        <Navbar />
+        Loading...
+      </div>
+    );
 
   return (
     <div style={styles.container}>
+      <Navbar />
+
       <button style={styles.back} onClick={() => router.push("/")}>
         ← Back to Shop
       </button>
@@ -195,5 +203,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "column",
   },
 };
