@@ -19,9 +19,9 @@ export default async function handler(req, res) {
 
     const product = data.result;
 
-    // 🔥 CRITICAL: use sync_variants (not variants)
-    const variants = product.sync_variants.map((v) => ({
-      variant_id: v.id, // ✅ UNIQUE PER ITEM
+    // ✅ CORRECT FIELD (this is what your store actually uses)
+    const variants = product.variants.map((v) => ({
+      variant_id: v.id,
       name: v.name,
       retail_price: v.retail_price,
     }));
