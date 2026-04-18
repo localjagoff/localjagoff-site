@@ -6,11 +6,16 @@ export default async function handler(req, res) {
   try {
     const { items } = req.body;
 
-    const line_items = items.map(item => ({
+    if (!items || !items.length) {
+      return res.status(400).json({ error: "No items provided" });
+    }
+
+    const line_items = items.map((item) => ({
       price_data: {
         currency: "usd",
         product_data: {
-          name: `${item.name} (${item.size})`,
+          name: item.name,
+          images: item.image ? [item.image] : [],
         },
         unit_amount: Math.round(Number(item.price) * 100),
       },
@@ -32,7 +37,7 @@ export default async function handler(req, res) {
       line_items,
 
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
 
       metadata: {
         cart: JSON.stringify(items),
