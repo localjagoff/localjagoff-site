@@ -4,10 +4,20 @@ import { useEffect, useState } from "react";
 export default function Navbar() {
   const [count, setCount] = useState(0);
 
-  useEffect(() => {
+  const updateCount = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     const total = cart.reduce((sum, item) => sum + item.quantity, 0);
     setCount(total);
+  };
+
+  useEffect(() => {
+    updateCount();
+
+    window.addEventListener("cartUpdated", updateCount);
+
+    return () => {
+      window.removeEventListener("cartUpdated", updateCount);
+    };
   }, []);
 
   return (
@@ -25,14 +35,11 @@ export default function Navbar() {
 
 const styles = {
   nav: {
-    position: "sticky",
-    top: 0,
-    backgroundColor: "#000",
-    padding: "15px 20px",
     display: "flex",
     justifyContent: "space-between",
+    padding: "15px 20px",
     borderBottom: "1px solid #222",
-    zIndex: 1000,
+    background: "#000",
   },
   logo: {
     color: "yellow",
