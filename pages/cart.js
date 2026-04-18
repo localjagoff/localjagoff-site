@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
@@ -49,7 +50,11 @@ export default function CartPage() {
 
   return (
     <div style={styles.container}>
+      <Navbar />
+
       <h1>YOUR CART</h1>
+
+      {cart.length === 0 && <p>Your cart is empty</p>}
 
       {cart.map((item, index) => (
         <div key={index} style={styles.item}>
@@ -77,7 +82,12 @@ export default function CartPage() {
 }
 
 const styles = {
-  container: { background: "#000", color: "#fff", padding: "20px" },
+  container: {
+    background: "#000",
+    color: "#fff",
+    minHeight: "100vh",
+    padding: "20px",
+  },
   item: {
     display: "flex",
     justifyContent: "space-between",
@@ -89,5 +99,6 @@ const styles = {
     padding: "15px",
     width: "100%",
     fontWeight: "bold",
+    border: "none",
   },
 };
