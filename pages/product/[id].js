@@ -15,53 +15,78 @@ export default function ProductPage() {
       .then(res => res.json())
       .then(data => {
         setProduct(data);
-        if (data.variants?.length > 0) {
-          setSelectedVariant(data.variants[0].id);
+        if (data.variants && data.variants.length > 0) {
+          setSelectedVariant(data.variants[0]);
         }
-      });
+      })
+      .catch(err => console.error('Error loading product:', err));
   }, [id]);
 
-  if (!product) return <p>Loading jagoff merch...</p>;
+  const handleBuy = async () => {
+    if (!selectedVariant) return;
+
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variantId: selectedVariant.id })
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    }
+  };
+
+  if (!product) {
+    return (
+      <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', padding: '40px' }}>
+        Loading product...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 40, color: 'white' }}>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', padding: '40px' }}>
       <h1>{product.name}</h1>
 
-      <img
-        src={product.thumbnail_url}
-        style={{ width: 300 }}
-      />
+      {product.thumbnail_url && (
+        <img
+          src={product.thumbnail_url}
+          alt={product.name}
+          style={{ maxWidth: '400px', marginBottom: '20px' }}
+        />
+      )}
 
-      <br /><br />
+      <h2>${selectedVariant?.price || product.retail_price}</h2>
 
-      <select
-        onChange={(e) => setSelectedVariant(e.target.value)}
-        value={selectedVariant || ''}
-      >
-        {product.variants.map(v => (
-          <option key={v.id} value={v.id}>
-            {v.size} - ${v.price}
-          </option>
-        ))}
-      </select>
+      {product.variants && (
+        <select
+          value={selectedVariant?.id}
+          onChange={(e) => {
+            const variant = product.variants.find(v => v.id == e.target.value);
+            setSelectedVariant(variant);
+          }}
+          style={{ marginBottom: '20px' }}
+        >
+          {product.variants.map(variant => (
+            <option key={variant.id} value={variant.id}>
+              {variant.name} - ${variant.price}
+            </option>
+          ))}
+        </select>
+      )}
 
-      <br /><br />
+      <br />
 
       <button
-        onClick={async () => {
-          const res = await fetch('/api/create-checkout-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ variantId: selectedVariant }),
-          });
-
-          const data = await res.json();
-          window.location.href = data.url;
-        }}
+        onClick={handleBuy}
         style={{
-          background: 'yellow',
-          padding: '12px 24px',
+          backgroundColor: 'yellow',
+          color: '#000',
+          padding: '10px 20px',
           fontWeight: 'bold',
+          border: 'none',
           cursor: 'pointer'
         }}
       >
