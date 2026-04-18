@@ -14,6 +14,8 @@ export default function Home() {
     <div style={{ padding: 20 }}>
       <h1>Local Jagoff</h1>
 
+      {products.length === 0 && <p>Loading products...</p>}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
         {products.map(product => (
           <Link key={product.id} href={`/product/${product.id}`}>
