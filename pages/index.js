@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Navbar from "../components/Navbar";
+import Link from "next/link";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -8,34 +8,28 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
-      .then(setProducts);
+      .then((data) => setProducts(data));
   }, []);
 
   return (
-    <div style={styles.container}>
+    <div style={styles.page}>
       <Navbar />
 
-      <div style={styles.hero}>
-        <h1 style={styles.title}>LOCAL JAGOFF</h1>
-        <p style={styles.subtitle}>
-          Certified nonsense. Pittsburgh attitude.
-        </p>
+      {/* BANNER */}
+      <div style={styles.banner}>
+        <img src="/images/banner.jpg" style={styles.bannerImg} />
       </div>
 
+      {/* PRODUCTS */}
       <div style={styles.grid}>
-        {products.map((product) => (
-          <div key={product.id} style={styles.card}>
-            <Link href={`/product/${product.id}`}>
-              <img src={product.thumbnail_url} style={styles.image} />
-            </Link>
-
-            <h2>{product.name}</h2>
-            <p>${product.retail_price}</p>
-
-            <Link href={`/product/${product.id}`}>
-              <button style={styles.button}>VIEW</button>
-            </Link>
-          </div>
+        {products.map((p) => (
+          <Link key={p.id} href={`/product/${p.id}`}>
+            <div style={styles.card}>
+              <img src={p.thumbnail_url} style={styles.image} />
+              <h3>{p.name}</h3>
+              <p>${p.retail_price}</p>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
@@ -43,45 +37,37 @@ export default function Home() {
 }
 
 const styles = {
-  container: {
-    background: "#000",
+  page: {
+    background: "linear-gradient(180deg, #000 0%, #0a0a0a 100%)",
     color: "#fff",
     minHeight: "100vh",
   },
-  hero: {
-    textAlign: "center",
-    padding: "60px 20px",
+
+  banner: {
+    width: "100%",
+    padding: "20px",
   },
-  title: {
-    fontSize: "48px",
-    letterSpacing: "2px",
+
+  bannerImg: {
+    width: "100%",
+    borderRadius: "8px",
   },
-  subtitle: {
-    color: "#aaa",
-  },
+
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "30px",
+    gap: "20px",
     padding: "20px",
   },
+
   card: {
     background: "#111",
     padding: "15px",
     border: "1px solid #222",
-    transition: "0.2s",
+    cursor: "pointer",
   },
+
   image: {
     width: "100%",
-  },
-  button: {
-    marginTop: "10px",
-    padding: "10px",
-    width: "100%",
-    background: "yellow",
-    color: "#000",
-    fontWeight: "bold",
-    border: "none",
-    cursor: "pointer",
   },
 };
