@@ -1,38 +1,33 @@
-/* 🔥 RESET */
+/* RESET */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #000;
   color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* 🔥 HEADINGS */
+/* HEADINGS */
 h1, h2, h3 {
   margin: 0;
   font-weight: 600;
 }
 
-/* 🔥 LINKS */
+/* LINKS */
 a {
-  color: inherit;
   text-decoration: none;
+  color: inherit;
 }
 
-/* 🔥 BUTTON BASE */
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-/* 🔥 PREMIUM BUTTON */
+/* BUTTONS */
 .btn {
   background: #ffe600;
   color: #000;
   padding: 14px 28px;
-  font-weight: 700;
+  font-weight: bold;
   letter-spacing: 1px;
   border: none;
   transition: all 0.2s ease;
+  display: inline-block;
 }
 
 .btn:hover {
@@ -40,21 +35,23 @@ button {
   background: #fff200;
 }
 
-/* 🔥 CARD HOVER */
-.card-hover {
+/* PRODUCT CARD */
+.card {
+  background: #111;
+  border: 1px solid #222;
   transition: all 0.25s ease;
 }
 
-.card-hover:hover {
+.card:hover {
   transform: translateY(-6px);
-  border-color: #444 !important;
+  border-color: #444;
 }
 
-/* 🔥 IMAGE ZOOM */
-.img-hover {
+/* IMAGE HOVER */
+.img {
   transition: transform 0.3s ease;
 }
 
-.card-hover:hover .img-hover {
+.card:hover .img {
   transform: scale(1.08);
 }
