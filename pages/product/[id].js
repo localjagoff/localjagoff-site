@@ -8,7 +8,7 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -20,6 +20,25 @@ export default function ProductPage() {
         setProduct(found);
       });
   }, [id]);
+
+  // 🔥 MULTI IMAGE SUPPORT
+  const productImages = {
+    428851907: ["/images/products/trucker.png"],
+    428851698: [
+      "/images/products/tee-keystone.png",
+      "/images/products/tee-keystone.png"
+    ],
+    428851608: ["/images/products/tee-steel.png"],
+    428851513: ["/images/products/tee-sideways.png"],
+    428821578: ["/images/products/hoodie.png"],
+    428550417: ["/images/products/tee-certified.png"],
+  };
+
+  useEffect(() => {
+    if (!product) return;
+    const imgs = productImages[product.id] || [product.thumbnail_url];
+    setSelectedImage(imgs[0]);
+  }, [product]);
 
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -34,65 +53,63 @@ export default function ProductPage() {
         name: product.name,
         price: product.retail_price,
         quantity,
-        image: product.thumbnail_url,
+        image: selectedImage,
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
-
-    // ✅ smooth feedback instead of alert
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
   };
 
-  if (!product) {
-    return <div style={{ padding: 40 }}>Loading...</div>;
-  }
+  if (!product) return <div style={{ padding: 40 }}>Loading...</div>;
+
+  const images = productImages[product.id] || [product.thumbnail_url];
 
   return (
     <div style={styles.page}>
       <Navbar />
 
       <div style={styles.container}>
-        <img src={product.thumbnail_url} style={styles.image} />
+        {/* 🔥 LEFT SIDE (THUMBNAILS + IMAGE) */}
+        <div style={styles.gallery}>
+          <div style={styles.thumbs}>
+            {images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                style={{
+                  ...styles.thumb,
+                  border:
+                    selectedImage === img
+                      ? "2px solid yellow"
+                      : "1px solid #333",
+                }}
+                onClick={() => setSelectedImage(img)}
+              />
+            ))}
+          </div>
 
+          <div style={styles.mainImageWrap}>
+            <img src={selectedImage} style={styles.mainImage} />
+          </div>
+        </div>
+
+        {/* 🔥 RIGHT SIDE (DETAILS) */}
         <div style={styles.details}>
           <h1>{product.name}</h1>
           <h2>${product.retail_price}</h2>
 
-          {/* Quantity */}
           <div style={styles.qty}>
-            <button
-              style={styles.qtyBtn}
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            >
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>
               −
             </button>
-
-            <span style={styles.qtyNum}>{quantity}</span>
-
-            <button
-              style={styles.qtyBtn}
-              onClick={() => setQuantity(quantity + 1)}
-            >
-              +
-            </button>
+            <span>{quantity}</span>
+            <button onClick={() => setQuantity(quantity + 1)}>+</button>
           </div>
 
-          {/* Buttons */}
-          <div style={styles.actions}>
-            <button style={styles.cartBtn} onClick={addToCart}>
-              ADD TO CART
-            </button>
-          </div>
-
-          {/* Toast */}
-          {added && (
-            <div style={styles.toast}>
-              ✓ Added to cart
-            </div>
-          )}
+          <button style={styles.cartBtn} onClick={addToCart}>
+            ADD TO CART
+          </button>
         </div>
       </div>
     </div>
@@ -107,18 +124,35 @@ const styles = {
   },
 
   container: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "40px 20px",
     display: "flex",
     gap: "40px",
-    flexWrap: "wrap",
+    padding: "40px",
+    maxWidth: "1200px",
+    margin: "0 auto",
   },
 
-  image: {
+  gallery: {
+    display: "flex",
+    gap: "15px",
+  },
+
+  thumbs: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+
+  thumb: {
+    width: "60px",
+    cursor: "pointer",
+  },
+
+  mainImageWrap: {
     width: "400px",
-    maxWidth: "100%",
-    background: "#111",
+  },
+
+  mainImage: {
+    width: "100%",
   },
 
   details: {
@@ -127,48 +161,16 @@ const styles = {
 
   qty: {
     display: "flex",
-    alignItems: "center",
     gap: "10px",
     margin: "20px 0",
   },
 
-  qtyBtn: {
-    width: "40px",
-    height: "40px",
-    background: "#222",
-    color: "#fff",
-    border: "1px solid #333",
-    cursor: "pointer",
-    fontSize: "18px",
-  },
-
-  qtyNum: {
-    minWidth: "20px",
-    textAlign: "center",
-  },
-
-  actions: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "15px",
-  },
-
   cartBtn: {
-    flex: 1,
     padding: "12px",
-    background: "#222",
-    color: "#fff",
-    border: "1px solid #333",
+    background: "yellow",
+    color: "#000",
+    border: "none",
     cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  toast: {
-    marginTop: "15px",
-    padding: "10px",
-    background: "#111",
-    border: "1px solid yellow",
-    color: "yellow",
     fontWeight: "bold",
   },
 };
