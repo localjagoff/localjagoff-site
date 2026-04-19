@@ -20,7 +20,6 @@ export default function Home() {
     428550417: "/images/products/tee-certified.png",
   };
 
-  // 🔥 CATEGORY GROUPING (ADDED)
   const tees = products.filter((p) =>
     [428851698, 428851608, 428851513, 428550417].includes(p.id)
   );
@@ -86,7 +85,7 @@ export default function Home() {
         `}</style>
       </div>
 
-      {/* 🔥 CATEGORY SECTIONS (REPLACES OLD PRODUCT GRID) */}
+      {/* PRODUCTS */}
       <div id="products" style={styles.section}>
 
         {/* T-SHIRTS */}
@@ -156,6 +155,24 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* 🔥 TRUST SECTION (ADDED) */}
+      <div style={styles.trustSection}>
+        <div>🔒 Secure Checkout</div>
+        <div>🚚 Fast Shipping</div>
+        <div>🇺🇸 Printed in USA</div>
+      </div>
+
+      {/* 🔥 FOOTER (ADDED) */}
+      <div style={styles.footer}>
+        <p>© 2026 Local Jagoff</p>
+        <div style={styles.footerLinks}>
+          <span>Privacy</span>
+          <span>Terms</span>
+          <span>Contact</span>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -238,5 +255,29 @@ const styles = {
 
   price: {
     color: "#ccc",
+  },
+
+  // 🔥 NEW STYLES
+  trustSection: {
+    display: "flex",
+    justifyContent: "space-around",
+    padding: "30px 10px",
+    borderTop: "1px solid #222",
+    borderBottom: "1px solid #222",
+    marginTop: "40px",
+    textAlign: "center",
+  },
+
+  footer: {
+    padding: "20px",
+    textAlign: "center",
+    color: "#777",
+  },
+
+  footerLinks: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "20px",
+    marginTop: "10px",
   },
 };
