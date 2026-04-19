@@ -10,6 +10,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState("");
+  const [copied, setCopied] = useState(false); // 🔥 NEW
 
   useEffect(() => {
     if (!id) return;
@@ -77,7 +78,8 @@ export default function ProductPage() {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("Link copied!");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     }
   };
 
@@ -137,11 +139,14 @@ export default function ProductPage() {
           </div>
 
           <button className="btn" onClick={addToCart}>
-            ADD TO CART, N’AT
+            🛒 ADD TO CART, N’AT
           </button>
 
-          <button className="share-btn" onClick={handleShare}>
-            SHARE THIS TO A JAGOFF
+          <button
+            className={`share-btn ${copied ? "copied" : ""}`}
+            onClick={handleShare}
+          >
+            {copied ? "COPIED, N’AT" : "🔗 SHARE THIS TO A JAGOFF"}
           </button>
         </div>
       </div>
@@ -209,6 +214,16 @@ export default function ProductPage() {
           border: 1px solid #333;
           cursor: pointer;
           font-weight: bold;
+          transition: transform 0.1s ease;
+        }
+
+        .share-btn:active {
+          transform: scale(0.97);
+        }
+
+        .share-btn.copied {
+          background: #1a1a1a;
+          border-color: #ffe600;
         }
 
         @media (max-width: 768px) {
