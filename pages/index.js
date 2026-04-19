@@ -40,8 +40,9 @@ export default function Home() {
           style={styles.heroImg}
         />
 
-        {/* DESKTOP CONTENT ONLY */}
+        {/* DESKTOP CONTENT */}
         <div className="hero-overlay" style={styles.overlay} />
+
         <div className="hero-content" style={styles.heroContent}>
           <h1 style={styles.title}>LOCAL JAGOFF</h1>
           <p style={styles.tagline}>
@@ -53,7 +54,7 @@ export default function Home() {
           </a>
         </div>
 
-        {/* RESPONSIVE CONTROL */}
+        {/* RESPONSIVE CONTROL (ONLY SOURCE OF TRUTH) */}
         <style jsx>{`
           .hero-mobile {
             display: none;
@@ -110,7 +111,7 @@ const styles = {
 
   hero: {
     position: "relative",
-    height: "420px", // restored desktop size
+    height: "520px", // 🔥 FIXED desktop banner size
     overflow: "hidden",
   },
 
@@ -133,21 +134,21 @@ const styles = {
 
   heroContent: {
     position: "absolute",
-    bottom: "40px",
+    top: "50%", // 🔥 centered again (fixes desktop issue)
     left: "50%",
-    transform: "translateX(-50%)",
+    transform: "translate(-50%, -50%)",
     textAlign: "center",
     width: "90%",
   },
 
   title: {
-    fontSize: "50px",
+    fontSize: "56px",
     marginBottom: "10px",
   },
 
   tagline: {
     color: "#ccc",
-    marginBottom: "15px",
+    marginBottom: "20px",
   },
 
   section: {
