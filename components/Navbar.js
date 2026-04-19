@@ -28,10 +28,10 @@ export default function Navbar() {
 
   const checkout = async () => {
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart }),
+        body: JSON.stringify({ items: cart }),
       });
 
       const data = await res.json();
@@ -41,7 +41,8 @@ export default function Navbar() {
       } else {
         alert("Checkout failed");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Checkout failed");
     }
   };
@@ -57,13 +58,18 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div style={styles.overlay}>
-          <div style={styles.sideCart}>
+        <div style={styles.overlay} onClick={() => setOpen(false)}>
+          <div
+            style={styles.sideCart}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={styles.close} onClick={() => setOpen(false)}>
               ✕
             </div>
 
             <h2>Your Cart</h2>
+
+            {cart.length === 0 && <p>Cart is empty</p>}
 
             {cart.map((item, i) => (
               <div key={i} style={styles.item}>
@@ -144,7 +150,7 @@ const styles = {
   btn: {
     width: "100%",
     padding: "15px",
-    background: "yellow",
+    background: "#ffe600",
     border: "none",
     fontWeight: "bold",
     marginTop: "10px",
