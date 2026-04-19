@@ -9,8 +9,6 @@ export default function ProductPage() {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState("");
-  const [zoom, setZoom] = useState(false);
-  const [modal, setModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -23,13 +21,9 @@ export default function ProductPage() {
       });
   }, [id]);
 
-  // 🔥 MULTI IMAGE SETUP
   const productImages = {
     428851907: ["/images/products/trucker.png"],
-    428851698: [
-      "/images/products/tee-keystone.png",
-      "/images/products/tee-keystone.png"
-    ],
+    428851698: ["/images/products/tee-keystone.png"],
     428851608: ["/images/products/tee-steel.png"],
     428851513: ["/images/products/tee-sideways.png"],
     428821578: ["/images/products/hoodie.png"],
@@ -63,7 +57,7 @@ export default function ProductPage() {
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  if (!product) return <div style={{ padding: 40 }}>Loading...</div>;
+  if (!product) return <div style={{ padding: 20 }}>Loading...</div>;
 
   const images = productImages[product.id] || [product.thumbnail_url];
 
@@ -72,45 +66,31 @@ export default function ProductPage() {
       <Navbar />
 
       <div style={styles.container}>
-        {/* 🔥 GALLERY */}
-        <div style={styles.gallery}>
-          <div style={styles.thumbs}>
-            {images.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                style={{
-                  ...styles.thumb,
-                  border:
-                    selectedImage === img
-                      ? "2px solid yellow"
-                      : "1px solid #333",
-                }}
-                onClick={() => setSelectedImage(img)}
-              />
-            ))}
-          </div>
+        {/* 🔥 MAIN IMAGE */}
+        <img src={selectedImage} style={styles.mainImage} />
 
-          <div
-            style={styles.mainWrap}
-            onMouseEnter={() => setZoom(true)}
-            onMouseLeave={() => setZoom(false)}
-            onClick={() => setModal(true)}
-          >
+        {/* 🔥 THUMBNAILS (SCROLLABLE) */}
+        <div style={styles.thumbRow}>
+          {images.map((img, i) => (
             <img
-              src={selectedImage}
+              key={i}
+              src={img}
               style={{
-                ...styles.mainImage,
-                transform: zoom ? "scale(1.2)" : "scale(1)",
+                ...styles.thumb,
+                border:
+                  selectedImage === img
+                    ? "2px solid yellow"
+                    : "1px solid #333",
               }}
+              onClick={() => setSelectedImage(img)}
             />
-          </div>
+          ))}
         </div>
 
-        {/* 🔥 DETAILS */}
+        {/* 🔥 PRODUCT INFO */}
         <div style={styles.details}>
           <h1 style={styles.title}>{product.name}</h1>
-          <h2 style={styles.price}>${product.retail_price}</h2>
+          <p style={styles.price}>${product.retail_price}</p>
 
           {/* QTY */}
           <div style={styles.qty}>
@@ -121,18 +101,12 @@ export default function ProductPage() {
             <button onClick={() => setQuantity(quantity + 1)}>+</button>
           </div>
 
+          {/* ADD TO CART */}
           <button style={styles.cartBtn} onClick={addToCart}>
             ADD TO CART
           </button>
         </div>
       </div>
-
-      {/* 🔥 MODAL */}
-      {modal && (
-        <div style={styles.modal} onClick={() => setModal(false)}>
-          <img src={selectedImage} style={styles.modalImg} />
-        </div>
-      )}
     </div>
   );
 }
@@ -144,84 +118,59 @@ const styles = {
     minHeight: "100vh",
   },
 
- container: {
-  display: "flex",
-  flexDirection: "column", // 🔥 STACK ON MOBILE
-  gap: "30px",
-  padding: "20px",
-},
-  
-  gallery: {
-    display: "flex",
-    gap: "15px",
-  },
-
-  thumbs: {
+  container: {
     display: "flex",
     flexDirection: "column",
-    gap: "10px",
-  },
-
-  thumb: {
-    width: "70px",
-    cursor: "pointer",
-  },
-
-  mainWrap: {
-    width: "450px",
-    overflow: "hidden",
-    cursor: "zoom-in",
+    gap: "20px",
+    padding: "20px",
+    maxWidth: "500px",
+    margin: "0 auto",
   },
 
   mainImage: {
     width: "100%",
-    transition: "transform 0.3s ease",
+  },
+
+  thumbRow: {
+    display: "flex",
+    gap: "10px",
+    overflowX: "auto",
+  },
+
+  thumb: {
+    width: "70px",
+    flexShrink: 0,
+    cursor: "pointer",
   },
 
   details: {
-    flex: 1,
+    marginTop: "10px",
   },
 
   title: {
-    fontSize: "32px",
+    fontSize: "22px",
     marginBottom: "10px",
   },
 
   price: {
-    fontSize: "22px",
+    fontSize: "18px",
     marginBottom: "20px",
   },
 
   qty: {
     display: "flex",
+    alignItems: "center",
     gap: "10px",
     marginBottom: "20px",
   },
 
   cartBtn: {
-    padding: "14px",
+    width: "100%",
+    padding: "16px",
     background: "yellow",
     color: "#000",
     fontWeight: "bold",
     border: "none",
     cursor: "pointer",
-  },
-
-  modal: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background: "rgba(0,0,0,0.9)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999,
-  },
-
-  modalImg: {
-    maxWidth: "90%",
-    maxHeight: "90%",
   },
 };
