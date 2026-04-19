@@ -62,38 +62,34 @@ export default function ProductPage() {
   const images = productImages[product.id] || [product.thumbnail_url];
 
   return (
-    <div style={styles.page}>
+    <div className="product-page">
       <Navbar />
 
-      <div style={styles.container}>
-        {/* 🔥 MAIN IMAGE */}
-        <img src={selectedImage} style={styles.mainImage} />
+      <div className="product-container">
+        {/* LEFT */}
+        <div className="product-gallery">
+          <img src={selectedImage} className="main-image" />
 
-        {/* 🔥 THUMBNAILS (SCROLLABLE) */}
-        <div style={styles.thumbRow}>
-          {images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              style={{
-                ...styles.thumb,
-                border:
-                  selectedImage === img
-                    ? "2px solid yellow"
-                    : "1px solid #333",
-              }}
-              onClick={() => setSelectedImage(img)}
-            />
-          ))}
+          <div className="thumb-row">
+            {images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                className={
+                  selectedImage === img ? "thumb active" : "thumb"
+                }
+                onClick={() => setSelectedImage(img)}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* 🔥 PRODUCT INFO */}
-        <div style={styles.details}>
-          <h1 style={styles.title}>{product.name}</h1>
-          <p style={styles.price}>${product.retail_price}</p>
+        {/* RIGHT */}
+        <div className="product-details">
+          <h1>{product.name}</h1>
+          <p className="price">${product.retail_price}</p>
 
-          {/* QTY */}
-          <div style={styles.qty}>
+          <div className="qty">
             <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>
               −
             </button>
@@ -101,76 +97,78 @@ export default function ProductPage() {
             <button onClick={() => setQuantity(quantity + 1)}>+</button>
           </div>
 
-          {/* ADD TO CART */}
-          <button style={styles.cartBtn} onClick={addToCart}>
+          <button className="btn" onClick={addToCart}>
             ADD TO CART
           </button>
         </div>
       </div>
+
+      {/* 🔥 CSS INSIDE FILE (OVERRIDES EVERYTHING) */}
+      <style jsx>{`
+        .product-container {
+          display: flex;
+          gap: 40px;
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 40px 20px;
+        }
+
+        .product-gallery {
+          flex: 1;
+        }
+
+        .main-image {
+          width: 100%;
+        }
+
+        .thumb-row {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+          overflow-x: auto;
+        }
+
+        .thumb {
+          width: 70px;
+          cursor: pointer;
+          border: 1px solid #333;
+        }
+
+        .thumb.active {
+          border: 2px solid yellow;
+        }
+
+        .product-details {
+          flex: 1;
+        }
+
+        .price {
+          margin: 10px 0 20px;
+        }
+
+        .qty {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+          .product-container {
+            flex-direction: column !important;
+            gap: 20px;
+            padding: 20px;
+          }
+
+          .product-details {
+            width: 100%;
+          }
+
+          .main-image {
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    background: "#000",
-    color: "#fff",
-    minHeight: "100vh",
-  },
-
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-    padding: "20px",
-    maxWidth: "500px",
-    margin: "0 auto",
-  },
-
-  mainImage: {
-    width: "100%",
-  },
-
-  thumbRow: {
-    display: "flex",
-    gap: "10px",
-    overflowX: "auto",
-  },
-
-  thumb: {
-    width: "70px",
-    flexShrink: 0,
-    cursor: "pointer",
-  },
-
-  details: {
-    marginTop: "10px",
-  },
-
-  title: {
-    fontSize: "22px",
-    marginBottom: "10px",
-  },
-
-  price: {
-    fontSize: "18px",
-    marginBottom: "20px",
-  },
-
-  qty: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "20px",
-  },
-
-  cartBtn: {
-    width: "100%",
-    padding: "16px",
-    background: "yellow",
-    color: "#000",
-    fontWeight: "bold",
-    border: "none",
-    cursor: "pointer",
-  },
-};
