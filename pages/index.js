@@ -167,9 +167,9 @@ export default function Home() {
       <div style={styles.footer}>
         <p>© 2026 Local Jagoff</p>
         <div style={styles.footerLinks}>
-          <span>Privacy</span>
-          <span>Terms</span>
-          <span>Contact</span>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/contact">Contact</Link>
         </div>
       </div>
     </div>
