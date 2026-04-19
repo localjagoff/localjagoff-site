@@ -55,6 +55,7 @@ export default function ProductPage() {
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
+alert("Added to cart");
   };
 
   if (!product) return <div style={{ padding: 20 }}>Loading...</div>;
