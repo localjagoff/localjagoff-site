@@ -30,6 +30,16 @@ export default function ProductPage() {
     428550417: ["/images/products/tee-certified.png"],
   };
 
+  // 🔥 ADDED: PRODUCT DESCRIPTIONS
+  const productDescriptions = {
+    428851698: "Classic keystone design representing Pittsburgh pride. Premium feel, built for everyday wear.",
+    428851608: "Steel City front and back print. Bold, clean, and made to stand out wherever you go.",
+    428851513: "Sideways 412 design with a unique look. Simple, different, and unmistakably Pittsburgh.",
+    428550417: "Certified Jagoff tee. Straight to the point, no explanation needed.",
+    428821578: "Warm, comfortable hoodie with Pittsburgh roots. Perfect for cold days n’at.",
+    428851907: "Trucker cap with a clean, bold logo. Lightweight and built for everyday wear.",
+  };
+
   useEffect(() => {
     if (!product) return;
     const imgs = productImages[product.id] || [product.thumbnail_url];
@@ -55,10 +65,8 @@ export default function ProductPage() {
 
     localStorage.setItem("cart", JSON.stringify(cart));
 
-    // 🔥 CRITICAL EVENT
     window.dispatchEvent(new Event("cartUpdated"));
 
-    // 🔥 FEEDBACK
     alert("Added to cart");
   };
 
@@ -94,6 +102,11 @@ export default function ProductPage() {
           <h1>{product.name}</h1>
           <p className="price">${product.retail_price}</p>
 
+          {/* 🔥 ADDED DESCRIPTION */}
+          <p className="description">
+            {productDescriptions[product.id]}
+          </p>
+
           <div className="qty">
             <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>
               −
@@ -103,7 +116,7 @@ export default function ProductPage() {
           </div>
 
           <button className="btn" onClick={addToCart}>
-            ADD TO CART
+            ADD TO CART, N’AT
           </button>
         </div>
       </div>
@@ -147,7 +160,13 @@ export default function ProductPage() {
         }
 
         .price {
-          margin: 10px 0 20px;
+          margin: 10px 0 10px;
+        }
+
+        .description {
+          margin-bottom: 20px;
+          color: #ccc;
+          line-height: 1.4;
         }
 
         .qty {
@@ -156,7 +175,6 @@ export default function ProductPage() {
           margin-bottom: 20px;
         }
 
-        /* MOBILE */
         @media (max-width: 768px) {
           .product-container {
             flex-direction: column;
