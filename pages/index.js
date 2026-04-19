@@ -55,7 +55,7 @@ export default function Home() {
                   <img src={image} className="img" />
 
                   <div style={styles.cardBody}>
-                    <h3 style={styles.productName}>{p.name}</h3>
+                    <h3>{p.name}</h3>
                     <p style={styles.price}>${p.retail_price}</p>
                   </div>
                 </div>
@@ -71,13 +71,11 @@ export default function Home() {
 const styles = {
   page: {
     background: "#000",
-    minHeight: "100vh",
   },
 
   hero: {
     position: "relative",
-    height: "520px",
-    overflow: "hidden",
+    height: "420px",
   },
 
   heroImg: {
@@ -90,7 +88,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     background:
-      "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 90%)",
+      "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
 
   heroContent: {
@@ -99,43 +97,34 @@ const styles = {
     left: "50%",
     transform: "translate(-50%, -50%)",
     textAlign: "center",
+    width: "90%",
   },
 
   title: {
-    fontSize: "60px",
-    marginBottom: "10px",
+    fontSize: "48px",
   },
 
   tagline: {
+    margin: "10px 0 20px",
     color: "#ccc",
-    marginBottom: "20px",
   },
 
   section: {
-    padding: "60px 20px",
-    maxWidth: "1200px",
-    margin: "0 auto",
+    padding: "40px 10px",
   },
 
   sectionTitle: {
-    marginBottom: "30px",
-    fontSize: "28px",
+    marginBottom: "20px",
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "25px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "15px",
   },
-
-  card: {},
 
   cardBody: {
-    padding: "15px",
-  },
-
-  productName: {
-    fontSize: "16px",
+    padding: "10px",
   },
 
   price: {
