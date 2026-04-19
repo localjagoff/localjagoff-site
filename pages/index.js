@@ -48,18 +48,21 @@ export default function Home() {
           }}
         />
 
-        <div style={styles.overlay} />
+        {/* 🔥 DESKTOP ONLY OVERLAY */}
+        {!isMobile && <div style={styles.overlay} />}
 
-        <div style={styles.heroContent}>
-          <h1 style={styles.title}>LOCAL JAGOFF</h1>
-          <p style={styles.tagline}>
-            Certified nonsense. Pittsburgh attitude.
-          </p>
+        {!isMobile && (
+          <div style={styles.heroContent}>
+            <h1 style={styles.title}>LOCAL JAGOFF</h1>
+            <p style={styles.tagline}>
+              Certified nonsense. Pittsburgh attitude.
+            </p>
 
-          <a href="#products" className="btn">
-            SHOP THE DROP
-          </a>
-        </div>
+            <a href="#products" className="btn">
+              SHOP THE DROP
+            </a>
+          </div>
+        )}
       </div>
 
       {/* PRODUCTS */}
@@ -94,10 +97,9 @@ const styles = {
     background: "#000",
   },
 
-  /* 🔥 HERO FIXED */
   hero: {
     position: "relative",
-    height: "360px", // 🔥 better mobile height
+    height: "360px",
     overflow: "hidden",
   },
 
@@ -105,7 +107,7 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center top", // 🔥 fixes cropping
+    objectPosition: "center top",
   },
 
   overlay: {
@@ -115,10 +117,9 @@ const styles = {
       "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
 
-  /* 🔥 TEXT FIXED */
   heroContent: {
     position: "absolute",
-    bottom: "25px", // 🔥 no overlap now
+    bottom: "25px",
     left: "50%",
     transform: "translateX(-50%)",
     textAlign: "center",
@@ -126,7 +127,7 @@ const styles = {
   },
 
   title: {
-    fontSize: "40px",
+    fontSize: "50px",
     marginBottom: "10px",
   },
 
