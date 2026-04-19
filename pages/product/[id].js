@@ -54,8 +54,12 @@ export default function ProductPage() {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+
+    // 🔥 CRITICAL EVENT
     window.dispatchEvent(new Event("cartUpdated"));
-alert("Added to cart");
+
+    // 🔥 FEEDBACK
+    alert("Added to cart");
   };
 
   if (!product) return <div style={{ padding: 20 }}>Loading...</div>;
@@ -67,7 +71,7 @@ alert("Added to cart");
       <Navbar />
 
       <div className="product-container">
-        {/* LEFT */}
+        {/* IMAGE */}
         <div className="product-gallery">
           <img src={selectedImage} className="main-image" />
 
@@ -85,7 +89,7 @@ alert("Added to cart");
           </div>
         </div>
 
-        {/* RIGHT */}
+        {/* DETAILS */}
         <div className="product-details">
           <h1>{product.name}</h1>
           <p className="price">${product.retail_price}</p>
@@ -104,7 +108,6 @@ alert("Added to cart");
         </div>
       </div>
 
-      {/* 🔥 CSS INSIDE FILE (OVERRIDES EVERYTHING) */}
       <style jsx>{`
         .product-container {
           display: flex;
@@ -136,7 +139,7 @@ alert("Added to cart");
         }
 
         .thumb.active {
-          border: 2px solid yellow;
+          border: 2px solid #ffe600;
         }
 
         .product-details {
@@ -156,17 +159,9 @@ alert("Added to cart");
         /* MOBILE */
         @media (max-width: 768px) {
           .product-container {
-            flex-direction: column !important;
+            flex-direction: column;
             gap: 20px;
             padding: 20px;
-          }
-
-          .product-details {
-            width: 100%;
-          }
-
-          .main-image {
-            width: 100%;
           }
         }
       `}</style>
