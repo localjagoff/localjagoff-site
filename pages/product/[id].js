@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
+import Head from "next/head";
 
 export default function ProductPage() {
   const router = useRouter();
@@ -30,7 +31,6 @@ export default function ProductPage() {
     428550417: ["/images/products/tee-certified.png"],
   };
 
-  // 🔥 ADDED: PRODUCT DESCRIPTIONS
   const productDescriptions = {
     428851698: "Classic keystone design representing Pittsburgh pride. Premium feel, built for everyday wear.",
     428851608: "Steel City front and back print. Bold, clean, and made to stand out wherever you go.",
@@ -66,16 +66,42 @@ export default function ProductPage() {
     localStorage.setItem("cart", JSON.stringify(cart));
 
     window.dispatchEvent(new Event("cartUpdated"));
+  };
 
-    alert("Added to cart");
+  // 🔥 SHARE FUNCTION
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: product.name,
+        text: "Check this out n’at 👀",
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Link copied!");
+    }
   };
 
   if (!product) return <div style={{ padding: 20 }}>Loading...</div>;
 
   const images = productImages[product.id] || [product.thumbnail_url];
+  const fullImageUrl = `https://www.localjagoff.com${selectedImage}`;
 
   return (
     <div className="product-page">
+      {/* 🔥 PRODUCT SOCIAL PREVIEW */}
+      <Head>
+        <title>{product.name} | Local Jagoff</title>
+        <meta property="og:title" content={product.name} />
+        <meta
+          property="og:description"
+          content={productDescriptions[product.id]}
+        />
+        <meta property="og:image" content={fullImageUrl} />
+        <meta property="og:url" content={`https://www.localjagoff.com/product/${product.id}`} />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Head>
+
       <Navbar />
 
       <div className="product-container">
@@ -102,7 +128,6 @@ export default function ProductPage() {
           <h1>{product.name}</h1>
           <p className="price">${product.retail_price}</p>
 
-          {/* 🔥 ADDED DESCRIPTION */}
           <p className="description">
             {productDescriptions[product.id]}
           </p>
@@ -117,6 +142,11 @@ export default function ProductPage() {
 
           <button className="btn" onClick={addToCart}>
             ADD TO CART, N’AT
+          </button>
+
+          {/* 🔥 SHARE BUTTON */}
+          <button className="share-btn" onClick={handleShare}>
+            SHARE THIS, N’AT
           </button>
         </div>
       </div>
@@ -173,6 +203,16 @@ export default function ProductPage() {
           display: flex;
           gap: 10px;
           margin-bottom: 20px;
+        }
+
+        .share-btn {
+          margin-top: 10px;
+          width: 100%;
+          padding: 12px;
+          background: #111;
+          color: #fff;
+          border: 1px solid #333;
+          cursor: pointer;
         }
 
         @media (max-width: 768px) {
