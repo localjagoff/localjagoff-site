@@ -52,9 +52,7 @@ export default function Home() {
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
                 <div className="card" style={styles.card}>
-                  <div style={styles.imageWrap}>
-                    <img src={image} style={styles.image} className="img" />
-                  </div>
+                  <img src={image} className="img" />
 
                   <div style={styles.cardBody}>
                     <h3 style={styles.productName}>{p.name}</h3>
@@ -72,7 +70,7 @@ export default function Home() {
 
 const styles = {
   page: {
-    background: "linear-gradient(180deg, #000 0%, #0a0a0a 100%)",
+    background: "#000",
     minHeight: "100vh",
   },
 
@@ -90,10 +88,7 @@ const styles = {
 
   overlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
+    inset: 0,
     background:
       "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 90%)",
   },
@@ -134,14 +129,6 @@ const styles = {
   },
 
   card: {},
-
-  imageWrap: {
-    overflow: "hidden",
-  },
-
-  image: {
-    width: "100%",
-  },
 
   cardBody: {
     padding: "15px",
