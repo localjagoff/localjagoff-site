@@ -4,9 +4,10 @@ body {
   background: #000;
   color: #fff;
   font-family: "Inter", sans-serif;
+  overflow-x: hidden; /* 🔥 FIX RIGHT SIDE GAP */
 }
 
-/* HEADINGS = BRAND FONT */
+/* HEADINGS */
 h1, h2, h3 {
   margin: 0;
   font-family: "Oswald", sans-serif;
@@ -28,12 +29,11 @@ a {
   font-weight: bold;
   letter-spacing: 1px;
   border: none;
-  transition: all 0.2s ease;
   display: inline-block;
+  transition: background 0.2s ease;
 }
 
 .btn:hover {
-  transform: translateY(-2px);
   background: #fff200;
 }
 
@@ -41,19 +41,15 @@ a {
 .card {
   background: #111;
   border: 1px solid #222;
-  transition: all 0.25s ease;
+  transition: border 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-6px);
   border-color: #444;
 }
 
 /* IMAGE */
 .img {
-  transition: transform 0.3s ease;
-}
-
-.card:hover .img {
-  transform: scale(1.08);
+  width: 100%;
+  display: block;
 }
