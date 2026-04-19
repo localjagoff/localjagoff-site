@@ -4,6 +4,7 @@ import Link from "next/link";
 export default function Navbar() {
   const [cart, setCart] = useState([]);
   const [open, setOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false); // 🔥 ADDED
 
   useEffect(() => {
     const loadCart = () => {
@@ -13,7 +14,16 @@ export default function Navbar() {
 
     loadCart();
 
-    const handler = () => loadCart();
+    const handler = () => {
+      loadCart();
+
+      // 🔥 AUTO OPEN CART
+      setOpen(true);
+
+      // 🔥 SHOW TOAST
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    };
 
     window.addEventListener("cartUpdated", handler);
 
@@ -95,6 +105,13 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* 🔥 TOAST */}
+      {showToast && (
+        <div style={styles.toast}>
+          Added to cart, n’at 🛒
+        </div>
+      )}
     </>
   );
 }
@@ -160,5 +177,18 @@ const styles = {
     marginTop: "10px",
     textAlign: "center",
     color: "#aaa",
+  },
+
+  // 🔥 NEW TOAST STYLE
+  toast: {
+    position: "fixed",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "#111",
+    padding: "12px 20px",
+    border: "1px solid #333",
+    borderRadius: "6px",
+    zIndex: 1000,
   },
 };
