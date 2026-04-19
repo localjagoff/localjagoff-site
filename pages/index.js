@@ -216,7 +216,7 @@ const styles = {
   
   scrollRow: { display: "flex", gap: "15px", overflowX: "auto", alignItems: "flex-start" },
   scrollCard: { flex: "0 0 160px" },
-  scrollImg: { width: "100%", height: "160px", objectFit: "cover" },
+  scrollImg: { width: "100%", height: "auto" },
 
   price: { color: "#ccc" },
   trustSection: {
