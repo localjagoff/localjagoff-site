@@ -10,7 +10,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState("");
-  const [copied, setCopied] = useState(false); // 🔥 NEW
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -98,7 +98,10 @@ export default function ProductPage() {
           content={productDescriptions[product.id]}
         />
         <meta property="og:image" content={fullImageUrl} />
-        <meta property="og:url" content={`https://www.localjagoff.com/product/${product.id}`} />
+        <meta
+          property="og:url"
+          content={`https://www.localjagoff.com/product/${product.id}`}
+        />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
@@ -143,7 +146,7 @@ export default function ProductPage() {
           </button>
 
           <button
-            className={`share-btn ${copied ? "copied" : ""}`}
+            className={`btn share-btn ${copied ? "copied" : ""}`}
             onClick={handleShare}
           >
             {copied ? "COPIED, N’AT" : "🔗 SHARE THIS TO A JAGOFF"}
@@ -207,8 +210,6 @@ export default function ProductPage() {
 
         .share-btn {
           margin-top: 10px;
-          width: 100%;
-          padding: 15px;
           background: #111;
           color: #fff;
           border: 1px solid #333;
