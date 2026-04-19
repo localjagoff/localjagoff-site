@@ -4,21 +4,11 @@ import Link from "next/link";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => setProducts(data));
-
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const customImages = {
@@ -34,35 +24,56 @@ export default function Home() {
     <div style={styles.page}>
       <Navbar />
 
-      {/* 🔥 HERO */}
+      {/* HERO */}
       <div style={styles.hero}>
+        {/* DESKTOP IMAGE */}
         <img
-          src={
-            isMobile
-              ? "/images/banner-mobile.png"
-              : "/images/banner.png"
-          }
+          src="/images/banner.png"
+          className="hero-desktop"
           style={styles.heroImg}
-          onError={(e) => {
-            e.target.src = "/images/banner.png";
-          }}
         />
 
-        {/* 🔥 DESKTOP ONLY OVERLAY */}
-        {!isMobile && <div style={styles.overlay} />}
+        {/* MOBILE IMAGE */}
+        <img
+          src="/images/banner-mobile.png"
+          className="hero-mobile"
+          style={styles.heroImg}
+        />
 
-        {!isMobile && (
-          <div style={styles.heroContent}>
-            <h1 style={styles.title}>LOCAL JAGOFF</h1>
-            <p style={styles.tagline}>
-              Certified nonsense. Pittsburgh attitude.
-            </p>
+        {/* DESKTOP CONTENT ONLY */}
+        <div className="hero-overlay" style={styles.overlay} />
+        <div className="hero-content" style={styles.heroContent}>
+          <h1 style={styles.title}>LOCAL JAGOFF</h1>
+          <p style={styles.tagline}>
+            Certified nonsense. Pittsburgh attitude.
+          </p>
 
-            <a href="#products" className="btn">
-              SHOP THE DROP
-            </a>
-          </div>
-        )}
+          <a href="#products" className="btn">
+            SHOP THE DROP
+          </a>
+        </div>
+
+        {/* RESPONSIVE CONTROL */}
+        <style jsx>{`
+          .hero-mobile {
+            display: none;
+          }
+
+          @media (max-width: 768px) {
+            .hero-desktop {
+              display: none;
+            }
+
+            .hero-mobile {
+              display: block;
+            }
+
+            .hero-overlay,
+            .hero-content {
+              display: none;
+            }
+          }
+        `}</style>
       </div>
 
       {/* PRODUCTS */}
@@ -99,7 +110,7 @@ const styles = {
 
   hero: {
     position: "relative",
-    height: "360px",
+    height: "420px", // restored desktop size
     overflow: "hidden",
   },
 
@@ -108,6 +119,9 @@ const styles = {
     height: "100%",
     objectFit: "cover",
     objectPosition: "center top",
+    position: "absolute",
+    top: 0,
+    left: 0,
   },
 
   overlay: {
@@ -119,7 +133,7 @@ const styles = {
 
   heroContent: {
     position: "absolute",
-    bottom: "25px",
+    bottom: "40px",
     left: "50%",
     transform: "translateX(-50%)",
     textAlign: "center",
@@ -150,8 +164,6 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "15px",
   },
-
-  card: {},
 
   cardBody: {
     padding: "10px",
