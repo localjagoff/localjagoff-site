@@ -43,6 +43,9 @@ export default function Home() {
               : "/images/banner.png"
           }
           style={styles.heroImg}
+          onError={(e) => {
+            e.target.src = "/images/banner.png";
+          }}
         />
 
         <div style={styles.overlay} />
@@ -91,17 +94,19 @@ const styles = {
     background: "#000",
   },
 
+  /* 🔥 HERO FIXED */
   hero: {
     position: "relative",
-    height: "420px",
+    height: "360px", // 🔥 better mobile height
+    overflow: "hidden",
   },
 
   heroImg: {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-  objectPosition: "center top", 
-},
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: "center top", // 🔥 fixes cropping
+  },
 
   overlay: {
     position: "absolute",
@@ -110,22 +115,24 @@ const styles = {
       "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
 
+  /* 🔥 TEXT FIXED */
   heroContent: {
     position: "absolute",
-    top: "55%",
+    bottom: "25px", // 🔥 no overlap now
     left: "50%",
-    transform: "translate(-50%, -50%)",
+    transform: "translateX(-50%)",
     textAlign: "center",
     width: "90%",
   },
 
   title: {
-    fontSize: "48px",
+    fontSize: "40px",
+    marginBottom: "10px",
   },
 
   tagline: {
-    margin: "10px 0 20px",
     color: "#ccc",
+    marginBottom: "15px",
   },
 
   section: {
@@ -134,6 +141,7 @@ const styles = {
 
   sectionTitle: {
     marginBottom: "20px",
+    fontSize: "24px",
   },
 
   grid: {
@@ -141,6 +149,8 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "15px",
   },
+
+  card: {},
 
   cardBody: {
     padding: "10px",
