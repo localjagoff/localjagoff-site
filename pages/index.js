@@ -212,9 +212,12 @@ const styles = {
     alignItems: "center",
     margin: "35px 0 12px",
   },
-  scrollRow: { display: "flex", gap: "15px", overflowX: "auto" },
-  scrollCard: { minWidth: "160px" },
-  scrollImg: { width: "100%" },
+
+  
+  scrollRow: { display: "flex", gap: "15px", overflowX: "auto", alignItems: "flex-start" },
+  scrollCard: { flex: "0 0 160px" },
+  scrollImg: { width: "100%", height: "160px", objectFit: "cover" },
+
   price: { color: "#ccc" },
   trustSection: {
     display: "flex",
