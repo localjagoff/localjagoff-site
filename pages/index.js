@@ -4,11 +4,21 @@ import Link from "next/link";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => setProducts(data));
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const customImages = {
@@ -24,9 +34,17 @@ export default function Home() {
     <div style={styles.page}>
       <Navbar />
 
-      {/* HERO */}
+      {/* 🔥 HERO */}
       <div style={styles.hero}>
-        <img src="/images/banner.png" style={styles.heroImg} />
+        <img
+          src={
+            isMobile
+              ? "/images/banner-mobile.png"
+              : "/images/banner.png"
+          }
+          style={styles.heroImg}
+        />
+
         <div style={styles.overlay} />
 
         <div style={styles.heroContent}>
