@@ -24,10 +24,9 @@ export default function Home() {
     <div style={styles.page}>
       <Navbar />
 
-      {/* 🔥 HERO SECTION */}
+      {/* 🔥 HERO */}
       <div style={styles.hero}>
         <img src="/images/banner.png" style={styles.heroImg} />
-
         <div style={styles.overlay} />
 
         <div style={styles.heroContent}>
@@ -37,26 +36,35 @@ export default function Home() {
           </p>
 
           <a href="#products" style={styles.button}>
-            SHOP NOW
+            SHOP THE DROP
           </a>
         </div>
       </div>
 
       {/* 🔥 PRODUCTS */}
-      <div id="products" style={styles.grid}>
-        {products.map((p) => {
-          const image = customImages[p.id] || p.thumbnail_url;
+      <div id="products" style={styles.section}>
+        <h2 style={styles.sectionTitle}>FEATURED</h2>
 
-          return (
-            <Link key={p.id} href={`/product/${p.id}`}>
-              <div style={styles.card}>
-                <img src={image} style={styles.image} />
-                <h3>{p.name}</h3>
-                <p>${p.retail_price}</p>
-              </div>
-            </Link>
-          );
-        })}
+        <div style={styles.grid}>
+          {products.map((p) => {
+            const image = customImages[p.id] || p.thumbnail_url;
+
+            return (
+              <Link key={p.id} href={`/product/${p.id}`}>
+                <div style={styles.card}>
+                  <div style={styles.imageWrap}>
+                    <img src={image} style={styles.image} />
+                  </div>
+
+                  <div style={styles.cardBody}>
+                    <h3 style={styles.productName}>{p.name}</h3>
+                    <p style={styles.price}>${p.retail_price}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -72,7 +80,7 @@ const styles = {
   // 🔥 HERO
   hero: {
     position: "relative",
-    height: "500px",
+    height: "520px",
     overflow: "hidden",
   },
 
@@ -80,6 +88,7 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    transform: "scale(1.05)",
   },
 
   overlay: {
@@ -88,54 +97,106 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
-    background: "rgba(0,0,0,0.6)",
+    background:
+      "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 90%)",
   },
 
   heroContent: {
     position: "absolute",
-    top: "50%",
+    top: "55%",
     left: "50%",
     transform: "translate(-50%, -50%)",
     textAlign: "center",
+    maxWidth: "700px",
   },
 
   title: {
-    fontSize: "48px",
+    fontSize: "64px",
+    letterSpacing: "2px",
     marginBottom: "10px",
   },
 
   tagline: {
     fontSize: "18px",
-    marginBottom: "20px",
     color: "#ccc",
+    marginBottom: "25px",
   },
 
   button: {
-    padding: "12px 25px",
+    padding: "14px 30px",
     background: "yellow",
     color: "#000",
     textDecoration: "none",
     fontWeight: "bold",
+    letterSpacing: "1px",
+    transition: "0.2s",
   },
 
-  // 🔥 PRODUCTS
+  // 🔥 SECTION
+  section: {
+    padding: "60px 20px",
+    maxWidth: "1200px",
+    margin: "0 auto",
+  },
+
+  sectionTitle: {
+    fontSize: "28px",
+    marginBottom: "30px",
+    letterSpacing: "1px",
+  },
+
+  // 🔥 GRID
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "20px",
-    padding: "40px 20px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "25px",
   },
 
+  // 🔥 CARD
   card: {
     background: "#111",
-    padding: "15px",
     border: "1px solid #222",
     cursor: "pointer",
-    transition: "0.2s",
+    transition: "all 0.25s ease",
+  },
+
+  imageWrap: {
+    overflow: "hidden",
   },
 
   image: {
     width: "100%",
-    marginBottom: "10px",
+    transition: "transform 0.3s ease",
+  },
+
+  cardBody: {
+    padding: "15px",
+  },
+
+  productName: {
+    fontSize: "16px",
+    marginBottom: "5px",
+  },
+
+  price: {
+    color: "#ccc",
   },
 };
+
+/* 🔥 HOVER EFFECTS */
+if (typeof window !== "undefined") {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    div:hover > div > img {
+      transform: scale(1.08);
+    }
+    div:hover {
+      transform: translateY(-4px);
+      border-color: #444;
+    }
+    a:hover {
+      opacity: 0.85;
+    }
+  `;
+  document.head.appendChild(style);
+}
