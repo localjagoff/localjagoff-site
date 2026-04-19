@@ -144,14 +144,13 @@ const styles = {
     minHeight: "100vh",
   },
 
-  container: {
-    display: "flex",
-    gap: "50px",
-    padding: "60px 20px",
-    maxWidth: "1200px",
-    margin: "0 auto",
-  },
-
+ container: {
+  display: "flex",
+  flexDirection: "column", // 🔥 STACK ON MOBILE
+  gap: "30px",
+  padding: "20px",
+},
+  
   gallery: {
     display: "flex",
     gap: "15px",
