@@ -13,6 +13,7 @@ export default function Navbar() {
     };
 
     update();
+
     window.addEventListener("cartUpdated", update);
     return () => window.removeEventListener("cartUpdated", update);
   }, []);
@@ -20,7 +21,9 @@ export default function Navbar() {
   return (
     <>
       <div style={styles.nav}>
-        <a href="/" style={styles.logo}>LOCAL JAGOFF</a>
+        <a href="/" style={styles.logo}>
+          LOCAL JAGOFF
+        </a>
 
         <div style={styles.cart} onClick={() => setOpen(true)}>
           CART ({count})
@@ -39,11 +42,13 @@ const styles = {
     padding: "15px 20px",
     borderBottom: "1px solid #222",
   },
+
   logo: {
     color: "yellow",
     fontWeight: "bold",
     textDecoration: "none",
   },
+
   cart: {
     cursor: "pointer",
   },
