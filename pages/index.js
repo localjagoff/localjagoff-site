@@ -24,7 +24,7 @@ export default function Home() {
     <div style={styles.page}>
       <Navbar />
 
-      {/* 🔥 HERO */}
+      {/* HERO */}
       <div style={styles.hero}>
         <img src="/images/banner.png" style={styles.heroImg} />
         <div style={styles.overlay} />
@@ -35,13 +35,13 @@ export default function Home() {
             Certified nonsense. Pittsburgh attitude.
           </p>
 
-          <a href="#products" style={styles.button}>
+          <a href="#products" className="btn">
             SHOP THE DROP
           </a>
         </div>
       </div>
 
-      {/* 🔥 PRODUCTS */}
+      {/* PRODUCTS */}
       <div id="products" style={styles.section}>
         <h2 style={styles.sectionTitle}>FEATURED</h2>
 
@@ -51,9 +51,9 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.card}>
+                <div className="card" style={styles.card}>
                   <div style={styles.imageWrap}>
-                    <img src={image} style={styles.image} />
+                    <img src={image} style={styles.image} className="img" />
                   </div>
 
                   <div style={styles.cardBody}>
@@ -73,11 +73,9 @@ export default function Home() {
 const styles = {
   page: {
     background: "linear-gradient(180deg, #000 0%, #0a0a0a 100%)",
-    color: "#fff",
     minHeight: "100vh",
   },
 
-  // 🔥 HERO
   hero: {
     position: "relative",
     height: "520px",
@@ -88,7 +86,6 @@ const styles = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    transform: "scale(1.05)",
   },
 
   overlay: {
@@ -107,32 +104,18 @@ const styles = {
     left: "50%",
     transform: "translate(-50%, -50%)",
     textAlign: "center",
-    maxWidth: "700px",
   },
 
   title: {
-    fontSize: "64px",
-    letterSpacing: "2px",
+    fontSize: "60px",
     marginBottom: "10px",
   },
 
   tagline: {
-    fontSize: "18px",
     color: "#ccc",
-    marginBottom: "25px",
+    marginBottom: "20px",
   },
 
-  button: {
-    padding: "14px 30px",
-    background: "yellow",
-    color: "#000",
-    textDecoration: "none",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-    transition: "0.2s",
-  },
-
-  // 🔥 SECTION
   section: {
     padding: "60px 20px",
     maxWidth: "1200px",
@@ -140,25 +123,17 @@ const styles = {
   },
 
   sectionTitle: {
-    fontSize: "28px",
     marginBottom: "30px",
-    letterSpacing: "1px",
+    fontSize: "28px",
   },
 
-  // 🔥 GRID
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: "25px",
   },
 
-  // 🔥 CARD
-  card: {
-    background: "#111",
-    border: "1px solid #222",
-    cursor: "pointer",
-    transition: "all 0.25s ease",
-  },
+  card: {},
 
   imageWrap: {
     overflow: "hidden",
@@ -166,7 +141,6 @@ const styles = {
 
   image: {
     width: "100%",
-    transition: "transform 0.3s ease",
   },
 
   cardBody: {
@@ -175,28 +149,9 @@ const styles = {
 
   productName: {
     fontSize: "16px",
-    marginBottom: "5px",
   },
 
   price: {
     color: "#ccc",
   },
 };
-
-/* 🔥 HOVER EFFECTS */
-if (typeof window !== "undefined") {
-  const style = document.createElement("style");
-  style.innerHTML = `
-    div:hover > div > img {
-      transform: scale(1.08);
-    }
-    div:hover {
-      transform: translateY(-4px);
-      border-color: #444;
-    }
-    a:hover {
-      opacity: 0.85;
-    }
-  `;
-  document.head.appendChild(style);
-}
