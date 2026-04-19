@@ -100,7 +100,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard} className="card">
+                <div style={styles.scrollCard}>
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -122,7 +122,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard} className="card">
+                <div style={styles.scrollCard}>
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -144,7 +144,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard} className="card">
+                <div style={styles.scrollCard}>
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -172,32 +172,13 @@ export default function Home() {
           <span>Contact</span>
         </div>
       </div>
-
-      {/* 🔥 MINIMAL HOVER ADD */}
-      <style jsx>{`
-        .card {
-          transition: transform 0.15s ease;
-        }
-
-        .card:hover {
-          transform: translateY(-3px);
-        }
-      `}</style>
     </div>
   );
 }
 
 const styles = {
-  page: {
-    background: "#000",
-  },
-
-  hero: {
-    position: "relative",
-    height: "520px",
-    overflow: "hidden",
-  },
-
+  page: { background: "#000" },
+  hero: { position: "relative", height: "520px", overflow: "hidden" },
   heroImg: {
     width: "100%",
     height: "100%",
@@ -207,14 +188,12 @@ const styles = {
     top: 0,
     left: 0,
   },
-
   overlay: {
     position: "absolute",
     inset: 0,
     background:
       "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
-
   heroContent: {
     position: "absolute",
     top: "50%",
@@ -223,50 +202,20 @@ const styles = {
     textAlign: "center",
     width: "90%",
   },
-
-  title: {
-    fontSize: "58px", // slight bump
-    marginBottom: "10px",
-  },
-
-  tagline: {
-    color: "#ccc",
-    marginBottom: "20px",
-  },
-
-  section: {
-    padding: "50px 12px", // slightly increased
-  },
-
-  sectionTitle: {
-    fontSize: "23px", // slight bump
-  },
-
+  title: { fontSize: "58px", marginBottom: "10px" },
+  tagline: { color: "#ccc", marginBottom: "20px" },
+  section: { padding: "50px 12px" },
+  sectionTitle: { fontSize: "23px" },
   categoryHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: "35px 0 12px", // slight spacing tweak
+    margin: "35px 0 12px",
   },
-
-  scrollRow: {
-    display: "flex",
-    gap: "15px",
-    overflowX: "auto",
-  },
-
-  scrollCard: {
-    minWidth: "160px",
-  },
-
-  scrollImg: {
-    width: "100%",
-  },
-
-  price: {
-    color: "#ccc",
-  },
-
+  scrollRow: { display: "flex", gap: "15px", overflowX: "auto" },
+  scrollCard: { minWidth: "160px" },
+  scrollImg: { width: "100%" },
+  price: { color: "#ccc" },
   trustSection: {
     display: "flex",
     justifyContent: "space-around",
@@ -276,13 +225,7 @@ const styles = {
     marginTop: "40px",
     textAlign: "center",
   },
-
-  footer: {
-    padding: "20px",
-    textAlign: "center",
-    color: "#777",
-  },
-
+  footer: { padding: "20px", textAlign: "center", color: "#777" },
   footerLinks: {
     display: "flex",
     justifyContent: "center",
