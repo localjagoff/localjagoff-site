@@ -68,7 +68,6 @@ export default function ProductPage() {
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  // 🔥 SHARE FUNCTION
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -89,7 +88,6 @@ export default function ProductPage() {
 
   return (
     <div className="product-page">
-      {/* 🔥 PRODUCT SOCIAL PREVIEW */}
       <Head>
         <title>{product.name} | Local Jagoff</title>
         <meta property="og:title" content={product.name} />
@@ -105,7 +103,6 @@ export default function ProductPage() {
       <Navbar />
 
       <div className="product-container">
-        {/* IMAGE */}
         <div className="product-gallery">
           <img src={selectedImage} className="main-image" />
 
@@ -123,7 +120,6 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* DETAILS */}
         <div className="product-details">
           <h1>{product.name}</h1>
           <p className="price">${product.retail_price}</p>
@@ -144,9 +140,8 @@ export default function ProductPage() {
             ADD TO CART, N’AT
           </button>
 
-          {/* 🔥 SHARE BUTTON */}
           <button className="share-btn" onClick={handleShare}>
-            SHARE THIS, N’AT
+            SHARE THIS TO A JAGOFF
           </button>
         </div>
       </div>
@@ -208,11 +203,12 @@ export default function ProductPage() {
         .share-btn {
           margin-top: 10px;
           width: 100%;
-          padding: 12px;
+          padding: 15px;
           background: #111;
           color: #fff;
           border: 1px solid #333;
           cursor: pointer;
+          font-weight: bold;
         }
 
         @media (max-width: 768px) {
