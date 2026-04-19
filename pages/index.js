@@ -12,12 +12,12 @@ export default function Home() {
   }, []);
 
   const customImages = {
-    428851907: "/images/products/trucker.jpg",
-    428851698: "/images/products/tee-412.jpg",
-    428851608: "/images/products/tee-steel.jpg",
-    428851513: "/images/products/tee-sideways.jpg",
-    428821578: "/images/products/hoodie.jpg",
-    428550417: "/images/products/tee-certified.jpg",
+    428851907: "/images/products/trucker.png",
+    428851698: "/images/products/tee-keystone.png",
+    428851608: "/images/products/tee-steel.png",
+    428851513: "/images/products/tee-sideways.png",
+    428821578: "/images/products/hoodie.png",
+    428550417: "/images/products/tee-certified.png",
   };
 
   return (
