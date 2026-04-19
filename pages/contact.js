@@ -13,7 +13,7 @@ export default function Contact() {
         </p>
 
         <h3>Email</h3>
-        <p>support@localjagoff.com</p>
+        <p>localjagoff@gmail.com</p>
 
         <h3>Response Time</h3>
         <p>We typically respond within 24–48 hours.</p>
