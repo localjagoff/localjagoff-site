@@ -100,7 +100,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard}>
+                <div style={styles.scrollCard} className="card">
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -122,7 +122,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard}>
+                <div style={styles.scrollCard} className="card">
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -144,7 +144,7 @@ export default function Home() {
 
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
-                <div style={styles.scrollCard}>
+                <div style={styles.scrollCard} className="card">
                   <img src={image} style={styles.scrollImg} />
                   <p>{p.name}</p>
                   <p style={styles.price}>${p.retail_price}</p>
@@ -156,14 +156,14 @@ export default function Home() {
 
       </div>
 
-      {/* 🔥 TRUST SECTION (ADDED) */}
+      {/* TRUST */}
       <div style={styles.trustSection}>
         <div>🔒 Secure Checkout</div>
         <div>🚚 Fast Shipping</div>
         <div>🇺🇸 Printed in USA</div>
       </div>
 
-      {/* 🔥 FOOTER (ADDED) */}
+      {/* FOOTER */}
       <div style={styles.footer}>
         <p>© 2026 Local Jagoff</p>
         <div style={styles.footerLinks}>
@@ -173,6 +173,16 @@ export default function Home() {
         </div>
       </div>
 
+      {/* 🔥 MINIMAL HOVER ADD */}
+      <style jsx>{`
+        .card {
+          transition: transform 0.15s ease;
+        }
+
+        .card:hover {
+          transform: translateY(-3px);
+        }
+      `}</style>
     </div>
   );
 }
@@ -215,7 +225,7 @@ const styles = {
   },
 
   title: {
-    fontSize: "56px",
+    fontSize: "58px", // slight bump
     marginBottom: "10px",
   },
 
@@ -225,18 +235,18 @@ const styles = {
   },
 
   section: {
-    padding: "40px 10px",
+    padding: "50px 12px", // slightly increased
   },
 
   sectionTitle: {
-    fontSize: "22px",
+    fontSize: "23px", // slight bump
   },
 
   categoryHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: "30px 0 10px",
+    margin: "35px 0 12px", // slight spacing tweak
   },
 
   scrollRow: {
@@ -257,7 +267,6 @@ const styles = {
     color: "#ccc",
   },
 
-  // 🔥 NEW STYLES
   trustSection: {
     display: "flex",
     justifyContent: "space-around",
