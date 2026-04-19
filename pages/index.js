@@ -26,7 +26,7 @@ export default function Home() {
 
       {/* 🔥 HERO SECTION */}
       <div style={styles.hero}>
-        <img src="/images/banner.jpg" style={styles.heroImg} />
+        <img src="/images/banner.png" style={styles.heroImg} />
 
         <div style={styles.overlay} />
 
