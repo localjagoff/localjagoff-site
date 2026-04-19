@@ -4,7 +4,6 @@ import Link from "next/link";
 export default function Navbar() {
   const [cart, setCart] = useState([]);
   const [open, setOpen] = useState(false);
-  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     const loadCart = () => {
@@ -13,10 +12,13 @@ export default function Navbar() {
     };
 
     loadCart();
-    window.addEventListener("cartUpdated", loadCart);
+
+    const handler = () => loadCart();
+
+    window.addEventListener("cartUpdated", handler);
 
     return () =>
-      window.removeEventListener("cartUpdated", loadCart);
+      window.removeEventListener("cartUpdated", handler);
   }, []);
 
   const total = cart.reduce(
@@ -25,17 +27,21 @@ export default function Navbar() {
   );
 
   const checkout = async () => {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cart }),
-    });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cart }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Checkout failed");
+      }
+    } catch {
       alert("Checkout failed");
     }
   };
@@ -50,18 +56,14 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 🔥 SIDE CART */}
       {open && (
         <div style={styles.overlay}>
           <div style={styles.sideCart}>
-            {/* CLOSE BUTTON */}
             <div style={styles.close} onClick={() => setOpen(false)}>
               ✕
             </div>
 
             <h2>Your Cart</h2>
-
-            {cart.length === 0 && <p>Cart is empty</p>}
 
             {cart.map((item, i) => (
               <div key={i} style={styles.item}>
@@ -77,20 +79,16 @@ export default function Navbar() {
 
             <h3>Total: ${total.toFixed(2)}</h3>
 
-            {/* 🔥 DIRECT CHECKOUT */}
             <button style={styles.btn} onClick={checkout}>
               CHECKOUT
             </button>
 
             <Link href="/cart">
-              <div style={styles.viewCart}>View Full Cart</div>
+              <div style={styles.viewCart}>View Cart</div>
             </Link>
           </div>
         </div>
       )}
-
-      {/* 🔥 ADDED FEEDBACK */}
-      {added && <div style={styles.toast}>Added to cart</div>}
     </>
   );
 }
@@ -156,15 +154,5 @@ const styles = {
     marginTop: "10px",
     textAlign: "center",
     color: "#aaa",
-  },
-
-  toast: {
-    position: "fixed",
-    bottom: "20px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "#111",
-    padding: "10px 20px",
-    border: "1px solid #333",
   },
 };
