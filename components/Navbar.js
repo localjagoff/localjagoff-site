@@ -1,35 +1,34 @@
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import CartDrawer from "./CartDrawer";
 
 export default function Navbar() {
   const [count, setCount] = useState(0);
-
-  const updateCount = () => {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const total = cart.reduce((sum, item) => sum + item.quantity, 0);
-    setCount(total);
-  };
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    updateCount();
-
-    window.addEventListener("cartUpdated", updateCount);
-
-    return () => {
-      window.removeEventListener("cartUpdated", updateCount);
+    const update = () => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+      setCount(total);
     };
+
+    update();
+    window.addEventListener("cartUpdated", update);
+    return () => window.removeEventListener("cartUpdated", update);
   }, []);
 
   return (
-    <div style={styles.nav}>
-      <Link href="/" style={styles.logo}>
-        LOCAL JAGOFF
-      </Link>
+    <>
+      <div style={styles.nav}>
+        <a href="/" style={styles.logo}>LOCAL JAGOFF</a>
 
-      <Link href="/cart" style={styles.cart}>
-        CART ({count})
-      </Link>
-    </div>
+        <div style={styles.cart} onClick={() => setOpen(true)}>
+          CART ({count})
+        </div>
+      </div>
+
+      <CartDrawer open={open} setOpen={setOpen} />
+    </>
   );
 }
 
@@ -39,7 +38,6 @@ const styles = {
     justifyContent: "space-between",
     padding: "15px 20px",
     borderBottom: "1px solid #222",
-    background: "#000",
   },
   logo: {
     color: "yellow",
@@ -47,7 +45,6 @@ const styles = {
     textDecoration: "none",
   },
   cart: {
-    color: "#fff",
-    textDecoration: "none",
+    cursor: "pointer",
   },
 };
