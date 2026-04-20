@@ -12,24 +12,39 @@ export default function Home() {
   }, []);
 
   const customImages = {
-    428851907: "/images/products/trucker.png",
-    428851698: "/images/products/tee-keystone.png",
-    428851608: "/images/products/tee-steel.png",
-    428851513: "/images/products/tee-sideways.png",
-    428821578: "/images/products/hoodie.png",
-    428550417: "/images/products/tee-certified.png",
+    428983169: "/images/products/local-jagoff-412-hoodie.jpg",
+    428982889: "/images/products/localjagoffkeystonetee.jpg",
+    428980566: "/images/products/localjagoffhatvr2.jpg",
+    428851907: "/images/products/localjagoffhat.jpg",
+    428851698: "/images/products/tee-keystone.jpg",
+    428851608: "/images/products/tee-steel.jpg",
+    428851513: "/images/products/local-jagoff-sideways-tee.jpg",
+    428821578: "/images/products/hoodie2.jpg",
+    428550417: "/images/products/tee-certified.jpg",
   };
 
   const tees = products.filter((p) =>
-    [428851698, 428851608, 428851513, 428550417].includes(p.id)
+    [
+      428851698,
+      428851608,
+      428851513,
+      428550417,
+      428982889,
+    ].includes(p.id)
   );
 
   const hoodies = products.filter((p) =>
-    [428821578].includes(p.id)
+    [
+      428821578,
+      428983169,
+    ].includes(p.id)
   );
 
   const hats = products.filter((p) =>
-    [428851907].includes(p.id)
+    [
+      428851907,
+      428980566,
+    ].includes(p.id)
   );
 
   return (
@@ -178,22 +193,26 @@ export default function Home() {
 
 const styles = {
   page: { background: "#000" },
-  hero: { position: "relative", height: "520px", overflow: "hidden" },
+
+  // ✅ FIXED HERO (no cropping)
+  hero: {
+    position: "relative",
+    height: "auto",
+  },
+
   heroImg: {
     width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    objectPosition: "center top",
-    position: "absolute",
-    top: 0,
-    left: 0,
+    height: "auto",
+    display: "block",
   },
+
   overlay: {
     position: "absolute",
     inset: 0,
     background:
       "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
+
   heroContent: {
     position: "absolute",
     top: "50%",
@@ -202,10 +221,13 @@ const styles = {
     textAlign: "center",
     width: "90%",
   },
+
   title: { fontSize: "58px", marginBottom: "10px" },
   tagline: { color: "#ccc", marginBottom: "20px" },
+
   section: { padding: "50px 12px" },
   sectionTitle: { fontSize: "23px" },
+
   categoryHeader: {
     display: "flex",
     justifyContent: "space-between",
@@ -213,17 +235,24 @@ const styles = {
     margin: "35px 0 12px",
   },
 
-  
-  scrollRow: { display: "flex", gap: "15px", overflowX: "auto", alignItems: "flex-start" },
+  scrollRow: {
+    display: "flex",
+    gap: "15px",
+    overflowX: "auto",
+    alignItems: "flex-start",
+  },
+
   scrollCard: { flex: "0 0 160px" },
+
   scrollImg: {
-  width: "100%",
-  height: "160px",
-  objectFit: "contain",
-  background: "#000"
-},
+    width: "100%",
+    height: "160px",
+    objectFit: "contain",
+    background: "#000",
+  },
 
   price: { color: "#ccc" },
+
   trustSection: {
     display: "flex",
     justifyContent: "space-around",
@@ -233,7 +262,9 @@ const styles = {
     marginTop: "40px",
     textAlign: "center",
   },
+
   footer: { padding: "20px", textAlign: "center", color: "#777" },
+
   footerLinks: {
     display: "flex",
     justifyContent: "center",
