@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   try {
     const response = await fetch(
-      "https://api.printful.com/store/products?store_id=18032822",
+      "https://api.printful.com/sync/products",
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -11,14 +11,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    console.log("PRINTFUL RAW:", JSON.stringify(data, null, 2));
+    console.log("SYNC PRODUCTS:", JSON.stringify(data, null, 2));
 
     if (!data.result || !Array.isArray(data.result)) {
       return res.status(200).json([]);
     }
 
     const products = data.result.map((item) => {
-      const product = item.sync_product;
+      const product = item;
 
       const name = (product.name || "").toLowerCase();
 
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
         name: product.name,
         thumbnail_url: product.thumbnail_url || "",
         retail_price:
-          item.sync_variants?.[0]?.retail_price || "0.00",
+          product.variants?.[0]?.retail_price || "0.00",
         category,
       };
     });
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     res.status(200).json(products);
 
   } catch (err) {
-    console.error("PRINTFUL ERROR:", err);
+    console.error("PRINTFUL SYNC ERROR:", err);
     res.status(200).json([]);
   }
 }
