@@ -23,87 +23,39 @@ export default function Home() {
     428550417: "/images/products/tee-certified.jpg",
   };
 
-  const tees = products.filter((p) =>
-    [
-      428851698,
-      428851608,
-      428851513,
-      428550417,
-      428982889,
-    ].includes(p.id)
-  );
-
-  const hoodies = products.filter((p) =>
-    [
-      428821578,
-      428983169,
-    ].includes(p.id)
-  );
-
-  const hats = products.filter((p) =>
-    [
-      428851907,
-      428980566,
-    ].includes(p.id)
-  );
+  const tees = products.filter((p) => p.category === "tees");
+  const hoodies = products.filter((p) => p.category === "hoodies");
+  const hats = products.filter((p) => p.category === "hats");
 
   return (
     <div style={styles.page}>
       <Navbar />
 
-      {/* HERO */}
       <div style={styles.hero}>
-        <img
-          src="/images/banner.png"
-          className="hero-desktop"
-          style={styles.heroImg}
-        />
-
-        <img
-          src="/images/banner-mobile.png"
-          className="hero-mobile"
-          style={styles.heroImg}
-        />
+        <img src="/images/banner.png" className="hero-desktop" style={styles.heroImg} />
+        <img src="/images/banner-mobile.png" className="hero-mobile" style={styles.heroImg} />
 
         <div className="hero-overlay" style={styles.overlay} />
 
         <div className="hero-content" style={styles.heroContent}>
           <h1 style={styles.title}>LOCAL JAGOFF</h1>
-          <p style={styles.tagline}>
-            Certified nonsense. Pittsburgh attitude.
-          </p>
-
-          <a href="#products" className="btn">
-            SHOP THE DROP
-          </a>
+          <p style={styles.tagline}>Certified nonsense. Pittsburgh attitude.</p>
+          <a href="#products" className="btn">SHOP THE DROP</a>
         </div>
 
         <style jsx>{`
-          .hero-mobile {
-            display: none;
-          }
+          .hero-mobile { display: none; }
 
           @media (max-width: 768px) {
-            .hero-desktop {
-              display: none;
-            }
-
-            .hero-mobile {
-              display: block;
-            }
-
-            .hero-overlay,
-            .hero-content {
-              display: none;
-            }
+            .hero-desktop { display: none; }
+            .hero-mobile { display: block; }
+            .hero-overlay, .hero-content { display: none; }
           }
         `}</style>
       </div>
 
-      {/* PRODUCTS */}
       <div id="products" style={styles.section}>
 
-        {/* T-SHIRTS */}
         <div style={styles.categoryHeader}>
           <h2 style={styles.sectionTitle}>T-SHIRTS</h2>
           <Link href="/tees">View All →</Link>
@@ -112,7 +64,6 @@ export default function Home() {
         <div style={styles.scrollRow}>
           {tees.map((p) => {
             const image = customImages[p.id] || p.thumbnail_url;
-
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
                 <div style={styles.scrollCard}>
@@ -125,7 +76,6 @@ export default function Home() {
           })}
         </div>
 
-        {/* HOODIES */}
         <div style={styles.categoryHeader}>
           <h2 style={styles.sectionTitle}>HOODIES</h2>
           <Link href="/hoodies">View All →</Link>
@@ -134,7 +84,6 @@ export default function Home() {
         <div style={styles.scrollRow}>
           {hoodies.map((p) => {
             const image = customImages[p.id] || p.thumbnail_url;
-
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
                 <div style={styles.scrollCard}>
@@ -147,7 +96,6 @@ export default function Home() {
           })}
         </div>
 
-        {/* HATS */}
         <div style={styles.categoryHeader}>
           <h2 style={styles.sectionTitle}>HATS</h2>
           <Link href="/hats">View All →</Link>
@@ -156,7 +104,6 @@ export default function Home() {
         <div style={styles.scrollRow}>
           {hats.map((p) => {
             const image = customImages[p.id] || p.thumbnail_url;
-
             return (
               <Link key={p.id} href={`/product/${p.id}`}>
                 <div style={styles.scrollCard}>
@@ -171,14 +118,12 @@ export default function Home() {
 
       </div>
 
-      {/* TRUST */}
       <div style={styles.trustSection}>
         <div>🔒 Secure Checkout</div>
         <div>🚚 Fast Shipping</div>
         <div>🇺🇸 Printed in USA</div>
       </div>
 
-      {/* FOOTER */}
       <div style={styles.footer}>
         <p>© 2026 Local Jagoff</p>
         <div style={styles.footerLinks}>
@@ -194,11 +139,7 @@ export default function Home() {
 const styles = {
   page: { background: "#000" },
 
-  // ✅ FIXED HERO (no cropping)
-  hero: {
-    position: "relative",
-    height: "auto",
-  },
+  hero: { position: "relative", height: "auto" },
 
   heroImg: {
     width: "100%",
@@ -209,8 +150,7 @@ const styles = {
   overlay: {
     position: "absolute",
     inset: 0,
-    background:
-      "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
+    background: "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.85))",
   },
 
   heroContent: {
