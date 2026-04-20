@@ -12,17 +12,19 @@ export default function HoodiesPage() {
   }, []);
 
   const customImages = {
-    428851907: "/images/products/trucker.png",
-    428851698: "/images/products/tee-keystone.png",
-    428851608: "/images/products/tee-steel.png",
-    428851513: "/images/products/tee-sideways.png",
-    428821578: "/images/products/hoodie.png",
-    428550417: "/images/products/tee-certified.png",
+    428983169: "/images/products/local-jagoff-412-hoodie.jpg",
+    428982889: "/images/products/localjagoffkeystonetee.jpg",
+    428980566: "/images/products/localjagoffhatvr2.jpg",
+    428851907: "/images/products/localjagoffhat.jpg",
+    428851698: "/images/products/tee-keystone.jpg",
+    428851608: "/images/products/tee-steel.jpg",
+    428851513: "/images/products/local-jagoff-sideways-tee.jpg",
+    428821578: "/images/products/hoodie2.jpg",
+    428550417: "/images/products/tee-certified.jpg",
   };
 
-  const hoodies = products.filter((p) =>
-    [428821578].includes(p.id)
-  );
+  // ✅ NEW CATEGORY-BASED FILTER
+  const hoodies = products.filter((p) => p.category === "hoodies");
 
   return (
     <div style={styles.page}>
