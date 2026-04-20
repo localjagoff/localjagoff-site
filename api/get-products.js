@@ -24,14 +24,16 @@ export default async function handler(req, res) {
       return {
         id: item.sync_product.id,
         name: item.sync_product.name,
-        thumbnail_url: item.sync_product.thumbnail_url,
-        retail_price: item.sync_variants[0].retail_price,
+        thumbnail_url: item.sync_product.thumbnail_url || "",
+        retail_price:
+          item.sync_variants?.[0]?.retail_price || "0.00",
         category,
       };
     });
 
     res.status(200).json(products);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 }
