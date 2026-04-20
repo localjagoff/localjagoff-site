@@ -1,24 +1,26 @@
 export default async function handler(req, res) {
   try {
-    const response = await fetch("https://api.printful.com/store/products", {
-      headers: {
-        Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-      },
-    });
+    const STORE_ID = 18032822;
+
+    const response = await fetch(
+      `https://api.printful.com/stores/${STORE_ID}/products`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+        },
+      }
+    );
 
     const data = await response.json();
 
-    console.log("PRINTFUL RAW:", JSON.stringify(data, null, 2));
+    console.log("PRINTFUL PRODUCTS:", JSON.stringify(data, null, 2));
 
-    // ✅ HARD SAFETY
-    if (!data || !data.result || !Array.isArray(data.result)) {
-      console.error("❌ INVALID PRINTFUL RESPONSE");
+    if (!data.result || !Array.isArray(data.result)) {
       return res.status(200).json([]);
     }
 
     const products = data.result.map((item) => {
-      // 🔥 HANDLE BOTH STRUCTURES
-      const product = item.sync_product || item;
+      const product = item.sync_product;
 
       const name = (product.name || "").toLowerCase();
 
@@ -37,9 +39,7 @@ export default async function handler(req, res) {
         name: product.name,
         thumbnail_url: product.thumbnail_url || "",
         retail_price:
-          item.sync_variants?.[0]?.retail_price ||
-          item.variants?.[0]?.retail_price ||
-          "0.00",
+          item.sync_variants?.[0]?.retail_price || "0.00",
         category,
       };
     });
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     res.status(200).json(products);
 
   } catch (err) {
-    console.error("🔥 PRINTFUL API ERROR:", err);
+    console.error("PRINTFUL ERROR:", err);
     res.status(200).json([]);
   }
 }
