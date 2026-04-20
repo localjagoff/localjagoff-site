@@ -8,6 +8,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    // 🚨 SAFETY CHECK
+    if (!data.result || !Array.isArray(data.result)) {
+      return res.status(200).json([]);
+    }
+
     const products = data.result.map((item) => {
       const name = item.sync_product.name.toLowerCase();
 
@@ -25,15 +30,16 @@ export default async function handler(req, res) {
         id: item.sync_product.id,
         name: item.sync_product.name,
         thumbnail_url: item.sync_product.thumbnail_url || "",
-        retail_price:
-          item.sync_variants?.[0]?.retail_price || "0.00",
+        retail_price: item.sync_variants?.[0]?.retail_price || "0.00",
         category,
       };
     });
 
     res.status(200).json(products);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch products" });
+    console.error("PRINTFUL ERROR:", err);
+
+    // 🚨 ALWAYS RETURN ARRAY
+    res.status(200).json([]);
   }
 }
