@@ -1,7 +1,9 @@
 export default async function handler(req, res) {
   try {
+    const STORE_ID = 18032822;
+
     const response = await fetch(
-      "https://api.printful.com/sync/products?limit=100",
+      `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -11,7 +13,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    console.log("PRINTFUL RESPONSE:", JSON.stringify(data, null, 2));
+    console.log("PRINTFUL SYNC:", JSON.stringify(data, null, 2));
 
     if (!data.result || !Array.isArray(data.result)) {
       return res.status(200).json([]);
