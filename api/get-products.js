@@ -1,9 +1,7 @@
 export default async function handler(req, res) {
   try {
-    const STORE_ID = 18032822;
-
     const response = await fetch(
-      `https://api.printful.com/stores/${STORE_ID}/products`,
+      "https://api.printful.com/store/products?store_id=18032822",
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -13,7 +11,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    console.log("PRINTFUL PRODUCTS:", JSON.stringify(data, null, 2));
+    console.log("PRINTFUL RAW:", JSON.stringify(data, null, 2));
 
     if (!data.result || !Array.isArray(data.result)) {
       return res.status(200).json([]);
