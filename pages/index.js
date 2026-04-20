@@ -24,8 +24,12 @@ export default function Home() {
       .catch(() => setProducts([]));
   }, []);
 
-  const getImage = (id) => {
-    return productImages[id]?.[0] || "/images/placeholder.jpg";
+  const getImage = (product) => {
+    return (
+      productImages[product.id]?.[0] ||
+      product.thumbnail_url ||
+      "/images/placeholder.jpg"
+    );
   };
 
   const tees = products.filter((p) => p.category === "tees");
@@ -42,7 +46,6 @@ export default function Home() {
         <img src="/images/banner.png" style={{ width: "100%", objectFit: "contain" }} />
       </picture>
 
-      {/* SECTIONS */}
       <Section title="T-Shirts" products={tees} getImage={getImage} link="/tees" />
       <Section title="Hoodies" products={hoodies} getImage={getImage} link="/hoodies" />
       <Section title="Hats" products={hats} getImage={getImage} link="/hats" />
@@ -63,7 +66,7 @@ function Section({ title, products, getImage, link }) {
           <Link key={p.id} href={`/product/${p.id}`}>
             <div style={{ minWidth: "160px" }}>
               <img
-                src={getImage(p.id)}
+                src={getImage(p)}
                 style={{ width: "100%", height: "160px", objectFit: "contain", background: "#000" }}
               />
               <p>{p.name}</p>
