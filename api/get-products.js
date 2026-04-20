@@ -8,13 +8,19 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 🚨 SAFETY CHECK
-    if (!data.result || !Array.isArray(data.result)) {
+    console.log("PRINTFUL RAW:", JSON.stringify(data, null, 2));
+
+    // ✅ HARD SAFETY
+    if (!data || !data.result || !Array.isArray(data.result)) {
+      console.error("❌ INVALID PRINTFUL RESPONSE");
       return res.status(200).json([]);
     }
 
     const products = data.result.map((item) => {
-      const name = item.sync_product.name.toLowerCase();
+      // 🔥 HANDLE BOTH STRUCTURES
+      const product = item.sync_product || item;
+
+      const name = (product.name || "").toLowerCase();
 
       let category = "other";
 
@@ -22,24 +28,26 @@ export default async function handler(req, res) {
         category = "tees";
       } else if (name.includes("hoodie")) {
         category = "hoodies";
-      } else if (name.includes("hat")) {
+      } else if (name.includes("hat") || name.includes("cap")) {
         category = "hats";
       }
 
       return {
-        id: item.sync_product.id,
-        name: item.sync_product.name,
-        thumbnail_url: item.sync_product.thumbnail_url || "",
-        retail_price: item.sync_variants?.[0]?.retail_price || "0.00",
+        id: product.id,
+        name: product.name,
+        thumbnail_url: product.thumbnail_url || "",
+        retail_price:
+          item.sync_variants?.[0]?.retail_price ||
+          item.variants?.[0]?.retail_price ||
+          "0.00",
         category,
       };
     });
 
     res.status(200).json(products);
-  } catch (err) {
-    console.error("PRINTFUL ERROR:", err);
 
-    // 🚨 ALWAYS RETURN ARRAY
+  } catch (err) {
+    console.error("🔥 PRINTFUL API ERROR:", err);
     res.status(200).json([]);
   }
 }
