@@ -5,11 +5,22 @@ import Link from "next/link";
 export default function Home() {
   const [products, setProducts] = useState([]);
 
-  useEffect(() => {
-    fetch("/api/get-products")
-      .then((res) => res.json())
-      .then((data) => setProducts(data));
-  }, []);
+ useEffect(() => {
+  fetch("/api/get-products")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error("Invalid product data:", data);
+        setProducts([]);
+      }
+    })
+    .catch((err) => {
+      console.error("Fetch error:", err);
+      setProducts([]);
+    });
+}, []);
 
   const customImages = {
     428983169: "/images/products/local-jagoff-412-hoodie.jpg",
