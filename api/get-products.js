@@ -1,55 +1,37 @@
 export default async function handler(req, res) {
   try {
-    const STORE_ID = "18032822";
+    const response = await fetch("https://api.printful.com/store/products", {
+      headers: {
+        Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+      },
+    });
 
-    const listResponse = await fetch(
-      `https://api.printful.com/store/products?store_id=${STORE_ID}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-        },
+    const data = await response.json();
+
+    const products = data.result.map((item) => {
+      const name = item.sync_product.name.toLowerCase();
+
+      let category = "other";
+
+      if (name.includes("tee") || name.includes("shirt")) {
+        category = "tees";
+      } else if (name.includes("hoodie")) {
+        category = "hoodies";
+      } else if (name.includes("hat")) {
+        category = "hats";
       }
-    );
 
-    const listData = await listResponse.json();
+      return {
+        id: item.sync_product.id,
+        name: item.sync_product.name,
+        thumbnail_url: item.sync_product.thumbnail_url,
+        retail_price: item.sync_variants[0].retail_price,
+        category,
+      };
+    });
 
-    const detailedProducts = await Promise.all(
-      listData.result.map(async (item) => {
-        const detailRes = await fetch(
-          `https://api.printful.com/store/products/${item.id}?store_id=${STORE_ID}`,
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-            },
-          }
-        );
-
-        const detailData = await detailRes.json();
-
-        const product = detailData.result.sync_product;
-        const variants = detailData.result.sync_variants;
-
-        return {
-          id: product.id,
-          name: product.name,
-          thumbnail_url: product.thumbnail_url,
-          retail_price:
-            variants && variants.length > 0
-              ? variants[0].retail_price
-              : "0.00",
-        };
-      })
-    );
-
-    // ✅ PRODUCTION CACHING 
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=60, stale-while-revalidate=300"
-    );
-
-    res.status(200).json(detailedProducts);
+    res.status(200).json(products);
   } catch (err) {
-    console.error("GET PRODUCTS ERROR:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 }
