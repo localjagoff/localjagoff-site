@@ -1,45 +1,10 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const productImages = {
-  // ✅ CORRECTED HOODIES
-  428983169: [
-    "/images/products/local-jagoff-412-hoodie.jpg", // Local Jagoff Keystone 412 Unisex Hoodie
-  ],
-
-  428821578: [
-    "/images/products/hoodie2.jpg", // Pittsburgh Local Jagoff Keystone Hoodie
-  ],
-
-  // OTHER PRODUCTS (UNCHANGED)
-  428982889: [
-    "/images/products/localjagoffkeystonetee.jpg",
-  ],
-  428980566: [
-    "/images/products/localjagoffhatvr2.jpg",
-  ],
-  428851907: [
-    "/images/products/localjagoffhat.jpg",
-  ],
-  428851698: [
-    "/images/products/tee-keystone.jpg",
-  ],
-  428851608: [
-    "/images/products/tee-steel.jpg",
-  ],
-  428851513: [
-    "/images/products/local-jagoff-sideways-tee.png",
-  ],
-  428550417: [
-    "/images/products/tee-certified.jpg",
-  ],
-};
-
 export default function ProductCard({ product }) {
   const [hovered, setHovered] = useState(false);
 
-  const images =
-    productImages[product.id] || [product.thumbnail_url];
+  const images = product.images || [product.thumbnail_url];
 
   const displayImage =
     hovered && images[1] ? images[1] : images[0];
@@ -67,6 +32,11 @@ export default function ProductCard({ product }) {
         <style jsx>{`
           .product-card {
             cursor: pointer;
+            transition: transform 0.2s ease;
+          }
+
+          .product-card:hover {
+            transform: scale(1.03);
           }
 
           .image-wrap {
@@ -74,6 +44,7 @@ export default function ProductCard({ product }) {
             aspect-ratio: 1 / 1;
             background: #000;
             overflow: hidden;
+            border-radius: 8px;
           }
 
           .product-image {
@@ -94,6 +65,7 @@ export default function ProductCard({ product }) {
           p {
             margin: 5px 0 0;
             font-weight: bold;
+            color: #ccc;
           }
         `}</style>
       </div>
