@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
+import Link from "next/link";
 
 const customImages = {
   428983169: "/images/products/local-jagoff-412-hoodie.jpg",
@@ -45,7 +46,7 @@ export default function Home() {
     <div className="container">
       <Navbar />
 
-      {/* ✅ Banner (correct + responsive) */}
+      {/* Banner */}
       <div className="banner">
         <picture>
           <source media="(max-width: 768px)" srcSet="/images/banner-mobile.png" />
@@ -80,9 +81,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ✅ FOOTER RESTORED */}
+      {/* 🔥 REAL FOOTER */}
       <footer className="footer">
-        <p>© {new Date().getFullYear()} Local Jagoff</p>
+        <div className="footer-links">
+          <Link href="/contact">Contact</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms of Service</Link>
+        </div>
+
+        <p className="copyright">
+          © {new Date().getFullYear()} Local Jagoff
+        </p>
       </footer>
 
       <style jsx>{`
@@ -90,10 +99,6 @@ export default function Home() {
           background: #000;
           color: #fff;
           min-height: 100vh;
-        }
-
-        .banner {
-          width: 100%;
         }
 
         .banner img {
@@ -118,12 +123,34 @@ export default function Home() {
           gap: 20px;
         }
 
+        /* 🔥 FOOTER STYLE */
         .footer {
-          text-align: center;
-          padding: 40px 20px;
+          margin-top: 50px;
+          padding: 30px 20px;
           border-top: 1px solid #222;
-          margin-top: 40px;
-          color: #aaa;
+          text-align: center;
+        }
+
+        .footer-links {
+          display: flex;
+          justify-content: center;
+          gap: 25px;
+          margin-bottom: 15px;
+        }
+
+        .footer-links a {
+          color: #ccc;
+          text-decoration: none;
+          font-size: 14px;
+        }
+
+        .footer-links a:hover {
+          color: #fff;
+        }
+
+        .copyright {
+          font-size: 12px;
+          color: #777;
         }
       `}</style>
     </div>
