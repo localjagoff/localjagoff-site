@@ -18,53 +18,63 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // 2. GET VARIANTS
-    const variantRes = await fetch(
-      `https://api.printful.com/sync/variants?store_id=${STORE_ID}&limit=100`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-        },
-      }
+    // 2. FETCH EACH PRODUCT'S VARIANTS (CORRECT WAY)
+    const productsWithPrices = await Promise.all(
+      productData.result.map(async (product) => {
+        try {
+          const detailRes = await fetch(
+            `https://api.printful.com/sync/products/${product.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+              },
+            }
+          );
+
+          const detailData = await detailRes.json();
+
+          let price = "0.00";
+
+          if (
+            detailData.result &&
+            detailData.result.sync_variants &&
+            detailData.result.sync_variants.length > 0
+          ) {
+            price = detailData.result.sync_variants[0].retail_price || "0.00";
+          }
+
+          const name = (product.name || "").toLowerCase();
+
+          let category = "other";
+
+          if (name.includes("tee") || name.includes("shirt")) {
+            category = "tees";
+          } else if (name.includes("hoodie")) {
+            category = "hoodies";
+          } else if (name.includes("hat") || name.includes("cap")) {
+            category = "hats";
+          }
+
+          return {
+            id: product.id,
+            name: product.name,
+            thumbnail_url: product.thumbnail_url || "",
+            retail_price: price,
+            category,
+          };
+        } catch {
+          return {
+            id: product.id,
+            name: product.name,
+            thumbnail_url: product.thumbnail_url || "",
+            retail_price: "0.00",
+            category: "other",
+          };
+        }
+      })
     );
 
-    const variantData = await variantRes.json();
-
-    const variantMap = {};
-
-    if (Array.isArray(variantData.result)) {
-      variantData.result.forEach((v) => {
-        // ✅ FIX: use sync_product_id
-        if (!variantMap[v.sync_product_id] && v.retail_price) {
-          variantMap[v.sync_product_id] = v.retail_price;
-        }
-      });
-    }
-
-    // 3. FORMAT PRODUCTS
-    const products = productData.result.map((product) => {
-      const name = (product.name || "").toLowerCase();
-
-      let category = "other";
-
-      if (name.includes("tee") || name.includes("shirt")) {
-        category = "tees";
-      } else if (name.includes("hoodie")) {
-        category = "hoodies";
-      } else if (name.includes("hat") || name.includes("cap")) {
-        category = "hats";
-      }
-
-      return {
-        id: product.id,
-        name: product.name,
-        thumbnail_url: product.thumbnail_url || "",
-        retail_price: variantMap[product.id] || "0.00",
-        category,
-      };
-    });
-
-    res.status(200).json(products);
+    res.status(200).json(productsWithPrices);
 
   } catch (err) {
     console.error("PRINTFUL ERROR:", err);
