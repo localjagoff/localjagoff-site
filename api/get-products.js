@@ -2,8 +2,8 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = 18032822;
 
-    // 1. GET SYNC PRODUCTS (IDs + names)
-    const syncRes = await fetch(
+    // 1. GET PRODUCTS
+    const productRes = await fetch(
       `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
@@ -12,15 +12,15 @@ export default async function handler(req, res) {
       }
     );
 
-    const syncData = await syncRes.json();
+    const productData = await productRes.json();
 
-    if (!syncData.result || !Array.isArray(syncData.result)) {
+    if (!productData.result || !Array.isArray(productData.result)) {
       return res.status(200).json([]);
     }
 
-    // 2. GET STORE PRODUCTS (HAS PRICES)
-    const storeRes = await fetch(
-      `https://api.printful.com/store/products`,
+    // 2. GET VARIANTS (THIS IS WHERE PRICE ACTUALLY IS)
+    const variantRes = await fetch(
+      `https://api.printful.com/sync/variants?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -28,23 +28,23 @@ export default async function handler(req, res) {
       }
     );
 
-    const storeData = await storeRes.json();
+    const variantData = await variantRes.json();
 
     const priceMap = {};
 
-    if (Array.isArray(storeData.result)) {
-      storeData.result.forEach((item) => {
-        const product = item.sync_product;
+    if (Array.isArray(variantData.result)) {
+      variantData.result.forEach((variant) => {
+        const productId = variant.sync_product_id;
 
-        if (product && item.sync_variants?.length > 0) {
-          priceMap[product.id] =
-            item.sync_variants[0].retail_price || "0.00";
+        // take first valid price per product
+        if (!priceMap[productId] && variant.retail_price) {
+          priceMap[productId] = variant.retail_price;
         }
       });
     }
 
-    // 3. MERGE DATA
-    const products = syncData.result.map((product) => {
+    // 3. MERGE PRODUCTS + PRICES
+    const products = productData.result.map((product) => {
       const name = (product.name || "").toLowerCase();
 
       let category = "other";
