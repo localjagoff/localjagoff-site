@@ -3,11 +3,8 @@ import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
 
 const customImages = {
-  // ✅ FIXED HOODIES (THIS WAS WRONG BEFORE)
-  428983169: "/images/products/local-jagoff-412-hoodie.jpg", // Keystone 412 Hoodie
-  428821578: "/images/products/hoodie2.jpg", // Pittsburgh Keystone Hoodie
-
-  // OTHER PRODUCTS
+  428983169: "/images/products/local-jagoff-412-hoodie.jpg",
+  428821578: "/images/products/hoodie2.jpg",
   428982889: "/images/products/localjagoffkeystonetee.jpg",
   428980566: "/images/products/localjagoffhatvr2.jpg",
   428851907: "/images/products/localjagoffhat.jpg",
@@ -48,6 +45,12 @@ export default function Home() {
     <div className="container">
       <Navbar />
 
+      {/* ✅ BANNER RESTORED */}
+      <div className="banner">
+        <img src="/images/banner.png" className="banner-desktop" />
+        <img src="/images/banner-mobile.png" className="banner-mobile" />
+      </div>
+
       <section>
         <h2>T-Shirts</h2>
         <div className="grid">
@@ -82,6 +85,19 @@ export default function Home() {
           min-height: 100vh;
         }
 
+        .banner {
+          width: 100%;
+        }
+
+        .banner img {
+          width: 100%;
+          display: block;
+        }
+
+        .banner-mobile {
+          display: none;
+        }
+
         section {
           padding: 40px 20px;
         }
@@ -94,6 +110,16 @@ export default function Home() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+          .banner-desktop {
+            display: none;
+          }
+
+          .banner-mobile {
+            display: block;
+          }
         }
       `}</style>
     </div>
