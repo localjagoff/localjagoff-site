@@ -31,8 +31,10 @@ const productImages = {
   428983169: [
     "/images/products/local-jagoff-412-hoodie.jpg",
   ],
+
+  // ✅ FIXED (was .png)
   429208592: [
-    "/images/products/localjagoff-keystone-hoodie01.png",
+    "/images/products/localjagoff-keystone-hoodie01.jpg",
   ],
 };
 
@@ -68,7 +70,6 @@ export default function Home() {
     <div className="container">
       <Navbar />
 
-      {/* BANNER */}
       <div className="banner">
         <picture>
           <source
@@ -79,7 +80,6 @@ export default function Home() {
         </picture>
       </div>
 
-      {/* TEES */}
       <section>
         <h2>T-Shirts</h2>
         <div className="grid">
@@ -89,7 +89,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* HOODIES */}
       <section>
         <h2>Hoodies</h2>
         <div className="grid">
@@ -99,7 +98,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* HATS */}
       <section>
         <h2>Hats</h2>
         <div className="grid">
@@ -109,7 +107,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-links">
           <Link href="/contact">Contact</Link>
