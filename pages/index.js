@@ -45,10 +45,15 @@ export default function Home() {
     <div className="container">
       <Navbar />
 
-      {/* ✅ BANNER RESTORED */}
+      {/* ✅ BANNER FIXED (ONLY ONE RENDERS) */}
       <div className="banner">
-        <img src="/images/banner.png" className="banner-desktop" />
-        <img src="/images/banner-mobile.png" className="banner-mobile" />
+        <picture>
+          <source
+            media="(max-width: 768px)"
+            srcSet="/images/banner-mobile.png"
+          />
+          <img src="/images/banner.png" alt="Local Jagoff Banner" />
+        </picture>
       </div>
 
       <section>
@@ -94,10 +99,6 @@ export default function Home() {
           display: block;
         }
 
-        .banner-mobile {
-          display: none;
-        }
-
         section {
           padding: 40px 20px;
         }
@@ -110,16 +111,6 @@ export default function Home() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-          .banner-desktop {
-            display: none;
-          }
-
-          .banner-mobile {
-            display: block;
-          }
         }
       `}</style>
     </div>
