@@ -1,97 +1,41 @@
-import Stripe from "stripe";
+const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
     const { items } = req.body;
 
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: "No items provided" });import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export default async function handler(req, res) {
-  try {
-    const { items } = req.body;
-
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: "No items provided" });
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: "Invalid items" });
     }
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
     const line_items = items.map((item) => ({
       price_data: {
         currency: "usd",
         product_data: {
           name: item.name,
-          images: item.image ? [`${baseUrl}${item.image}`] : [],
         },
-        unit_amount: Math.round(Number(item.price) * 100),
+        unit_amount: Math.round(parseFloat(item.price) * 100),
       },
-      quantity: item.quantity,
+      quantity: item.quantity || 1,
     }));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
-
-      // 🔥 THIS IS THE CRITICAL FIX
-      metadata: {
-        items: JSON.stringify(
-          items.map((item) => ({
-            id: item.id,
-            variant_id: item.variant_id,
-            quantity: item.quantity,
-          }))
-        ),
-      },
-
-      success_url: `${baseUrl}/success`,
-      cancel_url: `${baseUrl}/cart`,
+      success_url: `${req.headers.origin}/success`,
+      cancel_url: `${req.headers.origin}/cart`,
     });
 
     res.status(200).json({ url: session.url });
-
   } catch (err) {
-    console.error("STRIPE ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Stripe error:", err);
+    res.status(500).json({ error: "Checkout failed" });
   }
-}
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
-    const line_items = items.map((item) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.name,
-
-          // 🔥 FIX: MAKE IMAGE FULL URL
-          images: item.image
-            ? [`${baseUrl}${item.image}`]
-            : [],
-        },
-        unit_amount: Math.round(Number(item.price) * 100),
-      },
-      quantity: item.quantity,
-    }));
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items,
-      mode: "payment",
-      success_url: `${baseUrl}/success`,
-      cancel_url: `${baseUrl}/cart`,
-    });
-
-    res.status(200).json({ url: session.url });
-
-  } catch (err) {
-    console.error("STRIPE ERROR:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-}
+};
