@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = 18032822;
 
-    // GET PRODUCTS LIST
+    // 1. GET PRODUCTS LIST
     const productRes = await fetch(
       `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
@@ -18,10 +18,11 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // BUILD PRODUCTS WITH PRICES (SAFE)
+    // 2. BUILD PRODUCTS WITH VARIANTS + PRICES
     const products = await Promise.all(
       productData.result.map(async (product) => {
-        let price = "0.00";
+        let basePrice = "0.00";
+        let formattedVariants = [];
 
         try {
           const detailRes = await fetch(
@@ -44,11 +45,21 @@ export default async function handler(req, res) {
             [];
 
           if (Array.isArray(variants) && variants.length > 0) {
-            price =
-              variants[0]?.retail_price ||
-              variants[0]?.price ||
-              variants[0]?.retailPrice ||
-              "0.00";
+            formattedVariants = variants.map((v) => ({
+              id: v.id,
+              name:
+                v.name ||
+                v.size ||
+                v.option1 ||
+                "Default",
+              price:
+                v.retail_price ||
+                v.price ||
+                v.retailPrice ||
+                "0.00",
+            }));
+
+            basePrice = formattedVariants[0]?.price || "0.00";
           }
 
         } catch (err) {
@@ -71,7 +82,8 @@ export default async function handler(req, res) {
           id: product.id,
           name: product.name,
           thumbnail_url: product.thumbnail_url || "",
-          retail_price: price,
+          retail_price: basePrice,
+          variants: formattedVariants, // 🔥 THIS IS NEW
           category,
         };
       })
