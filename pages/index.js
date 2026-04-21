@@ -96,7 +96,10 @@ export default function Home() {
 
         .banner img {
           width: 100%;
+          max-height: 500px; /* 🔥 adjust this number */
+          object-fit: contain; /* shows full image */
           display: block;
+          margin: 0 auto;
         }
 
         section {
