@@ -2,7 +2,8 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = 18032822;
 
-    const response = await fetch(
+    // 1. GET PRODUCTS
+    const productRes = await fetch(
       `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
@@ -11,15 +12,34 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+    const productData = await productRes.json();
 
-    console.log("PRINTFUL SYNC:", JSON.stringify(data, null, 2));
-
-    if (!data.result || !Array.isArray(data.result)) {
+    if (!productData.result || !Array.isArray(productData.result)) {
       return res.status(200).json([]);
     }
 
-    const products = data.result.map((product) => {
+    // 2. GET VARIANTS (FOR PRICING)
+    const variantRes = await fetch(
+      `https://api.printful.com/sync/variant?store_id=${STORE_ID}&limit=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+        },
+      }
+    );
+
+    const variantData = await variantRes.json();
+
+    const variantMap = {};
+
+    if (Array.isArray(variantData.result)) {
+      variantData.result.forEach((v) => {
+        variantMap[v.product_id] = v.retail_price;
+      });
+    }
+
+    // 3. FORMAT PRODUCTS
+    const products = productData.result.map((product) => {
       const name = (product.name || "").toLowerCase();
 
       let category = "other";
@@ -36,8 +56,7 @@ export default async function handler(req, res) {
         id: product.id,
         name: product.name,
         thumbnail_url: product.thumbnail_url || "",
-        retail_price:
-          product.variants?.[0]?.retail_price || "0.00",
+        retail_price: variantMap[product.id] || "0.00",
         category,
       };
     });
