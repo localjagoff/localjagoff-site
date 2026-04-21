@@ -18,14 +18,14 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // 2. FETCH DETAILS PER PRODUCT
+    // 2. FETCH PRODUCT DETAILS WITH VARIANTS INCLUDED
     const products = await Promise.all(
       productData.result.map(async (product) => {
         let price = "0.00";
 
         try {
           const detailRes = await fetch(
-            `https://api.printful.com/sync/products/${product.id}`,
+            `https://api.printful.com/sync/products/${product.id}?include=variants`,
             {
               headers: {
                 Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -35,21 +35,13 @@ export default async function handler(req, res) {
 
           const detailData = await detailRes.json();
 
-          const result = detailData.result;
-
-          // 🔥 HANDLE ALL POSSIBLE STRUCTURES
-          if (result) {
-            const variants =
-              result.sync_variants ||
-              result.variants ||
-              [];
-
-            if (variants.length > 0) {
-              price =
-                variants[0].retail_price ||
-                variants[0].price ||
-                "0.00";
-            }
+          if (
+            detailData.result &&
+            detailData.result.sync_variants &&
+            detailData.result.sync_variants.length > 0
+          ) {
+            price =
+              detailData.result.sync_variants[0].retail_price || "0.00";
           }
 
         } catch (e) {
