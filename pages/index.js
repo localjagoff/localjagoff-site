@@ -46,7 +46,7 @@ export default function Home() {
     <div className="container">
       <Navbar />
 
-      {/* Banner */}
+      {/* BANNER */}
       <div className="banner">
         <picture>
           <source media="(max-width: 768px)" srcSet="/images/banner-mobile.png" />
@@ -54,6 +54,7 @@ export default function Home() {
         </picture>
       </div>
 
+      {/* TEES */}
       <section>
         <h2>T-Shirts</h2>
         <div className="grid">
@@ -63,6 +64,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* HOODIES */}
       <section>
         <h2>Hoodies</h2>
         <div className="grid">
@@ -72,6 +74,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* HATS */}
       <section>
         <h2>Hats</h2>
         <div className="grid">
@@ -81,7 +84,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🔥 REAL FOOTER */}
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-links">
           <Link href="/contact">Contact</Link>
@@ -117,13 +120,22 @@ export default function Home() {
           margin-bottom: 20px;
         }
 
+        /* ✅ GRID LAYOUT (NO HORIZONTAL SCROLL) */
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
           gap: 20px;
         }
 
-        /* 🔥 FOOTER STYLE */
+        /* ✅ MOBILE GRID */
+        @media (max-width: 768px) {
+          .grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+          }
+        }
+
+        /* FOOTER */
         .footer {
           margin-top: 50px;
           padding: 30px 20px;
