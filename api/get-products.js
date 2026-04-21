@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = 18032822;
 
-    // 1. GET PRODUCTS LIST
+    // 1. GET PRODUCTS
     const productRes = await fetch(
       `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // 2. BUILD PRODUCTS WITH VARIANTS + PRICES
+    // 2. GET DETAILS PER PRODUCT
     const products = await Promise.all(
       productData.result.map(async (product) => {
         let basePrice = "0.00";
@@ -36,34 +36,33 @@ export default async function handler(req, res) {
 
           const detailData = await detailRes.json();
 
+          // 🔥 THIS IS THE IMPORTANT PART
           const result = detailData?.result || {};
 
-          const variants =
-            result.sync_variants ||
-            result.variants ||
-            result.product?.variants ||
-            [];
+          // Printful structure (your account uses this)
+          const variants = result.sync_variants || [];
 
           if (Array.isArray(variants) && variants.length > 0) {
-            formattedVariants = variants.map((v) => ({
-              id: v.id,
-              name:
-                v.name ||
-                v.size ||
-                v.option1 ||
-                "Default",
-              price:
-                v.retail_price ||
-                v.price ||
-                v.retailPrice ||
-                "0.00",
-            }));
+            formattedVariants = variants.map((v) => {
+              // Extract size safely
+              let label = v.name || "Default";
+
+              if (label.includes("/")) {
+                label = label.split("/").pop().trim();
+              }
+
+              return {
+                id: v.id,
+                name: label,
+                price: v.retail_price || "0.00",
+              };
+            });
 
             basePrice = formattedVariants[0]?.price || "0.00";
           }
 
         } catch (err) {
-          console.error("DETAIL FETCH ERROR:", product.id, err.message);
+          console.error("DETAIL ERROR:", product.id, err.message);
         }
 
         const name = (product.name || "").toLowerCase();
@@ -83,7 +82,7 @@ export default async function handler(req, res) {
           name: product.name,
           thumbnail_url: product.thumbnail_url || "",
           retail_price: basePrice,
-          variants: formattedVariants, // 🔥 THIS IS NEW
+          variants: formattedVariants,
           category,
         };
       })
@@ -92,7 +91,7 @@ export default async function handler(req, res) {
     return res.status(200).json(products);
 
   } catch (err) {
-    console.error("FATAL API ERROR:", err);
+    console.error("FATAL ERROR:", err);
     return res.status(200).json([]);
   }
 }
