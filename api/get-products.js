@@ -2,8 +2,9 @@ export default async function handler(req, res) {
   try {
     const STORE_ID = 18032822;
 
-    const response = await fetch(
-      `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=1`,
+    // 1. GET PRODUCTS
+    const productRes = await fetch(
+      `https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -11,13 +12,76 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+    const productData = await productRes.json();
 
-    return res.status(200).json({
-      raw: data
-    });
+    if (!productData.result || !Array.isArray(productData.result)) {
+      return res.status(200).json([]);
+    }
+
+    // 2. FETCH DETAILS PER PRODUCT
+    const products = await Promise.all(
+      productData.result.map(async (product) => {
+        let price = "0.00";
+
+        try {
+          const detailRes = await fetch(
+            `https://api.printful.com/sync/products/${product.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
+              },
+            }
+          );
+
+          const detailData = await detailRes.json();
+
+          const result = detailData.result;
+
+          // 🔥 HANDLE ALL POSSIBLE STRUCTURES
+          if (result) {
+            const variants =
+              result.sync_variants ||
+              result.variants ||
+              [];
+
+            if (variants.length > 0) {
+              price =
+                variants[0].retail_price ||
+                variants[0].price ||
+                "0.00";
+            }
+          }
+
+        } catch (e) {
+          console.error("DETAIL ERROR:", e);
+        }
+
+        const name = (product.name || "").toLowerCase();
+
+        let category = "other";
+
+        if (name.includes("tee") || name.includes("shirt")) {
+          category = "tees";
+        } else if (name.includes("hoodie")) {
+          category = "hoodies";
+        } else if (name.includes("hat") || name.includes("cap")) {
+          category = "hats";
+        }
+
+        return {
+          id: product.id,
+          name: product.name,
+          thumbnail_url: product.thumbnail_url || "",
+          retail_price: price,
+          category,
+        };
+      })
+    );
+
+    res.status(200).json(products);
 
   } catch (err) {
-    return res.status(200).json({ error: err.message });
+    console.error("PRINTFUL ERROR:", err);
+    res.status(200).json([]);
   }
 }
