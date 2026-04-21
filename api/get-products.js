@@ -18,9 +18,9 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // 2. GET VARIANTS (FOR PRICING)
+    // 2. GET VARIANTS (CORRECT ENDPOINT)
     const variantRes = await fetch(
-      `https://api.printful.com/sync/variant?store_id=${STORE_ID}&limit=100`,
+      `https://api.printful.com/sync/variants?store_id=${STORE_ID}&limit=100`,
       {
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
@@ -34,7 +34,10 @@ export default async function handler(req, res) {
 
     if (Array.isArray(variantData.result)) {
       variantData.result.forEach((v) => {
-        variantMap[v.product_id] = v.retail_price;
+        // Only set once per product (first variant wins)
+        if (!variantMap[v.product_id] && v.retail_price) {
+          variantMap[v.product_id] = v.retail_price;
+        }
       });
     }
 
