@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 
-const productImages = {
-  428983169: ["/images/products/local-jagoff-412-hoodie.jpg", "/images/products/hoodie2.jpg"],
-  428821578: ["/images/products/local-jagoff-412-hoodie.jpg"],
-};
+// ✅ NEW IMPORT (centralized images)
+import productImages from "../lib/productImages";
 
 export default function HoodiesPage() {
   const [products, setProducts] = useState([]);
@@ -26,11 +24,23 @@ export default function HoodiesPage() {
         <Link href="/">← Back</Link>
         <h1>Hoodies</h1>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "20px",
+          }}
+        >
           {hoodies.map((p) => (
             <Link key={p.id} href={`/product/${p.id}`}>
               <div>
-                <img src={productImages[p.id]?.[0] || "/images/placeholder.jpg"} style={{ width: "100%" }} />
+                <img
+                  src={
+                    productImages[p.id]?.[0] ||
+                    "/images/placeholder.jpg"
+                  }
+                  style={{ width: "100%" }}
+                />
                 <p>{p.name}</p>
                 <p>${p.retail_price}</p>
               </div>
