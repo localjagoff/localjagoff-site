@@ -2,13 +2,8 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 
-const productImages = {
-  428982889: ["/images/products/localjagoffkeystonetee.jpg"],
-  428851698: ["/images/products/tee-keystone.jpg"],
-  428851608: ["/images/products/tee-steel.jpg"],
-  428851513: ["/images/products/local-jagoff-sideways-tee.png"],
-  428550417: ["/images/products/tee-certified.jpg"],
-};
+// ✅ NEW IMPORT (centralized images)
+import productImages from "../lib/productImages";
 
 export default function TeesPage() {
   const [products, setProducts] = useState([]);
@@ -29,11 +24,23 @@ export default function TeesPage() {
         <Link href="/">← Back</Link>
         <h1>T-Shirts</h1>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "20px",
+          }}
+        >
           {tees.map((p) => (
             <Link key={p.id} href={`/product/${p.id}`}>
               <div>
-                <img src={productImages[p.id]?.[0] || "/images/placeholder.jpg"} style={{ width: "100%" }} />
+                <img
+                  src={
+                    productImages[p.id]?.[0] ||
+                    "/images/placeholder.jpg"
+                  }
+                  style={{ width: "100%" }}
+                />
                 <p>{p.name}</p>
                 <p>${p.retail_price}</p>
               </div>
