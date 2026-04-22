@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
-
-// ✅ NEW IMPORT (centralized images)
+import ProductCard from "../components/ProductCard";
 import productImages from "../lib/productImages";
 
 export default function HoodiesPage() {
@@ -11,43 +10,81 @@ export default function HoodiesPage() {
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
-      .then((data) => setProducts(Array.isArray(data) ? data : []));
+      .then((data) => {
+        const mapped = Array.isArray(data)
+          ? data.map((product) => ({
+              ...product,
+              images: productImages[product.id] || [product.thumbnail_url],
+              thumbnail_url:
+                (productImages[product.id] && productImages[product.id][0]) ||
+                product.thumbnail_url,
+            }))
+          : [];
+
+        setProducts(mapped);
+      });
   }, []);
 
   const hoodies = products.filter((p) => p.category === "hoodies");
 
   return (
-    <div style={{ background: "#000", minHeight: "100vh" }}>
+    <div className="category-page">
       <Navbar />
 
-      <div style={{ padding: "20px" }}>
-        <Link href="/">← Back</Link>
+      <div className="category-wrap">
+        <Link href="/" className="back-link">
+          ← Back
+        </Link>
         <h1>Hoodies</h1>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "20px",
-          }}
-        >
+        <div className="grid">
           {hoodies.map((p) => (
-            <Link key={p.id} href={`/product/${p.id}`}>
-              <div>
-                <img
-                  src={
-                    productImages[p.id]?.[0] ||
-                    "/images/placeholder.jpg"
-                  }
-                  style={{ width: "100%" }}
-                />
-                <p>{p.name}</p>
-                <p>${p.retail_price}</p>
-              </div>
-            </Link>
+            <ProductCard key={p.id} product={p} />
           ))}
         </div>
       </div>
+
+      <style jsx>{`
+        .category-page {
+          min-height: 100vh;
+          color: #fff;
+          background:
+            radial-gradient(circle at left center, rgba(255, 230, 0, 0.08), transparent 28%),
+            radial-gradient(circle at right 18%, rgba(255, 255, 255, 0.04), transparent 20%),
+            #000;
+        }
+
+        .category-wrap {
+          padding: 24px 20px 40px;
+        }
+
+        .back-link {
+          display: inline-block;
+          margin-bottom: 14px;
+          color: #ccc;
+        }
+
+        h1 {
+          margin: 0 0 20px;
+        }
+
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+          .category-wrap {
+            padding: 18px 14px 26px;
+          }
+
+          .grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
