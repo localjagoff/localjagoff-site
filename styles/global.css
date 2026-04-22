@@ -1,12 +1,22 @@
 body {
   margin: 0;
-  background: #000;
   color: #fff;
   font-family: "Inter", sans-serif;
+  background:
+    radial-gradient(circle at left top, rgba(255, 230, 0, 0.07), transparent 26%),
+    radial-gradient(circle at right 20%, rgba(255, 255, 255, 0.035), transparent 18%),
+    linear-gradient(180deg, rgba(255, 230, 0, 0.025), transparent 16%),
+    #000;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 h1,
@@ -27,6 +37,35 @@ img {
   max-width: 100%;
 }
 
+button,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: #ffe600;
+  color: #000;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0b0b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 999px;
+  border: 2px solid #0b0b0b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
 .btn {
   background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
   color: #000;
@@ -38,12 +77,14 @@ img {
   display: inline-block;
   transition:
     transform 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
   box-shadow: 0 10px 24px rgba(255, 230, 0, 0.16);
 }
 
 .btn:hover {
   transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .card {
