@@ -46,7 +46,10 @@ export default function Home() {
 
       <section className="section-wrap">
         <div className="section-head">
-          <h2>T-Shirts</h2>
+          <div>
+            <p className="section-kicker">REP THE 412</p>
+            <h2>T-Shirts</h2>
+          </div>
         </div>
         <div className="grid">
           {tees.map((p) => (
@@ -57,7 +60,10 @@ export default function Home() {
 
       <section className="section-wrap">
         <div className="section-head">
-          <h2>Hoodies</h2>
+          <div>
+            <p className="section-kicker">HEAVY HITTERS</p>
+            <h2>Hoodies</h2>
+          </div>
         </div>
         <div className="grid">
           {hoodies.map((p) => (
@@ -68,7 +74,10 @@ export default function Home() {
 
       <section className="section-wrap">
         <div className="section-head">
-          <h2>Hats</h2>
+          <div>
+            <p className="section-kicker">TOP IT OFF</p>
+            <h2>Hats</h2>
+          </div>
         </div>
         <div className="grid">
           {hats.map((p) => (
@@ -95,6 +104,54 @@ export default function Home() {
             linear-gradient(180deg, rgba(255, 230, 0, 0.03), transparent 18%),
             #000;
           color: #fff;
+          position: relative;
+        }
+
+        .page-shell::before,
+        .page-shell::after {
+          content: "";
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          width: 110px;
+          pointer-events: none;
+          opacity: 0.2;
+          z-index: 0;
+        }
+
+        .page-shell::before {
+          left: 0;
+          background:
+            linear-gradient(90deg, rgba(255, 230, 0, 0.08), transparent),
+            repeating-linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.05) 0,
+              rgba(255, 255, 255, 0.05) 2px,
+              transparent 2px,
+              transparent 16px
+            );
+          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+        }
+
+        .page-shell::after {
+          right: 0;
+          background:
+            linear-gradient(270deg, rgba(255, 230, 0, 0.08), transparent),
+            repeating-linear-gradient(
+              45deg,
+              rgba(255, 255, 255, 0.05) 0,
+              rgba(255, 255, 255, 0.05) 2px,
+              transparent 2px,
+              transparent 16px
+            );
+          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+        }
+
+        .banner-shell,
+        .section-wrap,
+        .footer {
+          position: relative;
+          z-index: 1;
         }
 
         .banner-shell img {
@@ -114,6 +171,14 @@ export default function Home() {
           align-items: center;
           justify-content: space-between;
           margin-bottom: 18px;
+        }
+
+        .section-kicker {
+          margin: 0 0 6px;
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 1.4px;
         }
 
         h2 {
@@ -153,6 +218,12 @@ export default function Home() {
         }
 
         @media (max-width: 768px) {
+          .page-shell::before,
+          .page-shell::after {
+            width: 48px;
+            opacity: 0.12;
+          }
+
           .grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
