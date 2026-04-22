@@ -29,10 +29,17 @@ export default function ProductPage() {
     fetch(`/api/get-product?id=${id}`)
       .then((res) => res.json())
       .then((data) => {
-        setProduct(data);
+        const numericId = Number(data.id); // 🔥 FIX
+
+        const fixedProduct = {
+          ...data,
+          id: numericId,
+        };
+
+        setProduct(fixedProduct);
 
         const imgs =
-          productImages[data.id] || [data.thumbnail_url];
+          productImages[numericId] || [data.thumbnail_url];
 
         setSelectedImage(imgs[0]);
 
@@ -108,9 +115,7 @@ export default function ProductPage() {
 
           <h2>
             $
-            {selectedVariant?.retail_price ||
-              product?.retail_price ||
-              "0.00"}
+            {selectedVariant?.retail_price || "0.00"}
           </h2>
 
           <select
