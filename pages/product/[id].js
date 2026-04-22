@@ -26,25 +26,25 @@ export default function ProductPage() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`/api/get-product?id=${id}`)
+    // 🔥 BACK TO WORKING SOURCE
+    fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => {
-        const numericId = Number(data.id); // 🔥 FIX
+        const found = data.find(
+          (p) => String(p.id) === String(id)
+        );
 
-        const fixedProduct = {
-          ...data,
-          id: numericId,
-        };
+        if (!found) return;
 
-        setProduct(fixedProduct);
+        setProduct(found);
 
         const imgs =
-          productImages[numericId] || [data.thumbnail_url];
+          productImages[found.id] || [found.thumbnail_url];
 
         setSelectedImage(imgs[0]);
 
-        if (data.variants?.length) {
-          setSelectedVariantId(data.variants[0].variant_id);
+        if (found.variants?.length) {
+          setSelectedVariantId(found.variants[0].id);
         }
       });
   }, [id]);
@@ -64,7 +64,7 @@ export default function ProductPage() {
 
     return (
       product.variants.find(
-        (v) => String(v.variant_id) === String(selectedVariantId)
+        (v) => String(v.id) === String(selectedVariantId)
       ) || product.variants[0]
     );
   }, [product, selectedVariantId]);
@@ -113,17 +113,15 @@ export default function ProductPage() {
         <div>
           <h1>{product.name}</h1>
 
-          <h2>
-            $
-            {selectedVariant?.retail_price || "0.00"}
-          </h2>
+          {/* ✅ USE PRODUCT PRICE AGAIN */}
+          <h2>${product.retail_price}</h2>
 
           <select
             value={selectedVariantId}
             onChange={(e) => setSelectedVariantId(e.target.value)}
           >
             {product.variants.map((v) => (
-              <option key={v.variant_id} value={v.variant_id}>
+              <option key={v.id} value={v.id}>
                 {v.name} - ${v.retail_price}
               </option>
             ))}
