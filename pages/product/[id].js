@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar";
-import Head from "next/head";
 
 const productImages = {
   428982889: ["/images/products/localjagoffkeystonetee.jpg"],
@@ -32,10 +31,10 @@ export default function ProductPage() {
       .then((data) => {
         setProduct(data);
 
-        const images =
+        const imgs =
           productImages[data.id] || [data.thumbnail_url];
 
-        setSelectedImage(images[0]);
+        setSelectedImage(imgs[0]);
 
         if (data.variants?.length) {
           setSelectedVariantId(data.variants[0].variant_id);
@@ -106,7 +105,13 @@ export default function ProductPage() {
         {/* DETAILS */}
         <div>
           <h1>{product.name}</h1>
-          <h2>${selectedVariant?.retail_price || "0.00"}</h2>
+
+          <h2>
+            $
+            {selectedVariant?.retail_price ||
+              product?.retail_price ||
+              "0.00"}
+          </h2>
 
           <select
             value={selectedVariantId}
