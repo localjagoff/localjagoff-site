@@ -39,10 +39,7 @@ export default function Navbar() {
       });
 
       const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     } catch (err) {
       console.error(err);
       alert("Checkout failed");
@@ -54,25 +51,26 @@ export default function Navbar() {
       <div className="navSpacer" />
 
       <header className="nav">
-        {/* LEFT */}
+        {/* BRAND */}
         <div className="brandArea">
           <button
             type="button"
             className="brand"
             onClick={() => setMenuOpen((v) => !v)}
           >
-            LOCAL JAGOFF {menuOpen ? "▴" : "▾"}
+            LOCAL JAGOFF
+            <span className={`arrow ${menuOpen ? "open" : ""}`} />
           </button>
         </div>
 
-        {/* CENTER (desktop only) */}
+        {/* DESKTOP LINKS */}
         <nav className="desktopLinks">
           <Link href="/tees">TEES</Link>
           <Link href="/hoodies">HOODIES</Link>
           <Link href="/hats">HATS</Link>
         </nav>
 
-        {/* RIGHT */}
+        {/* CART */}
         <button className="cartTrigger" onClick={() => setOpen(true)}>
           CART ({cart.length})
         </button>
@@ -81,18 +79,10 @@ export default function Navbar() {
       {/* MOBILE MENU */}
       {menuOpen && (
         <div className="mobileMenu">
-          <Link href="/" onClick={() => setMenuOpen(false)}>
-            HOME
-          </Link>
-          <Link href="/tees" onClick={() => setMenuOpen(false)}>
-            TEES
-          </Link>
-          <Link href="/hoodies" onClick={() => setMenuOpen(false)}>
-            HOODIES
-          </Link>
-          <Link href="/hats" onClick={() => setMenuOpen(false)}>
-            HATS
-          </Link>
+          <Link href="/" onClick={() => setMenuOpen(false)}>HOME</Link>
+          <Link href="/tees" onClick={() => setMenuOpen(false)}>TEES</Link>
+          <Link href="/hoodies" onClick={() => setMenuOpen(false)}>HOODIES</Link>
+          <Link href="/hats" onClick={() => setMenuOpen(false)}>HATS</Link>
         </div>
       )}
 
@@ -100,9 +90,7 @@ export default function Navbar() {
       {open && (
         <div className="overlay" onClick={() => setOpen(false)}>
           <aside className="sideCart" onClick={(e) => e.stopPropagation()}>
-            <button className="close" onClick={() => setOpen(false)}>
-              ✕
-            </button>
+            <button className="close" onClick={() => setOpen(false)}>✕</button>
 
             <h2>Your Jagoff Stash</h2>
 
@@ -113,9 +101,7 @@ export default function Navbar() {
                 <img src={item.image} className="img" />
                 <div>
                   <p>{item.name}</p>
-                  <p>
-                    ${item.price} x {item.quantity}
-                  </p>
+                  <p>${item.price} x {item.quantity}</p>
                 </div>
               </div>
             ))}
@@ -155,12 +141,30 @@ export default function Navbar() {
         }
 
         .brand {
+          display: flex;
+          align-items: center;
+          gap: 8px;
           font-family: "Oswald", sans-serif;
           font-size: 18px;
           color: #fff;
           background: none;
           border: none;
           cursor: pointer;
+        }
+
+        /* 🔥 NEW SMOOTH ARROW */
+        .arrow {
+          width: 8px;
+          height: 8px;
+          border-right: 2px solid #fff;
+          border-bottom: 2px solid #fff;
+          transform: rotate(45deg);
+          transition: transform 0.2s ease;
+          margin-top: 2px;
+        }
+
+        .arrow.open {
+          transform: rotate(-135deg);
         }
 
         .desktopLinks {
