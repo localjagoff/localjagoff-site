@@ -84,8 +84,8 @@ export default function Home() {
       )}
 
       <section className="trust-bar">
-        <div>🔒 Secure checkout through Stripe</div>
-        <div>📦 Fulfilled through Printful</div>
+        <div>🔒 Secure checkout</div>
+        <div>📦 Made to order</div>
         <div>🖤 Pittsburgh attitude, shipped to your door</div>
       </section>
 
@@ -109,24 +109,15 @@ export default function Home() {
           color: #fff;
         }
 
-        .banner-shell,
-        .section-wrap,
-        .trust-bar,
-        .footer,
-        .loading-box {
-          position: relative;
-          z-index: 1;
-        }
-
         .banner-shell {
-          max-width: 1200px;
+          max-width: 1100px;
           margin: 0 auto;
-          padding: 18px 16px 8px;
+          padding: 18px 16px 4px;
         }
 
         .banner-shell img {
           width: 100%;
-          max-height: 500px;
+          max-height: 430px;
           object-fit: contain;
           display: block;
           margin: 0 auto;
@@ -144,9 +135,9 @@ export default function Home() {
         }
 
         .section-wrap {
-          max-width: 1200px;
+          max-width: 1100px;
           margin: 0 auto;
-          padding: 34px 20px 8px;
+          padding: 28px 20px 8px;
         }
 
         .section-head {
@@ -154,7 +145,7 @@ export default function Home() {
           align-items: flex-end;
           justify-content: space-between;
           gap: 16px;
-          margin-bottom: 18px;
+          margin-bottom: 16px;
         }
 
         .section-kicker {
@@ -183,14 +174,25 @@ export default function Home() {
 
         .product-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
-          gap: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(190px, 240px));
+          gap: 18px;
           justify-content: start;
+          align-items: start;
         }
 
         .product-slot {
           width: 100%;
-          max-width: 260px;
+          max-width: 240px;
+          min-width: 0;
+        }
+
+        .product-slot :global(a) {
+          display: block;
+          width: 100%;
+        }
+
+        .product-slot :global(img) {
+          max-width: 100%;
         }
 
         .empty-box {
@@ -202,8 +204,8 @@ export default function Home() {
         }
 
         .trust-bar {
-          max-width: 1200px;
-          margin: 42px auto 0;
+          max-width: 1100px;
+          margin: 38px auto 0;
           padding: 18px 20px;
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -248,8 +250,12 @@ export default function Home() {
             padding: 12px 10px 4px;
           }
 
+          .banner-shell img {
+            max-height: 360px;
+          }
+
           .section-wrap {
-            padding: 26px 14px 8px;
+            padding: 24px 14px 8px;
           }
 
           .section-head {
