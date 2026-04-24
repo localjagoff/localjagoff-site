@@ -2,6 +2,8 @@ const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const STORE_ID = "18032822";
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -28,8 +30,8 @@ module.exports = async function handler(req, res) {
     }));
 
     const printfulMetadataItems = items.map((item) => ({
-      id: item.id,
-      variant_id: item.variant_id,
+      product_id: item.id,
+      sync_variant_id: item.variant_id,
       quantity: item.quantity || 1,
     }));
 
@@ -38,7 +40,16 @@ module.exports = async function handler(req, res) {
       line_items,
       mode: "payment",
 
+      shipping_address_collection: {
+        allowed_countries: ["US"],
+      },
+
+      phone_number_collection: {
+        enabled: true,
+      },
+
       metadata: {
+        store_id: STORE_ID,
         items: JSON.stringify(printfulMetadataItems),
       },
 
@@ -46,9 +57,9 @@ module.exports = async function handler(req, res) {
       cancel_url: `${req.headers.origin}/cart`,
     });
 
-    res.status(200).json({ url: session.url });
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("Stripe error:", err);
-    res.status(500).json({ error: "Checkout failed" });
+    console.error("Stripe checkout error:", err);
+    return res.status(500).json({ error: "Checkout failed" });
   }
 };
