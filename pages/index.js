@@ -31,12 +31,12 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const tees = products.filter((p) => p.category === "tees");
-  const hoodies = products.filter((p) => p.category === "hoodies");
-  const hats = products.filter((p) => p.category === "hats");
+  const tees = products.filter((p) => p.category === "tees").slice(0, 4);
+  const hoodies = products.filter((p) => p.category === "hoodies").slice(0, 4);
+  const hats = products.filter((p) => p.category === "hats").slice(0, 4);
 
   const renderSection = (title, kicker, items, href) => (
-    <section className="section-wrap" id={title.toLowerCase()}>
+    <section className="section-wrap">
       <div className="section-head">
         <div>
           <p className="section-kicker">{kicker}</p>
@@ -49,15 +49,15 @@ export default function Home() {
       </div>
 
       {items.length > 0 ? (
-        <div className="grid">
+        <div className="product-grid">
           {items.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <div className="product-slot" key={p.id}>
+              <ProductCard product={p} />
+            </div>
           ))}
         </div>
       ) : (
-        <div className="empty-box">
-          <p>No {title.toLowerCase()} loaded yet.</p>
-        </div>
+        <div className="empty-box">No {title.toLowerCase()} loaded yet.</div>
       )}
     </section>
   );
@@ -66,23 +66,15 @@ export default function Home() {
     <div className="page-shell">
       <Navbar />
 
-      <div className="hero-wrap">
+      <div className="banner-shell">
         <picture>
           <source media="(max-width: 768px)" srcSet="/images/banner-mobile.png" />
           <img src="/images/banner.png" alt="Local Jagoff Banner" />
         </picture>
-
-        <div className="hero-actions">
-          <a href="#t-shirts" className="hero-btn">
-            SHOP THE 412
-          </a>
-        </div>
       </div>
 
       {loading ? (
-        <div className="loading-box">
-          <p>Loading the jagoff goods...</p>
-        </div>
+        <div className="loading-box">Loading the jagoff goods...</div>
       ) : (
         <>
           {renderSection("T-Shirts", "REP THE 412", tees, "/tees")}
@@ -90,6 +82,12 @@ export default function Home() {
           {renderSection("Hats", "TOP IT OFF", hats, "/hats")}
         </>
       )}
+
+      <section className="trust-bar">
+        <div>🔒 Secure checkout through Stripe</div>
+        <div>📦 Fulfilled through Printful</div>
+        <div>🖤 Pittsburgh attitude, shipped to your door</div>
+      </section>
 
       <footer className="footer">
         <div className="footer-links">
@@ -109,88 +107,29 @@ export default function Home() {
             linear-gradient(180deg, rgba(255, 230, 0, 0.03), transparent 18%),
             #000;
           color: #fff;
-          position: relative;
         }
 
-        .page-shell::before,
-        .page-shell::after {
-          content: "";
-          position: fixed;
-          top: 0;
-          bottom: 0;
-          width: 110px;
-          pointer-events: none;
-          opacity: 0.2;
-          z-index: 0;
-        }
-
-        .page-shell::before {
-          left: 0;
-          background:
-            linear-gradient(90deg, rgba(255, 230, 0, 0.08), transparent),
-            repeating-linear-gradient(
-              135deg,
-              rgba(255, 255, 255, 0.05) 0,
-              rgba(255, 255, 255, 0.05) 2px,
-              transparent 2px,
-              transparent 16px
-            );
-          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
-        }
-
-        .page-shell::after {
-          right: 0;
-          background:
-            linear-gradient(270deg, rgba(255, 230, 0, 0.08), transparent),
-            repeating-linear-gradient(
-              45deg,
-              rgba(255, 255, 255, 0.05) 0,
-              rgba(255, 255, 255, 0.05) 2px,
-              transparent 2px,
-              transparent 16px
-            );
-          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
-        }
-
-        .hero-wrap,
+        .banner-shell,
         .section-wrap,
+        .trust-bar,
         .footer,
         .loading-box {
           position: relative;
           z-index: 1;
         }
 
-        .hero-wrap {
-          max-width: 1300px;
+        .banner-shell {
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 18px 18px 10px;
-          text-align: center;
+          padding: 18px 16px 8px;
         }
 
-        .hero-wrap img {
+        .banner-shell img {
           width: 100%;
-          max-height: 540px;
+          max-height: 500px;
           object-fit: contain;
           display: block;
           margin: 0 auto;
-          border-radius: 18px;
-        }
-
-        .hero-actions {
-          display: flex;
-          justify-content: center;
-          margin-top: 18px;
-        }
-
-        .hero-btn {
-          display: inline-block;
-          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
-          color: #000;
-          padding: 14px 30px;
-          border-radius: 14px;
-          font-weight: 900;
-          letter-spacing: 1px;
-          box-shadow: 0 10px 24px rgba(255, 230, 0, 0.16);
         }
 
         .loading-box {
@@ -205,14 +144,14 @@ export default function Home() {
         }
 
         .section-wrap {
-          max-width: 1300px;
+          max-width: 1200px;
           margin: 0 auto;
-          padding: 36px 20px 10px;
+          padding: 34px 20px 8px;
         }
 
         .section-head {
           display: flex;
-          align-items: end;
+          align-items: flex-end;
           justify-content: space-between;
           gap: 16px;
           margin-bottom: 18px;
@@ -228,7 +167,7 @@ export default function Home() {
 
         h2 {
           margin: 0;
-          font-size: 32px;
+          font-size: 30px;
         }
 
         .view-all {
@@ -239,17 +178,19 @@ export default function Home() {
           font-weight: 800;
           font-size: 13px;
           background: rgba(0, 0, 0, 0.35);
+          white-space: nowrap;
         }
 
-        .view-all:hover {
-          border-color: #ffe600;
-          background: rgba(255, 230, 0, 0.08);
-        }
-
-        .grid {
+        .product-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
           gap: 20px;
+          justify-content: start;
+        }
+
+        .product-slot {
+          width: 100%;
+          max-width: 260px;
         }
 
         .empty-box {
@@ -260,8 +201,26 @@ export default function Home() {
           color: #aaa;
         }
 
+        .trust-bar {
+          max-width: 1200px;
+          margin: 42px auto 0;
+          padding: 18px 20px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          border: 1px solid #222;
+          border-radius: 18px;
+          background:
+            linear-gradient(180deg, rgba(255, 230, 0, 0.05), transparent),
+            #0f0f0f;
+          color: #ddd;
+          font-size: 14px;
+          font-weight: 700;
+          text-align: center;
+        }
+
         .footer {
-          margin-top: 50px;
+          margin-top: 36px;
           padding: 30px 20px 40px;
           border-top: 1px solid #222;
           text-align: center;
@@ -278,7 +237,6 @@ export default function Home() {
 
         .footer-links :global(a) {
           color: #ccc;
-          text-decoration: none;
         }
 
         .footer-links :global(a:hover) {
@@ -286,27 +244,12 @@ export default function Home() {
         }
 
         @media (max-width: 768px) {
-          .page-shell::before,
-          .page-shell::after {
-            width: 48px;
-            opacity: 0.12;
-          }
-
-          .hero-wrap {
-            padding: 12px 10px 6px;
-          }
-
-          .hero-wrap img {
-            border-radius: 12px;
-          }
-
-          .hero-btn {
-            width: calc(100% - 20px);
-            text-align: center;
+          .banner-shell {
+            padding: 12px 10px 4px;
           }
 
           .section-wrap {
-            padding: 28px 14px 8px;
+            padding: 26px 14px 8px;
           }
 
           .section-head {
@@ -314,17 +257,22 @@ export default function Home() {
           }
 
           h2 {
-            font-size: 26px;
+            font-size: 25px;
           }
 
-          .grid {
+          .product-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
           }
 
-          .view-all {
-            padding: 9px 11px;
-            font-size: 12px;
+          .product-slot {
+            max-width: none;
+          }
+
+          .trust-bar {
+            margin: 32px 14px 0;
+            grid-template-columns: 1fr;
+            text-align: left;
           }
         }
       `}</style>
