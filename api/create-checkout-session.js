@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   try {
     const { items } = req.body;
 
-    if (!items || !Array.isArray(items)) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "Invalid items" });
     }
 
@@ -18,10 +18,18 @@ module.exports = async function handler(req, res) {
       price_data: {
         currency: "usd",
         product_data: {
-          name: item.name,
+          name: item.variant_name
+            ? `${item.name} - ${item.variant_name}`
+            : item.name,
         },
         unit_amount: Math.round(parseFloat(item.price) * 100),
       },
+      quantity: item.quantity || 1,
+    }));
+
+    const printfulMetadataItems = items.map((item) => ({
+      id: item.id,
+      variant_id: item.variant_id,
       quantity: item.quantity || 1,
     }));
 
@@ -29,6 +37,11 @@ module.exports = async function handler(req, res) {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
+
+      metadata: {
+        items: JSON.stringify(printfulMetadataItems),
+      },
+
       success_url: `${req.headers.origin}/success`,
       cancel_url: `${req.headers.origin}/cart`,
     });
