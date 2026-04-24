@@ -51,7 +51,6 @@ export default function Navbar() {
       <div className="navSpacer" />
 
       <header className="nav">
-        {/* BRAND */}
         <div className="brandArea">
           <button
             type="button"
@@ -63,30 +62,24 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* DESKTOP LINKS */}
         <nav className="desktopLinks">
           <Link href="/tees">TEES</Link>
           <Link href="/hoodies">HOODIES</Link>
           <Link href="/hats">HATS</Link>
         </nav>
 
-        {/* CART */}
         <button className="cartTrigger" onClick={() => setOpen(true)}>
           CART ({cart.length})
         </button>
       </header>
 
-      {/* MOBILE MENU */}
-      {menuOpen && (
-        <div className="mobileMenu">
-          <Link href="/" onClick={() => setMenuOpen(false)}>HOME</Link>
-          <Link href="/tees" onClick={() => setMenuOpen(false)}>TEES</Link>
-          <Link href="/hoodies" onClick={() => setMenuOpen(false)}>HOODIES</Link>
-          <Link href="/hats" onClick={() => setMenuOpen(false)}>HATS</Link>
-        </div>
-      )}
+      <div className={`mobileMenu ${menuOpen ? "menuOpen" : ""}`}>
+        <Link href="/" onClick={() => setMenuOpen(false)}>HOME</Link>
+        <Link href="/tees" onClick={() => setMenuOpen(false)}>TEES</Link>
+        <Link href="/hoodies" onClick={() => setMenuOpen(false)}>HOODIES</Link>
+        <Link href="/hats" onClick={() => setMenuOpen(false)}>HATS</Link>
+      </div>
 
-      {/* CART DRAWER */}
       {open && (
         <div className="overlay" onClick={() => setOpen(false)}>
           <aside className="sideCart" onClick={(e) => e.stopPropagation()}>
@@ -98,7 +91,7 @@ export default function Navbar() {
 
             {cart.map((item, i) => (
               <div key={i} className="item">
-                <img src={item.image} className="img" />
+                <img src={item.image} className="img" alt={item.name} />
                 <div>
                   <p>{item.name}</p>
                   <p>${item.price} x {item.quantity}</p>
@@ -152,14 +145,13 @@ export default function Navbar() {
           cursor: pointer;
         }
 
-        /* 🔥 NEW SMOOTH ARROW */
         .arrow {
           width: 8px;
           height: 8px;
           border-right: 2px solid #fff;
           border-bottom: 2px solid #fff;
           transform: rotate(45deg);
-          transition: transform 0.2s ease;
+          transition: transform 0.22s ease;
           margin-top: 2px;
         }
 
@@ -171,6 +163,8 @@ export default function Navbar() {
           display: flex;
           justify-content: center;
           gap: 28px;
+          font-family: "Oswald", sans-serif;
+          letter-spacing: 1px;
         }
 
         .desktopLinks :global(a) {
@@ -187,6 +181,8 @@ export default function Navbar() {
           background: none;
           border: none;
           cursor: pointer;
+          font-family: "Oswald", sans-serif;
+          font-size: 18px;
         }
 
         .mobileMenu {
@@ -194,30 +190,63 @@ export default function Navbar() {
           top: 70px;
           left: 0;
           right: 0;
-          background: #090909;
           z-index: 999;
+          background: #090909;
           border-bottom: 1px solid #222;
+          transform: translateY(-120%);
+          opacity: 0;
+          pointer-events: none;
+          transition:
+            transform 0.22s ease,
+            opacity 0.22s ease;
+          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .mobileMenu.menuOpen {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: auto;
         }
 
         .mobileMenu :global(a) {
           display: block;
-          padding: 14px 18px;
+          padding: 15px 18px;
           border-top: 1px solid #1d1d1d;
+          color: #fff;
+          font-family: "Oswald", sans-serif;
+          letter-spacing: 1px;
+        }
+
+        .mobileMenu :global(a:hover) {
+          color: #ffe600;
+          background: rgba(255, 230, 0, 0.05);
         }
 
         .overlay {
           position: fixed;
           inset: 0;
           background: rgba(0, 0, 0, 0.7);
+          z-index: 1100;
         }
 
         .sideCart {
           position: absolute;
           right: 0;
           width: 350px;
+          max-width: 100%;
           height: 100%;
           background: #000;
           padding: 20px;
+          overflow-y: auto;
+        }
+
+        .close {
+          color: #fff;
+          background: none;
+          border: none;
+          font-size: 22px;
+          float: right;
+          cursor: pointer;
         }
 
         .item {
@@ -238,11 +267,27 @@ export default function Navbar() {
           background: #ffe600;
           border: none;
           margin-top: 10px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        @media (min-width: 769px) {
+          .mobileMenu {
+            display: none;
+          }
         }
 
         @media (max-width: 768px) {
           .desktopLinks {
             display: none;
+          }
+
+          .nav {
+            padding: 16px 18px;
+          }
+
+          .cartTrigger {
+            font-size: 16px;
           }
         }
       `}</style>
