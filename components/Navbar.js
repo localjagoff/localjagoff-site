@@ -61,31 +61,33 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="nav">
-        <div className="brandWrap">
+      <div className="navSpacer" />
+
+      <header className="nav">
+        <div className="brandArea">
+          <Link href="/" className="brand desktopBrand">
+            LOCAL JAGOFF
+          </Link>
+
           <button
             type="button"
             className="brand mobileBrand"
             onClick={() => setMenuOpen((v) => !v)}
           >
-            LOCAL JAGOFF ▾
+            LOCAL JAGOFF {menuOpen ? "▴" : "▾"}
           </button>
-
-          <Link href="/" className="brand desktopBrand">
-            LOCAL JAGOFF
-          </Link>
         </div>
 
-        <div className="desktopLinks">
+        <nav className="desktopLinks">
           <Link href="/tees">TEES</Link>
           <Link href="/hoodies">HOODIES</Link>
           <Link href="/hats">HATS</Link>
-        </div>
+        </nav>
 
         <button className="cartTrigger" onClick={() => setOpen(true)}>
           CART ({cart.length})
         </button>
-      </div>
+      </header>
 
       {menuOpen && (
         <div className="mobileMenu">
@@ -163,27 +165,33 @@ export default function Navbar() {
       {showToast && <div className="toast">Added to cart, n’at 🛒</div>}
 
       <style jsx>{`
+        .navSpacer {
+          height: 76px;
+        }
+
         .nav {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 950;
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          padding: 16px 22px;
+          padding: 18px 22px;
           border-bottom: 1px solid #1d1d1d;
-          background: rgba(0, 0, 0, 0.9);
-          backdrop-filter: blur(8px);
-          position: sticky;
-          top: 0;
-          z-index: 900;
+          background: rgba(0, 0, 0, 0.94);
+          backdrop-filter: blur(10px);
         }
 
-        .brandWrap {
+        .brandArea {
           justify-self: start;
         }
 
         .brand {
           font-family: "Oswald", sans-serif;
           font-size: 18px;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.6px;
           color: #fff;
           background: transparent;
           border: none;
@@ -199,7 +207,7 @@ export default function Navbar() {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 28px;
+          gap: 32px;
           font-family: "Oswald", sans-serif;
           font-size: 15px;
           letter-spacing: 1px;
@@ -392,11 +400,15 @@ export default function Navbar() {
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+          .navSpacer {
+            height: 64px;
+          }
+
           .nav {
             display: flex;
             justify-content: space-between;
-            padding: 14px;
+            padding: 16px 18px;
           }
 
           .desktopBrand,
@@ -414,10 +426,11 @@ export default function Navbar() {
 
           .mobileMenu {
             display: grid;
-            gap: 0;
-            position: sticky;
-            top: 53px;
-            z-index: 899;
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            z-index: 940;
             background: #090909;
             border-bottom: 1px solid #222;
             box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
