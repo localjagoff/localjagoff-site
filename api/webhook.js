@@ -8,11 +8,15 @@ export const config = {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const STORE_ID = "18032822";
+
 async function buffer(readable) {
   const chunks = [];
+
   for await (const chunk of readable) {
     chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
   }
+
   return Buffer.concat(chunks);
 }
 
@@ -37,67 +41,77 @@ export default async function handler(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ ONLY handle successful payments
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
+  if (event.type !== "checkout.session.completed") {
+    return res.status(200).json({ received: true });
+  }
 
-    console.log("💰 PAYMENT SUCCESS:", session.id);
+  const session = event.data.object;
 
-    try {
-      // 🔥 Get full session with line items
-      const fullSession = await stripe.checkout.sessions.retrieve(
-        session.id,
-        { expand: ["line_items"] }
-      );
+  console.log("💰 PAYMENT SUCCESS:", session.id);
 
-      const items = fullSession.line_items.data;
+  try {
+    const metadataItems = JSON.parse(session.metadata?.items || "[]");
 
-      // 🧠 Build Printful order items
-      const printfulItems = items.map((item) => ({
-        name: item.description,
-        quantity: item.quantity,
-        retail_price: (item.amount_total / 100).toFixed(2),
-      }));
+    if (!Array.isArray(metadataItems) || metadataItems.length === 0) {
+      throw new Error("Missing Printful metadata items");
+    }
 
-      // 📦 Shipping info
-      const shipping = session.customer_details;
+    const customer = session.customer_details;
 
-      const orderPayload = {
-        recipient: {
-          name: shipping.name,
-          address1: shipping.address.line1,
-          city: shipping.address.city,
-          state_code: shipping.address.state,
-          country_code: shipping.address.country,
-          zip: shipping.address.postal_code,
-          email: shipping.email,
-          phone: shipping.phone || "",
-        },
+    if (!customer?.address) {
+      throw new Error("Missing customer shipping address");
+    }
 
-        items: printfulItems,
+    const printfulItems = metadataItems.map((item) => ({
+      sync_variant_id: Number(item.sync_variant_id),
+      quantity: Number(item.quantity || 1),
+    }));
 
-        confirm: false, // ✅ YOU APPROVE MANUALLY
-      };
+    const orderPayload = {
+      external_id: session.id,
 
-      console.log("📦 SENDING TO PRINTFUL:", orderPayload);
+      recipient: {
+        name: customer.name,
+        address1: customer.address.line1,
+        address2: customer.address.line2 || "",
+        city: customer.address.city,
+        state_code: customer.address.state,
+        country_code: customer.address.country,
+        zip: customer.address.postal_code,
+        email: customer.email,
+        phone: customer.phone || "",
+      },
 
-      const pfRes = await fetch("https://api.printful.com/orders", {
+      items: printfulItems,
+
+      confirm: false,
+    };
+
+    console.log("📦 SENDING TO PRINTFUL:", JSON.stringify(orderPayload, null, 2));
+
+    const pfRes = await fetch(
+      `https://api.printful.com/orders?store_id=${STORE_ID}`,
+      {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(orderPayload),
-      });
+      }
+    );
 
-      const pfData = await pfRes.json();
+    const pfData = await pfRes.json();
 
-      console.log("🧾 PRINTFUL RESPONSE:", pfData);
+    console.log("🧾 PRINTFUL RESPONSE:", JSON.stringify(pfData, null, 2));
 
-    } catch (err) {
-      console.error("❌ PRINTFUL ORDER ERROR:", err);
+    if (!pfRes.ok) {
+      throw new Error(`Printful order failed: ${JSON.stringify(pfData)}`);
     }
-  }
 
-  res.status(200).json({ received: true });
+    return res.status(200).json({ received: true, printful: pfData });
+  } catch (err) {
+    console.error("❌ PRINTFUL ORDER ERROR:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
 }
