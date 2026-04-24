@@ -1,7 +1,10 @@
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 import productImages from "../../lib/productImages";
+
+const SITE_URL = "https://www.localjagoff.com";
 
 function getVariantLabel(productName, variantName) {
   if (!variantName) return "Default";
@@ -48,11 +51,35 @@ const productDescriptions = {
     "Structured trucker hat with Local Jagoff branding. Simple and solid.",
   429208592:
     "Local Jagoff 412 hoodie with a clean keystone look and everyday fit.",
+  429536493:
+    "412 tee with Pittsburgh attitude. Clean, bold, and made for local jagoffs.",
 };
 
-export default function ProductPage() {
+const productFallbackNames = {
+  428851698: "Local Jagoff Keystone 412 Tee",
+  428851608: "Local Jagoff Steel City Front and Back Tee",
+  428851513: "Local Jagoff 412 Sideways Tee",
+  428550417: "Certified Jagoff T-Shirt",
+  428821578: "Pittsburgh Local Jagoff Keystone Hoodie",
+  428851907: "Local Jagoff Trucker Cap",
+  428983169: "Local Jagoff Keystone 412 Hoodie",
+  428982889: "Local Jagoff Keystone Tee",
+  428980566: "Local Jagoff Trucker Hat",
+  429208592: "Local Jagoff Keystone Hoodie",
+  429536493: "Local Jagoff 412 Tee",
+};
+
+function absoluteImageUrl(path) {
+  if (!path) return `${SITE_URL}/images/banner.png`;
+  if (path.startsWith("http")) return path;
+  return `${SITE_URL}${path}`;
+}
+
+export default function ProductPage({ initialProductId }) {
   const router = useRouter();
   const { id } = router.query;
+
+  const productId = String(id || initialProductId || "");
 
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState("");
@@ -61,6 +88,14 @@ export default function ProductPage() {
   const [copied, setCopied] = useState(false);
 
   const touchStartX = useRef(null);
+
+  const fallbackImage = productImages[productId]?.[0] || "/images/banner.png";
+  const shareTitle =
+    product?.name || productFallbackNames[productId] || "Local Jagoff";
+  const shareDescription =
+    productDescriptions[productId] || "Certified nonsense. Pittsburgh attitude.";
+  const shareImage = absoluteImageUrl(fallbackImage);
+  const shareUrl = `${SITE_URL}/product/${productId}`;
 
   useEffect(() => {
     if (!id) return;
@@ -90,11 +125,11 @@ export default function ProductPage() {
   }, [id]);
 
   const images = useMemo(() => {
-    if (!product) return ["/images/placeholder.jpg"];
+    if (!product) return [fallbackImage];
     return product.images?.length
       ? product.images
       : [product.thumbnail_url || "/images/placeholder.jpg"];
-  }, [product]);
+  }, [product, fallbackImage]);
 
   const selectedImageIndex = useMemo(() => {
     const index = images.findIndex((img) => img === selectedImage);
@@ -211,6 +246,26 @@ export default function ProductPage() {
   if (!product) {
     return (
       <div className="product-page">
+        <Head>
+          <title>{shareTitle} | Local Jagoff</title>
+          <meta name="description" content={shareDescription} key="description" />
+          <meta property="og:title" content={shareTitle} key="og:title" />
+          <meta
+            property="og:description"
+            content={shareDescription}
+            key="og:description"
+          />
+          <meta property="og:image" content={shareImage} key="og:image" />
+          <meta property="og:url" content={shareUrl} key="og:url" />
+          <meta property="og:type" content="product" key="og:type" />
+          <meta
+            name="twitter:card"
+            content="summary_large_image"
+            key="twitter:card"
+          />
+          <meta name="twitter:image" content={shareImage} key="twitter:image" />
+        </Head>
+
         <Navbar />
         <div className="loading">Loading...</div>
 
@@ -231,6 +286,26 @@ export default function ProductPage() {
 
   return (
     <div className="product-page">
+      <Head>
+        <title>{shareTitle} | Local Jagoff</title>
+        <meta name="description" content={shareDescription} key="description" />
+        <meta property="og:title" content={shareTitle} key="og:title" />
+        <meta
+          property="og:description"
+          content={shareDescription}
+          key="og:description"
+        />
+        <meta property="og:image" content={shareImage} key="og:image" />
+        <meta property="og:url" content={shareUrl} key="og:url" />
+        <meta property="og:type" content="product" key="og:type" />
+        <meta
+          name="twitter:card"
+          content="summary_large_image"
+          key="twitter:card"
+        />
+        <meta name="twitter:image" content={shareImage} key="twitter:image" />
+      </Head>
+
       <Navbar />
 
       <div className="product-layout">
@@ -600,4 +675,12 @@ export default function ProductPage() {
       `}</style>
     </div>
   );
+}
+
+export async function getServerSideProps(context) {
+  return {
+    props: {
+      initialProductId: String(context.params?.id || ""),
+    },
+  };
 }
