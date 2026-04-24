@@ -6,16 +6,12 @@ import productImages from "../lib/productImages";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => {
-        if (!Array.isArray(data)) {
-          setProducts([]);
-          return;
-        }
+        if (!Array.isArray(data)) return;
 
         const mapped = data.map((product) => ({
           ...product,
@@ -27,40 +23,12 @@ export default function Home() {
 
         setProducts(mapped);
       })
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
+      .catch(() => setProducts([]));
   }, []);
 
-  const tees = products.filter((p) => p.category === "tees").slice(0, 4);
-  const hoodies = products.filter((p) => p.category === "hoodies").slice(0, 4);
-  const hats = products.filter((p) => p.category === "hats").slice(0, 4);
-
-  const renderSection = (title, kicker, items, href) => (
-    <section className="section-wrap">
-      <div className="section-head">
-        <div>
-          <p className="section-kicker">{kicker}</p>
-          <h2>{title}</h2>
-        </div>
-
-        <Link href={href} className="view-all">
-          VIEW ALL
-        </Link>
-      </div>
-
-      {items.length > 0 ? (
-        <div className="product-grid">
-          {items.map((p) => (
-            <div className="product-slot" key={p.id}>
-              <ProductCard product={p} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-box">No {title.toLowerCase()} loaded yet.</div>
-      )}
-    </section>
-  );
+  const tees = products.filter((p) => p.category === "tees");
+  const hoodies = products.filter((p) => p.category === "hoodies");
+  const hats = products.filter((p) => p.category === "hats");
 
   return (
     <div className="page-shell">
@@ -68,25 +36,54 @@ export default function Home() {
 
       <div className="banner-shell">
         <picture>
-          <source media="(max-width: 768px)" srcSet="/images/banner-mobile.png" />
+          <source
+            media="(max-width: 768px)"
+            srcSet="/images/banner-mobile.png"
+          />
           <img src="/images/banner.png" alt="Local Jagoff Banner" />
         </picture>
       </div>
 
-      {loading ? (
-        <div className="loading-box">Loading the jagoff goods...</div>
-      ) : (
-        <>
-          {renderSection("T-Shirts", "REP THE 412", tees, "/tees")}
-          {renderSection("Hoodies", "HEAVY HITTERS", hoodies, "/hoodies")}
-          {renderSection("Hats", "TOP IT OFF", hats, "/hats")}
-        </>
-      )}
+      <section className="section-wrap">
+        <div className="section-head">
+          <div>
+            <p className="section-kicker">REP THE 412</p>
+            <h2>T-Shirts</h2>
+          </div>
+        </div>
+        <div className="grid">
+          {tees.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
 
-      <section className="trust-bar">
-        <div>🔒 Secure checkout</div>
-        <div>📦 Made to order</div>
-        <div>🖤 Pittsburgh attitude, shipped to your door</div>
+      <section className="section-wrap">
+        <div className="section-head">
+          <div>
+            <p className="section-kicker">HEAVY HITTERS</p>
+            <h2>Hoodies</h2>
+          </div>
+        </div>
+        <div className="grid">
+          {hoodies.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      <section className="section-wrap">
+        <div className="section-head">
+          <div>
+            <p className="section-kicker">TOP IT OFF</p>
+            <h2>Hats</h2>
+          </div>
+        </div>
+        <div className="grid">
+          {hats.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
       </section>
 
       <footer className="footer">
@@ -107,122 +104,96 @@ export default function Home() {
             linear-gradient(180deg, rgba(255, 230, 0, 0.03), transparent 18%),
             #000;
           color: #fff;
+          position: relative;
         }
 
-        .banner-shell {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 18px 16px 4px;
+        .page-shell::before,
+        .page-shell::after {
+          content: "";
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          width: 110px;
+          pointer-events: none;
+          opacity: 0.2;
+          z-index: 0;
+        }
+
+        .page-shell::before {
+          left: 0;
+          background:
+            linear-gradient(90deg, rgba(255, 230, 0, 0.08), transparent),
+            repeating-linear-gradient(
+              135deg,
+              rgba(255, 255, 255, 0.05) 0,
+              rgba(255, 255, 255, 0.05) 2px,
+              transparent 2px,
+              transparent 16px
+            );
+          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+        }
+
+        .page-shell::after {
+          right: 0;
+          background:
+            linear-gradient(270deg, rgba(255, 230, 0, 0.08), transparent),
+            repeating-linear-gradient(
+              45deg,
+              rgba(255, 255, 255, 0.05) 0,
+              rgba(255, 255, 255, 0.05) 2px,
+              transparent 2px,
+              transparent 16px
+            );
+          mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+        }
+
+        .banner-shell,
+        .section-wrap,
+        .footer {
+          position: relative;
+          z-index: 1;
         }
 
         .banner-shell img {
           width: 100%;
-          max-height: 430px;
+          max-height: 500px;
           object-fit: contain;
           display: block;
           margin: 0 auto;
         }
 
-        .loading-box {
-          max-width: 1100px;
-          margin: 24px auto;
-          padding: 24px 20px;
-          border: 1px solid #222;
-          border-radius: 18px;
-          background: rgba(17, 17, 17, 0.9);
-          color: #ccc;
-          text-align: center;
-        }
-
         .section-wrap {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 28px 20px 8px;
+          padding: 34px 20px 10px;
         }
 
         .section-head {
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         .section-kicker {
           margin: 0 0 6px;
           color: #ffe600;
           font-size: 12px;
-          font-weight: 900;
-          letter-spacing: 1.5px;
+          font-weight: 800;
+          letter-spacing: 1.4px;
         }
 
         h2 {
           margin: 0;
-          font-size: 30px;
+          font-size: 28px;
         }
 
-        .view-all {
-          color: #ffe600;
-          border: 1px solid rgba(255, 230, 0, 0.35);
-          padding: 10px 14px;
-          border-radius: 12px;
-          font-weight: 800;
-          font-size: 13px;
-          background: rgba(0, 0, 0, 0.35);
-          white-space: nowrap;
-        }
-
-        .product-grid {
+        .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(190px, 240px));
-          gap: 18px;
-          justify-content: start;
-          align-items: start;
-        }
-
-        .product-slot {
-          width: 100%;
-          max-width: 240px;
-          min-width: 0;
-        }
-
-        .product-slot :global(a) {
-          display: block;
-          width: 100%;
-        }
-
-        .product-slot :global(img) {
-          max-width: 100%;
-        }
-
-        .empty-box {
-          border: 1px dashed #333;
-          background: rgba(17, 17, 17, 0.7);
-          border-radius: 16px;
-          padding: 18px;
-          color: #aaa;
-        }
-
-        .trust-bar {
-          max-width: 1100px;
-          margin: 38px auto 0;
-          padding: 18px 20px;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          border: 1px solid #222;
-          border-radius: 18px;
-          background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.05), transparent),
-            #0f0f0f;
-          color: #ddd;
-          font-size: 14px;
-          font-weight: 700;
-          text-align: center;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 20px;
         }
 
         .footer {
-          margin-top: 36px;
+          margin-top: 50px;
           padding: 30px 20px 40px;
           border-top: 1px solid #222;
           text-align: center;
@@ -239,6 +210,7 @@ export default function Home() {
 
         .footer-links :global(a) {
           color: #ccc;
+          text-decoration: none;
         }
 
         .footer-links :global(a:hover) {
@@ -246,39 +218,23 @@ export default function Home() {
         }
 
         @media (max-width: 768px) {
-          .banner-shell {
-            padding: 12px 10px 4px;
+          .page-shell::before,
+          .page-shell::after {
+            width: 48px;
+            opacity: 0.12;
           }
 
-          .banner-shell img {
-            max-height: 360px;
+          .grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
           }
 
           .section-wrap {
             padding: 24px 14px 8px;
           }
 
-          .section-head {
-            align-items: center;
-          }
-
           h2 {
-            font-size: 25px;
-          }
-
-          .product-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-          }
-
-          .product-slot {
-            max-width: none;
-          }
-
-          .trust-bar {
-            margin: 32px 14px 0;
-            grid-template-columns: 1fr;
-            text-align: left;
+            font-size: 24px;
           }
         }
       `}</style>
