@@ -4,6 +4,7 @@ import Link from "next/link";
 export default function Navbar() {
   const [cart, setCart] = useState([]);
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
@@ -56,17 +57,52 @@ export default function Navbar() {
     }
   };
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <>
       <div className="nav">
-        <Link href="/" className="brand">
-          LOCAL JAGOFF
-        </Link>
+        <div className="brandWrap">
+          <button
+            type="button"
+            className="brand mobileBrand"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            LOCAL JAGOFF ▾
+          </button>
+
+          <Link href="/" className="brand desktopBrand">
+            LOCAL JAGOFF
+          </Link>
+        </div>
+
+        <div className="desktopLinks">
+          <Link href="/tees">TEES</Link>
+          <Link href="/hoodies">HOODIES</Link>
+          <Link href="/hats">HATS</Link>
+        </div>
 
         <button className="cartTrigger" onClick={() => setOpen(true)}>
           CART ({cart.length})
         </button>
       </div>
+
+      {menuOpen && (
+        <div className="mobileMenu">
+          <Link href="/" onClick={closeMenu}>
+            HOME
+          </Link>
+          <Link href="/tees" onClick={closeMenu}>
+            TEES
+          </Link>
+          <Link href="/hoodies" onClick={closeMenu}>
+            HOODIES
+          </Link>
+          <Link href="/hats" onClick={closeMenu}>
+            HATS
+          </Link>
+        </div>
+      )}
 
       {open && (
         <div className="overlay" onClick={() => setOpen(false)}>
@@ -128,36 +164,75 @@ export default function Navbar() {
 
       <style jsx>{`
         .nav {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
           align-items: center;
-          padding: 16px 18px;
+          padding: 16px 22px;
           border-bottom: 1px solid #1d1d1d;
-          background: rgba(0, 0, 0, 0.82);
+          background: rgba(0, 0, 0, 0.9);
           backdrop-filter: blur(8px);
           position: sticky;
           top: 0;
-          z-index: 50;
+          z-index: 900;
+        }
+
+        .brandWrap {
+          justify-self: start;
         }
 
         .brand {
           font-family: "Oswald", sans-serif;
           font-size: 18px;
           letter-spacing: 0.5px;
+          color: #fff;
+          background: transparent;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+        }
+
+        .mobileBrand {
+          display: none;
+        }
+
+        .desktopLinks {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 28px;
+          font-family: "Oswald", sans-serif;
+          font-size: 15px;
+          letter-spacing: 1px;
+        }
+
+        .desktopLinks :global(a) {
+          color: #dcdcdc;
+          text-decoration: none;
+        }
+
+        .desktopLinks :global(a:hover) {
+          color: #ffe600;
         }
 
         .cartTrigger {
+          justify-self: end;
           cursor: pointer;
           color: #fff;
           background: transparent;
           border: 1px solid transparent;
           padding: 8px 12px;
           border-radius: 10px;
+          font-family: "Oswald", sans-serif;
+          font-size: 18px;
         }
 
         .cartTrigger:hover {
           border-color: #2f2f2f;
           background: rgba(255, 255, 255, 0.03);
+        }
+
+        .mobileMenu {
+          display: none;
         }
 
         .overlay {
@@ -319,7 +394,46 @@ export default function Navbar() {
 
         @media (max-width: 768px) {
           .nav {
+            display: flex;
+            justify-content: space-between;
             padding: 14px;
+          }
+
+          .desktopBrand,
+          .desktopLinks {
+            display: none;
+          }
+
+          .mobileBrand {
+            display: block;
+          }
+
+          .cartTrigger {
+            font-size: 16px;
+          }
+
+          .mobileMenu {
+            display: grid;
+            gap: 0;
+            position: sticky;
+            top: 53px;
+            z-index: 899;
+            background: #090909;
+            border-bottom: 1px solid #222;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+          }
+
+          .mobileMenu :global(a) {
+            padding: 15px 18px;
+            border-top: 1px solid #1d1d1d;
+            color: #fff;
+            font-family: "Oswald", sans-serif;
+            letter-spacing: 1px;
+          }
+
+          .mobileMenu :global(a:hover) {
+            color: #ffe600;
+            background: rgba(255, 230, 0, 0.05);
           }
 
           .sideCart {
