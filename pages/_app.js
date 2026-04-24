@@ -5,30 +5,38 @@ export default function App({ Component, pageProps }) {
   return (
     <>
       <Head>
-        {/* 🔥 BASIC META */}
         <title>Local Jagoff</title>
         <meta
           name="description"
           content="Certified nonsense. Pittsburgh attitude."
+          key="description"
         />
 
-        {/* 🔥 OPEN GRAPH (SHARING) */}
-        <meta property="og:title" content="Local Jagoff" />
+        <meta property="og:title" content="Local Jagoff" key="og:title" />
         <meta
           property="og:description"
           content="Certified nonsense. Pittsburgh attitude."
+          key="og:description"
         />
         <meta
           property="og:image"
           content="https://www.localjagoff.com/images/banner.png"
+          key="og:image"
         />
-        <meta property="og:url" content="https://www.localjagoff.com" />
-        <meta property="og:type" content="website" />
+        <meta
+          property="og:url"
+          content="https://www.localjagoff.com"
+          key="og:url"
+        />
+        <meta property="og:type" content="website" key="og:type" />
 
-        {/* 🔥 TWITTER */}
-        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:card" content="summary_large_image" key="twitter:card" />
+        <meta
+          name="twitter:image"
+          content="https://www.localjagoff.com/images/banner.png"
+          key="twitter:image"
+        />
 
-        {/* 🔥 ICONS */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/images/icon.png" />
       </Head>
