@@ -6,12 +6,16 @@ import productImages from "../lib/productImages";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => {
-        if (!Array.isArray(data)) return;
+        if (!Array.isArray(data)) {
+          setProducts([]);
+          return;
+        }
 
         const mapped = data.map((product) => ({
           ...product,
@@ -23,68 +27,69 @@ export default function Home() {
 
         setProducts(mapped);
       })
-      .catch(() => setProducts([]));
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const tees = products.filter((p) => p.category === "tees");
   const hoodies = products.filter((p) => p.category === "hoodies");
   const hats = products.filter((p) => p.category === "hats");
 
+  const renderSection = (title, kicker, items, href) => (
+    <section className="section-wrap" id={title.toLowerCase()}>
+      <div className="section-head">
+        <div>
+          <p className="section-kicker">{kicker}</p>
+          <h2>{title}</h2>
+        </div>
+
+        <Link href={href} className="view-all">
+          VIEW ALL
+        </Link>
+      </div>
+
+      {items.length > 0 ? (
+        <div className="grid">
+          {items.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      ) : (
+        <div className="empty-box">
+          <p>No {title.toLowerCase()} loaded yet.</p>
+        </div>
+      )}
+    </section>
+  );
+
   return (
     <div className="page-shell">
       <Navbar />
 
-      <div className="banner-shell">
+      <div className="hero-wrap">
         <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet="/images/banner-mobile.png"
-          />
+          <source media="(max-width: 768px)" srcSet="/images/banner-mobile.png" />
           <img src="/images/banner.png" alt="Local Jagoff Banner" />
         </picture>
+
+        <div className="hero-actions">
+          <a href="#t-shirts" className="hero-btn">
+            SHOP THE 412
+          </a>
+        </div>
       </div>
 
-      <section className="section-wrap">
-        <div className="section-head">
-          <div>
-            <p className="section-kicker">REP THE 412</p>
-            <h2>T-Shirts</h2>
-          </div>
+      {loading ? (
+        <div className="loading-box">
+          <p>Loading the jagoff goods...</p>
         </div>
-        <div className="grid">
-          {tees.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      <section className="section-wrap">
-        <div className="section-head">
-          <div>
-            <p className="section-kicker">HEAVY HITTERS</p>
-            <h2>Hoodies</h2>
-          </div>
-        </div>
-        <div className="grid">
-          {hoodies.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      <section className="section-wrap">
-        <div className="section-head">
-          <div>
-            <p className="section-kicker">TOP IT OFF</p>
-            <h2>Hats</h2>
-          </div>
-        </div>
-        <div className="grid">
-          {hats.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+      ) : (
+        <>
+          {renderSection("T-Shirts", "REP THE 412", tees, "/tees")}
+          {renderSection("Hoodies", "HEAVY HITTERS", hoodies, "/hoodies")}
+          {renderSection("Hats", "TOP IT OFF", hats, "/hats")}
+        </>
+      )}
 
       <footer className="footer">
         <div className="footer-links">
@@ -147,29 +152,69 @@ export default function Home() {
           mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
         }
 
-        .banner-shell,
+        .hero-wrap,
         .section-wrap,
-        .footer {
+        .footer,
+        .loading-box {
           position: relative;
           z-index: 1;
         }
 
-        .banner-shell img {
+        .hero-wrap {
+          max-width: 1300px;
+          margin: 0 auto;
+          padding: 18px 18px 10px;
+          text-align: center;
+        }
+
+        .hero-wrap img {
           width: 100%;
-          max-height: 500px;
+          max-height: 540px;
           object-fit: contain;
           display: block;
           margin: 0 auto;
+          border-radius: 18px;
+        }
+
+        .hero-actions {
+          display: flex;
+          justify-content: center;
+          margin-top: 18px;
+        }
+
+        .hero-btn {
+          display: inline-block;
+          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
+          color: #000;
+          padding: 14px 30px;
+          border-radius: 14px;
+          font-weight: 900;
+          letter-spacing: 1px;
+          box-shadow: 0 10px 24px rgba(255, 230, 0, 0.16);
+        }
+
+        .loading-box {
+          max-width: 1100px;
+          margin: 24px auto;
+          padding: 24px 20px;
+          border: 1px solid #222;
+          border-radius: 18px;
+          background: rgba(17, 17, 17, 0.9);
+          color: #ccc;
+          text-align: center;
         }
 
         .section-wrap {
-          padding: 34px 20px 10px;
+          max-width: 1300px;
+          margin: 0 auto;
+          padding: 36px 20px 10px;
         }
 
         .section-head {
           display: flex;
-          align-items: center;
+          align-items: end;
           justify-content: space-between;
+          gap: 16px;
           margin-bottom: 18px;
         }
 
@@ -177,19 +222,42 @@ export default function Home() {
           margin: 0 0 6px;
           color: #ffe600;
           font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 1.4px;
+          font-weight: 900;
+          letter-spacing: 1.5px;
         }
 
         h2 {
           margin: 0;
-          font-size: 28px;
+          font-size: 32px;
+        }
+
+        .view-all {
+          color: #ffe600;
+          border: 1px solid rgba(255, 230, 0, 0.35);
+          padding: 10px 14px;
+          border-radius: 12px;
+          font-weight: 800;
+          font-size: 13px;
+          background: rgba(0, 0, 0, 0.35);
+        }
+
+        .view-all:hover {
+          border-color: #ffe600;
+          background: rgba(255, 230, 0, 0.08);
         }
 
         .grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
           gap: 20px;
+        }
+
+        .empty-box {
+          border: 1px dashed #333;
+          background: rgba(17, 17, 17, 0.7);
+          border-radius: 16px;
+          padding: 18px;
+          color: #aaa;
         }
 
         .footer {
@@ -224,17 +292,39 @@ export default function Home() {
             opacity: 0.12;
           }
 
+          .hero-wrap {
+            padding: 12px 10px 6px;
+          }
+
+          .hero-wrap img {
+            border-radius: 12px;
+          }
+
+          .hero-btn {
+            width: calc(100% - 20px);
+            text-align: center;
+          }
+
+          .section-wrap {
+            padding: 28px 14px 8px;
+          }
+
+          .section-head {
+            align-items: center;
+          }
+
+          h2 {
+            font-size: 26px;
+          }
+
           .grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
           }
 
-          .section-wrap {
-            padding: 24px 14px 8px;
-          }
-
-          h2 {
-            font-size: 24px;
+          .view-all {
+            padding: 9px 11px;
+            font-size: 12px;
           }
         }
       `}</style>
