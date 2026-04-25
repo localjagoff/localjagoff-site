@@ -89,8 +89,13 @@ export default function ProductPage({ initialProductId }) {
 
   const touchStartX = useRef(null);
 
-  const fallbackProductForImages = { id: productId, thumbnail_url: "/images/banner.jpg" };
-  const fallbackImage = getProductImages(fallbackProductForImages)[0] || "/images/banner.jpg";
+  const fallbackProductForImages = {
+    id: productId,
+    thumbnail_url: "/images/banner.jpg",
+  };
+
+  const fallbackImage =
+    getProductImages(fallbackProductForImages)[0] || "/images/banner.jpg";
 
   const shareTitle =
     product?.name || productFallbackNames[productId] || "Local Jagoff";
@@ -315,7 +320,7 @@ export default function ProductPage({ initialProductId }) {
 
       <Navbar />
 
-      <div className="product-layout">
+      <main className="product-layout">
         <section className="gallery-panel">
           <div
             className="main-image-wrap"
@@ -420,7 +425,7 @@ export default function ProductPage({ initialProductId }) {
             {copied ? "COPIED, JAGOFF" : "SHARE TO A JAGOFF"}
           </button>
         </section>
-      </div>
+      </main>
 
       <style jsx>{`
         .product-page {
@@ -430,9 +435,11 @@ export default function ProductPage({ initialProductId }) {
             radial-gradient(circle at left center, rgba(255, 230, 0, 0.08), transparent 28%),
             radial-gradient(circle at right 18%, rgba(255, 255, 255, 0.04), transparent 20%),
             #000;
+          overflow-x: hidden;
         }
 
         .product-layout {
+          width: 100%;
           max-width: 1200px;
           margin: 0 auto;
           padding: 32px 20px 40px;
@@ -444,6 +451,8 @@ export default function ProductPage({ initialProductId }) {
 
         .gallery-panel,
         .details-panel {
+          width: 100%;
+          min-width: 0;
           background:
             linear-gradient(180deg, rgba(255, 230, 0, 0.04), rgba(255, 230, 0, 0) 22%),
             rgba(17, 17, 17, 0.96);
@@ -472,7 +481,10 @@ export default function ProductPage({ initialProductId }) {
         .main-image {
           width: 100%;
           height: 100%;
+          max-width: 100%;
+          max-height: 100%;
           object-fit: contain;
+          object-position: center;
           display: block;
           user-select: none;
           -webkit-user-drag: none;
@@ -516,16 +528,21 @@ export default function ProductPage({ initialProductId }) {
         }
 
         .thumb-row {
+          width: 100%;
+          max-width: 100%;
           display: flex;
           gap: 10px;
           margin-top: 12px;
           overflow-x: auto;
+          overflow-y: hidden;
           padding-bottom: 2px;
+          -webkit-overflow-scrolling: touch;
         }
 
         .thumb {
           width: 72px;
           height: 72px;
+          min-width: 72px;
           border-radius: 12px;
           border: 1px solid #333;
           background: #0d0d0d;
@@ -557,6 +574,8 @@ export default function ProductPage({ initialProductId }) {
           margin: 0 0 10px;
           font-size: 34px;
           line-height: 1.1;
+          word-break: normal;
+          overflow-wrap: anywhere;
         }
 
         .price {
@@ -658,8 +677,35 @@ export default function ProductPage({ initialProductId }) {
 
         @media (max-width: 768px) {
           .product-layout {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
             padding: 20px 14px 28px;
             gap: 18px;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .gallery-panel,
+          .details-panel {
+            width: 100%;
+            max-width: 100%;
+            padding: 18px;
+            margin: 0;
+            box-sizing: border-box;
+          }
+
+          .main-image-wrap {
+            width: 100%;
+            max-width: 100%;
+            aspect-ratio: 1 / 1;
+          }
+
+          .main-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
           }
 
           h1 {
@@ -673,6 +719,7 @@ export default function ProductPage({ initialProductId }) {
           .thumb {
             width: 64px;
             height: 64px;
+            min-width: 64px;
           }
 
           .gallery-arrow {
