@@ -40,7 +40,7 @@ export default function Home() {
             media="(max-width: 768px)"
             srcSet="/images/banner-mobile.png"
           />
-          <img src="/images/banner.png" alt="Local Jagoff Banner" />
+          <img src="/images/banner.jpg" alt="Local Jagoff Banner" />
         </picture>
       </div>
 
