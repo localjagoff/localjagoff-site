@@ -38,21 +38,26 @@ export default function Navbar() {
     startCheckout(cart);
   };
 
+  const handleBrandClick = () => {
+    if (typeof window !== "undefined" && window.innerWidth <= 768) {
+      setMenuOpen((v) => !v);
+      return;
+    }
+
+    window.location.href = "/";
+  };
+
   return (
     <>
       <div className="navSpacer" />
 
       <header className="nav">
         <div className="brandArea">
-          <Link href="/" className="brand desktopBrand">
-            LOCAL JAGOFF
-          </Link>
-
           <button
             type="button"
-            className="brand mobileBrand"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Open navigation menu"
+            className="brand brandButton"
+            onClick={handleBrandClick}
+            aria-label="Local Jagoff navigation"
           >
             LOCAL JAGOFF
             <span className={`arrow ${menuOpen ? "open" : ""}`} />
@@ -181,6 +186,7 @@ export default function Navbar() {
         }
 
         .brand {
+          display: inline-flex;
           align-items: center;
           gap: 8px;
           font-family: "Oswald", sans-serif;
@@ -193,20 +199,16 @@ export default function Navbar() {
           line-height: 1;
         }
 
-        .desktopBrand {
-          display: flex !important;
-          text-decoration: none;
-        }
-
-        .mobileBrand {
-          display: none !important;
+        .brand:hover {
+          color: #ffe600;
         }
 
         .arrow {
+          display: none;
           width: 8px;
           height: 8px;
-          border-right: 2px solid #fff;
-          border-bottom: 2px solid #fff;
+          border-right: 2px solid currentColor;
+          border-bottom: 2px solid currentColor;
           transform: rotate(45deg);
           transition: transform 0.22s ease;
           margin-top: 2px;
@@ -228,8 +230,7 @@ export default function Navbar() {
           color: #ccc;
         }
 
-        .desktopLinks :global(a:hover),
-        .desktopBrand:hover {
+        .desktopLinks :global(a:hover) {
           color: #ffe600;
         }
 
@@ -469,22 +470,12 @@ export default function Navbar() {
             grid-template-columns: 1fr auto;
           }
 
-          .desktopBrand {
-            display: none !important;
-            visibility: hidden !important;
-            position: absolute !important;
-            pointer-events: none !important;
-          }
-
-          .mobileBrand {
-            display: inline-flex !important;
-            visibility: visible !important;
-            position: static !important;
-            pointer-events: auto !important;
-          }
-
           .desktopLinks {
             display: none !important;
+          }
+
+          .arrow {
+            display: inline-block;
           }
 
           .cartTrigger {
