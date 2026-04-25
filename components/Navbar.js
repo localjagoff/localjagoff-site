@@ -52,6 +52,7 @@ export default function Navbar() {
             type="button"
             className="brand mobileBrand"
             onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Open navigation menu"
           >
             LOCAL JAGOFF
             <span className={`arrow ${menuOpen ? "open" : ""}`} />
@@ -193,12 +194,12 @@ export default function Navbar() {
         }
 
         .desktopBrand {
-          display: flex;
+          display: flex !important;
           text-decoration: none;
         }
 
         .mobileBrand {
-          display: none;
+          display: none !important;
         }
 
         .arrow {
@@ -458,23 +459,32 @@ export default function Navbar() {
 
         @media (min-width: 769px) {
           .mobileMenu {
-            display: none;
+            display: none !important;
           }
         }
 
         @media (max-width: 768px) {
-          .desktopBrand,
-          .desktopLinks {
-            display: none !important;
-          }
-
-          .mobileBrand {
-            display: flex !important;
-          }
-
           .nav {
             padding: 16px 18px;
             grid-template-columns: 1fr auto;
+          }
+
+          .desktopBrand {
+            display: none !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            pointer-events: none !important;
+          }
+
+          .mobileBrand {
+            display: inline-flex !important;
+            visibility: visible !important;
+            position: static !important;
+            pointer-events: auto !important;
+          }
+
+          .desktopLinks {
+            display: none !important;
           }
 
           .cartTrigger {
