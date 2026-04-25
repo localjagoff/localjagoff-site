@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
+import { startCheckout } from "../lib/checkout";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
@@ -41,37 +42,6 @@ export default function CartPage() {
     (sum, item) => sum + Number(item.price) * item.quantity,
     0
   );
-
-  // 🔥 FULL DEBUG CHECKOUT FUNCTION
-  const checkout = async () => {
-    console.log("🚀 CHECKOUT CLICKED");
-
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ items: cart }),
-      });
-
-      console.log("📡 STATUS:", res.status);
-
-      const data = await res.json();
-
-      console.log("📦 DATA:", data);
-
-      if (data.url) {
-        console.log("➡️ REDIRECTING TO STRIPE");
-        window.location.href = data.url;
-      } else {
-        alert("Checkout failed");
-      }
-    } catch (err) {
-      console.error("❌ CHECKOUT ERROR:", err);
-      alert("Checkout error");
-    }
-  };
 
   return (
     <div style={styles.page}>
@@ -123,7 +93,7 @@ export default function CartPage() {
 
           <button
             style={styles.checkoutBtn}
-            onClick={checkout}
+            onClick={() => startCheckout(cart)}
             disabled={cart.length === 0}
           >
             CHECKOUT
