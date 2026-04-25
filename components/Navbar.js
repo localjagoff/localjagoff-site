@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { startCheckout } from "../lib/checkout";
 
 export default function Navbar() {
   const [cart, setCart] = useState([]);
@@ -32,27 +33,6 @@ export default function Navbar() {
       0
     );
   }, [cart]);
-
-  const checkout = async () => {
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cart }),
-      });
-
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Checkout failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Checkout failed");
-    }
-  };
 
   return (
     <>
@@ -149,7 +129,7 @@ export default function Navbar() {
 
               <button
                 className="checkoutBtn"
-                onClick={checkout}
+                onClick={() => startCheckout(cart)}
                 disabled={cart.length === 0}
               >
                 CHECKOUT
