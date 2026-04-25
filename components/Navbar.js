@@ -34,6 +34,10 @@ export default function Navbar() {
     );
   }, [cart]);
 
+  const checkout = () => {
+    startCheckout(cart);
+  };
+
   return (
     <>
       <div className="navSpacer" />
@@ -129,7 +133,7 @@ export default function Navbar() {
 
               <button
                 className="checkoutBtn"
-                onClick={() => startCheckout(cart)}
+                onClick={checkout}
                 disabled={cart.length === 0}
               >
                 CHECKOUT
@@ -169,8 +173,13 @@ export default function Navbar() {
           backdrop-filter: blur(10px);
         }
 
-        .brand {
+        .brandArea {
           display: flex;
+          align-items: center;
+          min-width: 0;
+        }
+
+        .brand {
           align-items: center;
           gap: 8px;
           font-family: "Oswald", sans-serif;
@@ -180,9 +189,11 @@ export default function Navbar() {
           border: none;
           cursor: pointer;
           padding: 0;
+          line-height: 1;
         }
 
         .desktopBrand {
+          display: flex;
           text-decoration: none;
         }
 
@@ -454,15 +465,16 @@ export default function Navbar() {
         @media (max-width: 768px) {
           .desktopBrand,
           .desktopLinks {
-            display: none;
+            display: none !important;
           }
 
           .mobileBrand {
-            display: flex;
+            display: flex !important;
           }
 
           .nav {
             padding: 16px 18px;
+            grid-template-columns: 1fr auto;
           }
 
           .cartTrigger {
