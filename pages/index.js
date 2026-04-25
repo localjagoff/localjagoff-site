@@ -154,10 +154,20 @@ export default function Home() {
           z-index: 1;
         }
 
+        .banner-shell {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background: #000;
+          overflow: hidden;
+        }
+
         .banner-shell img {
           width: 100%;
-          max-height: 500px;
-          object-fit: contain;
+          height: auto;
+          max-height: 620px;
+          object-fit: cover;
+          object-position: center;
           display: block;
           margin: 0 auto;
         }
@@ -222,6 +232,11 @@ export default function Home() {
           .page-shell::after {
             width: 48px;
             opacity: 0.12;
+          }
+
+          .banner-shell img {
+            max-height: none;
+            object-fit: contain;
           }
 
           .grid {
