@@ -29,6 +29,7 @@ export default function Home() {
   const tees = products.filter((p) => p.category === "tees");
   const hoodies = products.filter((p) => p.category === "hoodies");
   const hats = products.filter((p) => p.category === "hats");
+  const other = products.filter((p) => p.category === "other");
 
   return (
     <div className="page-shell">
@@ -85,6 +86,22 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {other.length > 0 && (
+        <section className="section-wrap">
+          <div className="section-head">
+            <div>
+              <p className="section-kicker">ODDS N’ ENDS</p>
+              <h2>Other Gear</h2>
+            </div>
+          </div>
+          <div className="grid">
+            {other.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <footer className="footer">
         <div className="footer-links">
