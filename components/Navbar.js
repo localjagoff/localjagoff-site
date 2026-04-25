@@ -60,9 +60,13 @@ export default function Navbar() {
 
       <header className="nav">
         <div className="brandArea">
+          <Link href="/" className="brand desktopBrand">
+            LOCAL JAGOFF
+          </Link>
+
           <button
             type="button"
-            className="brand"
+            className="brand mobileBrand"
             onClick={() => setMenuOpen((v) => !v)}
           >
             LOCAL JAGOFF
@@ -198,6 +202,14 @@ export default function Navbar() {
           padding: 0;
         }
 
+        .desktopBrand {
+          text-decoration: none;
+        }
+
+        .mobileBrand {
+          display: none;
+        }
+
         .arrow {
           width: 8px;
           height: 8px;
@@ -224,7 +236,8 @@ export default function Navbar() {
           color: #ccc;
         }
 
-        .desktopLinks :global(a:hover) {
+        .desktopLinks :global(a:hover),
+        .desktopBrand:hover {
           color: #ffe600;
         }
 
@@ -459,8 +472,13 @@ export default function Navbar() {
         }
 
         @media (max-width: 768px) {
+          .desktopBrand,
           .desktopLinks {
             display: none;
+          }
+
+          .mobileBrand {
+            display: flex;
           }
 
           .nav {
