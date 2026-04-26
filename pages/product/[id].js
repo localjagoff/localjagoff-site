@@ -32,27 +32,27 @@ function getVariantLabel(productName, variantName) {
 
 const productDescriptions = {
   428851698:
-    "Classic keystone design representing Pittsburgh pride. Premium feel, built for everyday wear.",
+    "Straight Pittsburgh energy. Clean keystone, no extra nonsense.",
   428851608:
-    "Steel City front and back print. Bold, clean, and built to stand out.",
+    "Front and back print that actually hits. Not subtle. Not supposed to be.",
   428851513:
-    "Sideways 412 design with a cleaner, different look that still hits hard.",
+    "Different angle, same attitude. 412 sideways but still loud.",
   428550417:
-    "Certified Jagoff tee. Straight to the point, no explanation needed.",
+    "You know exactly what this means. No explanation needed.",
   428821578:
-    "Warm, comfortable hoodie with Pittsburgh roots. Perfect for cold days n’at.",
+    "Warm hoodie. Cold attitude. Perfect for when Pittsburgh does its thing.",
   428851907:
-    "Trucker cap with a clean, bold logo. Lightweight and built for everyday wear.",
+    "Throw it on and go. Clean, simple, does the job.",
   428983169:
-    "Keystone 412 hoodie. Heavy, clean, and built for Pittsburgh weather.",
+    "Heavy hoodie, built right. Not that thin, cheap stuff.",
   428982889:
-    "Keystone tee with straight Pittsburgh attitude. Clean look, everyday wear.",
+    "Keystone look, no filler. Just straight Pittsburgh.",
   428980566:
-    "Structured trucker hat with Local Jagoff branding. Simple and solid.",
+    "Solid hat. No gimmicks. Just wear it.",
   429208592:
-    "Local Jagoff 412 hoodie with a clean keystone look and everyday fit.",
+    "Another one that hits. Keystone, 412, done right.",
   429536493:
-    "412 tee with Pittsburgh attitude. Clean, bold, and made for local jagoffs.",
+    "Basic? Yeah. Boring? Not even close.",
 };
 
 const productFallbackNames = {
