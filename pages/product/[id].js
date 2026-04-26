@@ -509,7 +509,7 @@ export default function ProductPage({ initialProductId }) {
 
           <div className="trust-box">
             <div>
-              <strong>NO CORPORATE BULLSHIT</strong>
+              <strong>NO CORPORATE BULLSH*T</strong>
               <span>This ain’t mass-produced garbage.</span>
             </div>
             <div>
@@ -523,17 +523,6 @@ export default function ProductPage({ initialProductId }) {
           </div>
         </section>
       </main>
-
-      <div className="mobile-sticky-cart">
-        <div className="sticky-info">
-          <span>{variantLabel || "Selected item"}</span>
-          <strong>${displayedPrice}</strong>
-        </div>
-
-        <button type="button" className="sticky-add-btn" onClick={addToCart}>
-          {added ? "ADDED" : "ADD TO CART"}
-        </button>
-      </div>
 
       <style jsx>{`
         .product-page {
@@ -964,10 +953,6 @@ export default function ProductPage({ initialProductId }) {
           line-height: 1.35;
         }
 
-        .mobile-sticky-cart {
-          display: none;
-        }
-
         @media (max-width: 980px) {
           .product-layout {
             grid-template-columns: 1fr;
@@ -1069,66 +1054,6 @@ export default function ProductPage({ initialProductId }) {
 
           .gallery-arrow {
             display: none;
-          }
-
-          .product-page {
-            padding-bottom: 92px;
-          }
-
-          .mobile-sticky-cart {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 1250;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-            background:
-              linear-gradient(180deg, rgba(20, 20, 20, 0.94), rgba(5, 5, 5, 0.98)),
-              #050505;
-            border-top: 1px solid rgba(255, 230, 0, 0.22);
-            box-shadow: 0 -14px 30px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(10px);
-          }
-
-          .sticky-info {
-            min-width: 0;
-            display: grid;
-            gap: 2px;
-          }
-
-          .sticky-info span {
-            color: #a8a8a8;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .sticky-info strong {
-            color: #fff;
-            font-size: 20px;
-            line-height: 1;
-          }
-
-          .sticky-add-btn {
-            border: none;
-            border-radius: 14px;
-            background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
-            color: #000;
-            font-weight: 900;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-            padding: 14px 16px;
-            cursor: pointer;
-            white-space: nowrap;
-            box-shadow: 0 10px 24px rgba(255, 230, 0, 0.2);
           }
 
           .primary-btn,
