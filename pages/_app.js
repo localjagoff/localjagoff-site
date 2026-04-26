@@ -16,6 +16,14 @@ export default function App({ Component, pageProps }) {
           key="description"
         />
 
+        <meta name="theme-color" content="#000000" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+
         {!isProductPage && (
           <>
             <meta property="og:title" content="Local Jagoff" key="og:title" />
