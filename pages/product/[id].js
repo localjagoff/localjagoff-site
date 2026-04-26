@@ -110,7 +110,6 @@ export default function ProductPage({ initialProductId }) {
     product?.name || productFallbackNames[productId] || "Local Jagoff";
   const shareDescription =
     productDescriptions[productId] || "Certified nonsense. Pittsburgh attitude.";
-  const shareImage = absoluteImageUrl(selectedImage || fallbackImage);
   const shareUrl = `${SITE_URL}/product/${productId}`;
   const productSignal = productSignals[productId];
 
@@ -152,6 +151,8 @@ export default function ProductPage({ initialProductId }) {
 
     return getProductImages(product);
   }, [product, fallbackImage]);
+
+  const shareImage = absoluteImageUrl(images[0] || fallbackImage);
 
   const selectedImageIndex = useMemo(() => {
     const index = images.findIndex((img) => img === selectedImage);
@@ -285,6 +286,9 @@ export default function ProductPage({ initialProductId }) {
             key="og:description"
           />
           <meta property="og:image" content={shareImage} key="og:image" />
+          <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
+          <meta property="og:image:width" content="1200" key="og:image:width" />
+          <meta property="og:image:height" content="1200" key="og:image:height" />
           <meta property="og:url" content={shareUrl} key="og:url" />
           <meta property="og:type" content="product" key="og:type" />
           <meta
@@ -292,6 +296,8 @@ export default function ProductPage({ initialProductId }) {
             content="summary_large_image"
             key="twitter:card"
           />
+          <meta name="twitter:title" content={shareTitle} key="twitter:title" />
+          <meta name="twitter:description" content={shareDescription} key="twitter:description" />
           <meta name="twitter:image" content={shareImage} key="twitter:image" />
         </Head>
 
@@ -352,6 +358,9 @@ export default function ProductPage({ initialProductId }) {
           key="og:description"
         />
         <meta property="og:image" content={shareImage} key="og:image" />
+        <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
+        <meta property="og:image:width" content="1200" key="og:image:width" />
+        <meta property="og:image:height" content="1200" key="og:image:height" />
         <meta property="og:url" content={shareUrl} key="og:url" />
         <meta property="og:type" content="product" key="og:type" />
         <meta
@@ -359,6 +368,8 @@ export default function ProductPage({ initialProductId }) {
           content="summary_large_image"
           key="twitter:card"
         />
+        <meta name="twitter:title" content={shareTitle} key="twitter:title" />
+        <meta name="twitter:description" content={shareDescription} key="twitter:description" />
         <meta name="twitter:image" content={shareImage} key="twitter:image" />
       </Head>
 
