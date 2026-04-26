@@ -53,12 +53,18 @@ export default function Home() {
               <p className="section-kicker">STUFF WORTH CLICKING</p>
               <h2>Featured Picks</h2>
             </div>
+            <p className="mobile-scroll-hint">Swipe →</p>
           </div>
 
-          <div className="featured-grid">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+          <div className="featured-scroll">
+            <div className="featured-grid">
+              {featured.map((p) => (
+                <div key={p.id} className="featured-card-wrap">
+                  <span className="featured-badge">FEATURED</span>
+                  <ProductCard product={p} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -176,6 +182,7 @@ export default function Home() {
 
         .featured-wrap {
           padding: 38px 20px 12px;
+          overflow: hidden;
         }
 
         .section-wrap {
@@ -186,6 +193,7 @@ export default function Home() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 14px;
           margin-bottom: 18px;
         }
 
@@ -202,16 +210,66 @@ export default function Home() {
           font-size: 28px;
         }
 
+        .mobile-scroll-hint {
+          display: none;
+          margin: 0;
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.8px;
+          white-space: nowrap;
+        }
+
         .grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
           gap: 20px;
         }
 
+        .featured-scroll {
+          position: relative;
+        }
+
+        .featured-scroll::after {
+          display: none;
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 42px;
+          pointer-events: none;
+          background: linear-gradient(90deg, transparent, #000);
+        }
+
         .featured-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 20px;
+        }
+
+        .featured-card-wrap {
+          position: relative;
+          min-width: 0;
+        }
+
+        .featured-badge {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 4;
+          display: inline-flex;
+          align-items: center;
+          border: 1px solid rgba(255, 230, 0, 0.5);
+          border-radius: 999px;
+          padding: 6px 9px;
+          background:
+            linear-gradient(180deg, rgba(255, 242, 122, 0.96), rgba(255, 230, 0, 0.96));
+          color: #000;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.8px;
+          box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
         }
 
         .footer {
@@ -241,7 +299,7 @@ export default function Home() {
 
         @media (max-width: 900px) {
           .featured-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(210px, 1fr));
           }
         }
 
@@ -251,14 +309,55 @@ export default function Home() {
             object-fit: contain;
           }
 
-          .grid,
-          .featured-grid {
+          .grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
           }
 
           .featured-wrap {
-            padding: 28px 14px 8px;
+            padding: 28px 0 8px 14px;
+          }
+
+          .featured-wrap .section-head {
+            padding-right: 14px;
+          }
+
+          .mobile-scroll-hint {
+            display: block;
+          }
+
+          .featured-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0 14px 8px 0;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .featured-scroll::after {
+            display: block;
+          }
+
+          .featured-grid {
+            display: flex;
+            gap: 14px;
+            width: max-content;
+            min-width: 100%;
+          }
+
+          .featured-card-wrap {
+            width: 72vw;
+            max-width: 260px;
+            min-width: 220px;
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+          }
+
+          .featured-badge {
+            top: 9px;
+            left: 9px;
+            font-size: 9px;
+            padding: 5px 8px;
           }
 
           .section-wrap {
