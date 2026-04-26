@@ -7,46 +7,13 @@ body {
   color: #fff;
   font-family: "Inter", sans-serif;
   background:
-    linear-gradient(135deg, rgba(255, 230, 0, 0.06) 0%, transparent 26%),
-    linear-gradient(315deg, rgba(255, 230, 0, 0.045) 0%, transparent 30%),
-    radial-gradient(circle at 50% 40%, rgba(255, 230, 0, 0.035), transparent 46%),
-    linear-gradient(180deg, #050505 0%, #000 48%, #070707 100%);
+    linear-gradient(160deg, rgba(255, 230, 0, 0.13) 0%, rgba(20, 18, 0, 0.12) 24%, transparent 52%),
+    linear-gradient(20deg, rgba(255, 230, 0, 0.09) 0%, rgba(18, 16, 0, 0.1) 28%, transparent 58%),
+    linear-gradient(180deg, #090900 0%, #000000 42%, #090900 100%);
   background-attachment: fixed;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      135deg,
-      rgba(255, 230, 0, 0.012) 0px,
-      rgba(255, 230, 0, 0.012) 1px,
-      transparent 1px,
-      transparent 14px
-    );
-  opacity: 0.18;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 24%, rgba(255, 230, 0, 0.04), transparent 28%),
-    radial-gradient(circle at 82% 62%, rgba(255, 230, 0, 0.03), transparent 30%),
-    radial-gradient(circle at 48% 92%, rgba(255, 230, 0, 0.025), transparent 26%);
-  opacity: 0.75;
-}
-
 #__next {
-  position: relative;
-  z-index: 1;
   min-height: 100vh;
 }
 
@@ -141,22 +108,10 @@ select {
 @media (max-width: 768px) {
   body {
     background:
-      linear-gradient(135deg, rgba(255, 230, 0, 0.045) 0%, transparent 32%),
-      linear-gradient(315deg, rgba(255, 230, 0, 0.035) 0%, transparent 36%),
-      radial-gradient(circle at 50% 34%, rgba(255, 230, 0, 0.028), transparent 50%),
-      linear-gradient(180deg, #050505 0%, #000 52%, #060606 100%);
+      linear-gradient(160deg, rgba(255, 230, 0, 0.12) 0%, rgba(18, 16, 0, 0.12) 30%, transparent 62%),
+      linear-gradient(20deg, rgba(255, 230, 0, 0.08) 0%, rgba(18, 16, 0, 0.1) 36%, transparent 68%),
+      linear-gradient(180deg, #080800 0%, #000000 48%, #080800 100%);
     background-attachment: scroll;
-  }
-
-  body::before {
-    opacity: 0.12;
-  }
-
-  body::after {
-    background:
-      radial-gradient(circle at 18% 22%, rgba(255, 230, 0, 0.03), transparent 32%),
-      radial-gradient(circle at 82% 70%, rgba(255, 230, 0, 0.025), transparent 34%);
-    opacity: 0.6;
   }
 
   h1 {
