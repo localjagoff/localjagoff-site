@@ -7,10 +7,10 @@ body {
   color: #fff;
   font-family: "Inter", sans-serif;
   background:
-    radial-gradient(circle at 12% 18%, rgba(255, 230, 0, 0.055), transparent 28%),
-    radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.026), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(255, 230, 0, 0.035), transparent 34%),
-    linear-gradient(180deg, rgba(255, 230, 0, 0.018), transparent 18%),
+    radial-gradient(circle at 8% 12%, rgba(255, 230, 0, 0.12), transparent 30%),
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.055), transparent 26%),
+    radial-gradient(circle at 52% 100%, rgba(255, 230, 0, 0.075), transparent 38%),
+    linear-gradient(180deg, rgba(255, 230, 0, 0.035), transparent 24%),
     #000;
   background-attachment: fixed;
 }
@@ -19,13 +19,19 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-  background-size: 44px 44px;
-  opacity: 0.18;
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.16;
+}
+
+#__next {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
 }
 
 * {
@@ -119,15 +125,16 @@ select {
 @media (max-width: 768px) {
   body {
     background:
-      radial-gradient(circle at 10% 12%, rgba(255, 230, 0, 0.05), transparent 30%),
-      radial-gradient(circle at 90% 4%, rgba(255, 255, 255, 0.022), transparent 24%),
-      linear-gradient(180deg, rgba(255, 230, 0, 0.016), transparent 18%),
+      radial-gradient(circle at 8% 10%, rgba(255, 230, 0, 0.105), transparent 34%),
+      radial-gradient(circle at 92% 4%, rgba(255, 255, 255, 0.045), transparent 28%),
+      radial-gradient(circle at 50% 100%, rgba(255, 230, 0, 0.06), transparent 40%),
+      linear-gradient(180deg, rgba(255, 230, 0, 0.03), transparent 22%),
       #000;
     background-attachment: scroll;
   }
 
   body::before {
-    opacity: 0.1;
+    opacity: 0.11;
     background-size: 36px 36px;
   }
 
