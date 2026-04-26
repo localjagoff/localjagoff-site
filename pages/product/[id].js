@@ -497,10 +497,6 @@ export default function ProductPage({ initialProductId }) {
               <span>Powered by Stripe.</span>
             </div>
             <div>
-              <strong>Printed on demand</strong>
-              <span>Fulfilled through Printful.</span>
-            </div>
-            <div>
               <strong>Local Jagoff promise</strong>
               <span>No boring merch. No corporate personality.</span>
             </div>
