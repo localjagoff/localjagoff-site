@@ -540,10 +540,7 @@ export default function ProductPage({ initialProductId }) {
         .product-page {
           min-height: 100vh;
           color: #fff;
-          background:
-            radial-gradient(circle at left center, rgba(255, 230, 0, 0.08), transparent 28%),
-            radial-gradient(circle at right 18%, rgba(255, 255, 255, 0.04), transparent 20%),
-            #000;
+          background: transparent;
           overflow-x: hidden;
         }
 
