@@ -278,6 +278,14 @@ export default function Navbar() {
               >
                 View Cart
               </Link>
+
+              <Link
+                href="/"
+                className="continueShopping"
+                onClick={() => setOpen(false)}
+              >
+                ← Continue Shopping
+              </Link>
             </div>
           </aside>
         </div>
@@ -669,6 +677,21 @@ export default function Navbar() {
         .viewCart:hover {
           color: #ffe600;
           border-color: rgba(255, 230, 0, 0.45);
+        }
+
+        .continueShopping {
+          display: block;
+          margin-top: 10px;
+          text-align: center;
+          color: #aaa;
+          padding: 10px;
+          border-radius: 12px;
+          font-weight: 800;
+        }
+
+        .continueShopping:hover {
+          color: #ffe600;
+          background: rgba(255, 230, 0, 0.04);
         }
 
         .toast {
