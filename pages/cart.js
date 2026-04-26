@@ -1,8 +1,8 @@
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { startCheckout } from "../lib/checkout";
 
-export default function CartPage() {
+export default function Cart() {
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
@@ -10,191 +10,173 @@ export default function CartPage() {
     setCart(stored);
   }, []);
 
-  const updateCart = (updated) => {
+  const total = cart.reduce((sum, item) => {
+    return sum + Number(item.price) * item.quantity;
+  }, 0);
+
+  const updateQty = (index, amount) => {
+    const updated = [...cart];
+    updated[index].quantity = Math.max(1, updated[index].quantity + amount);
     setCart(updated);
     localStorage.setItem("cart", JSON.stringify(updated));
-    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const clearCart = () => {
-    localStorage.removeItem("cart");
-    setCart([]);
-    window.dispatchEvent(new Event("cartUpdated"));
+  const removeItem = (index) => {
+    const updated = cart.filter((_, i) => i !== index);
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
   };
-
-  const increaseQty = (index) => {
-    const updated = [...cart];
-    updated[index].quantity += 1;
-    updateCart(updated);
-  };
-
-  const decreaseQty = (index) => {
-    const updated = [...cart];
-    if (updated[index].quantity > 1) {
-      updated[index].quantity -= 1;
-    } else {
-      updated.splice(index, 1);
-    }
-    updateCart(updated);
-  };
-
-  const total = cart.reduce(
-    (sum, item) => sum + Number(item.price) * item.quantity,
-    0
-  );
 
   return (
-    <div style={styles.page}>
+    <div className="page">
       <Navbar />
 
-      <div style={styles.container}>
-        {/* LEFT */}
-        <div style={styles.left}>
-          <div style={styles.headerRow}>
-            <h1>YOUR CART</h1>
-            {cart.length > 0 && (
-              <button style={styles.clearBtn} onClick={clearCart}>
-                CLEAR
-              </button>
-            )}
-          </div>
+      <main className="wrap">
+        <h1>Your Cart</h1>
 
-          {cart.length === 0 && <p>Your cart is empty</p>}
+        {cart.length === 0 ? (
+          <p className="empty">Cart’s empty. Fix it jagoff.</p>
+        ) : (
+          <>
+            <div className="list">
+              {cart.map((item, i) => (
+                <div key={i} className="item">
+                  <img src={item.image} alt={item.name} />
 
-          {cart.map((item, i) => (
-            <div key={i} style={styles.item}>
-              <img
-                src={item.image || "https://via.placeholder.com/80"}
-                style={styles.image}
-              />
+                  <div className="info">
+                    <h3>{item.name}</h3>
 
-              <div style={styles.details}>
-                <h3>{item.name}</h3>
-                <p style={styles.price}>${item.price}</p>
-              </div>
+                    {item.variant_name && (
+                      <p className="variant">Size: {item.variant_name}</p>
+                    )}
 
-              <div style={styles.qty}>
-                <button style={styles.qtyBtn} onClick={() => decreaseQty(i)}>
-                  −
-                </button>
-                <span>{item.quantity}</span>
-                <button style={styles.qtyBtn} onClick={() => increaseQty(i)}>
-                  +
-                </button>
-              </div>
+                    <p className="price">${item.price}</p>
+
+                    <div className="qty">
+                      <button onClick={() => updateQty(i, -1)}>-</button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQty(i, 1)}>+</button>
+                    </div>
+
+                    <button className="remove" onClick={() => removeItem(i)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* RIGHT */}
-        <div style={styles.right}>
-          <h2>Total</h2>
-          <h1>${total.toFixed(2)}</h1>
+            <div className="summary">
+              <p>Total</p>
+              <strong>${total.toFixed(2)}</strong>
 
-          <button
-            style={styles.checkoutBtn}
-            onClick={() => startCheckout(cart)}
-            disabled={cart.length === 0}
-          >
-            CHECKOUT
-          </button>
-        </div>
-      </div>
+              <button className="checkout">
+                Proceed to Checkout
+              </button>
+            </div>
+          </>
+        )}
+      </main>
+
+      <style jsx>{`
+        .page {
+          background: #000;
+          color: #fff;
+          min-height: 100vh;
+        }
+
+        .wrap {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 30px 20px;
+        }
+
+        h1 {
+          margin-bottom: 20px;
+        }
+
+        .empty {
+          color: #ccc;
+        }
+
+        .list {
+          display: grid;
+          gap: 16px;
+        }
+
+        .item {
+          display: grid;
+          grid-template-columns: 100px 1fr;
+          gap: 14px;
+          border: 1px solid #222;
+          border-radius: 12px;
+          padding: 12px;
+          background: #111;
+        }
+
+        img {
+          width: 100%;
+          object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .info h3 {
+          margin: 0;
+          font-size: 16px;
+        }
+
+        .variant {
+          color: #aaa;
+          font-size: 13px;
+        }
+
+        .price {
+          color: #ffe600;
+          margin: 6px 0;
+        }
+
+        .qty {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .qty button {
+          width: 28px;
+          height: 28px;
+          background: #222;
+          color: #fff;
+          border: none;
+          cursor: pointer;
+        }
+
+        .remove {
+          margin-top: 8px;
+          background: none;
+          border: none;
+          color: #888;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .summary {
+          margin-top: 30px;
+          border-top: 1px solid #222;
+          padding-top: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .checkout {
+          background: #ffe600;
+          color: #000;
+          border: none;
+          padding: 12px 18px;
+          font-weight: bold;
+          cursor: pointer;
+        }
+      `}</style>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    background: "#000",
-    color: "#fff",
-    minHeight: "100vh",
-  },
-
-  container: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "40px 20px",
-    display: "flex",
-    gap: "40px",
-    flexWrap: "wrap",
-  },
-
-  left: {
-    flex: 2,
-  },
-
-  right: {
-    flex: 1,
-    background: "#111",
-    padding: "25px",
-    border: "1px solid #222",
-    height: "fit-content",
-    minWidth: "260px",
-  },
-
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px",
-  },
-
-  clearBtn: {
-    background: "none",
-    border: "1px solid #333",
-    color: "#aaa",
-    padding: "6px 12px",
-    cursor: "pointer",
-  },
-
-  item: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-    borderBottom: "1px solid #222",
-    padding: "15px 0",
-  },
-
-  image: {
-    width: "80px",
-    height: "80px",
-    objectFit: "cover",
-    background: "#111",
-  },
-
-  details: {
-    flex: 1,
-  },
-
-  price: {
-    color: "#ccc",
-  },
-
-  qty: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-
-  qtyBtn: {
-    width: "36px",
-    height: "36px",
-    background: "#222",
-    color: "#fff",
-    border: "1px solid #333",
-    cursor: "pointer",
-    fontSize: "18px",
-  },
-
-  checkoutBtn: {
-    marginTop: "20px",
-    width: "100%",
-    padding: "15px",
-    background: "yellow",
-    color: "#000",
-    fontWeight: "bold",
-    border: "none",
-    cursor: "pointer",
-  },
-};
