@@ -230,18 +230,6 @@ export default function Home() {
           position: relative;
         }
 
-        .featured-scroll::after {
-          display: none;
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          width: 42px;
-          pointer-events: none;
-          background: linear-gradient(90deg, transparent, #000);
-        }
-
         .featured-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -332,10 +320,6 @@ export default function Home() {
             padding: 0 14px 8px 0;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
-          }
-
-          .featured-scroll::after {
-            display: block;
           }
 
           .featured-grid {
