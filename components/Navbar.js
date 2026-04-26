@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { startCheckout } from "../lib/checkout";
 
@@ -8,12 +8,15 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  useEffect(() => {
-    const loadCart = () => {
-      const c = JSON.parse(localStorage.getItem("cart")) || [];
-      setCart(c);
-    };
+  const menuRef = useRef(null);
+  const brandRef = useRef(null);
 
+  const loadCart = () => {
+    const c = JSON.parse(localStorage.getItem("cart")) || [];
+    setCart(c);
+  };
+
+  useEffect(() => {
     loadCart();
 
     const handler = () => {
@@ -26,6 +29,74 @@ export default function Navbar() {
     window.addEventListener("cartUpdated", handler);
     return () => window.removeEventListener("cartUpdated", handler);
   }, []);
+
+  useEffect(() => {
+    const handleClickAway = (e) => {
+      if (!menuOpen) return;
+
+      const clickedMenu = menuRef.current?.contains(e.target);
+      const clickedBrand = brandRef.current?.contains(e.target);
+
+      if (!clickedMenu && !clickedBrand) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickAway);
+    document.addEventListener("touchstart", handleClickAway);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickAway);
+      document.removeEventListener("touchstart", handleClickAway);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpen]);
+
+  const updateCart = (updated) => {
+    setCart(updated);
+    localStorage.setItem("cart", JSON.stringify(updated));
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  const clearCart = () => {
+    localStorage.removeItem("cart");
+    setCart([]);
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  const increaseQty = (index) => {
+    const updated = [...cart];
+    updated[index].quantity += 1;
+    updateCart(updated);
+  };
+
+  const decreaseQty = (index) => {
+    const updated = [...cart];
+
+    if (updated[index].quantity > 1) {
+      updated[index].quantity -= 1;
+    } else {
+      updated.splice(index, 1);
+    }
+
+    updateCart(updated);
+  };
+
+  const removeItem = (index) => {
+    const updated = cart.filter((_, i) => i !== index);
+    updateCart(updated);
+  };
+
+  const totalItems = useMemo(() => {
+    return cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  }, [cart]);
 
   const total = useMemo(() => {
     return cart.reduce(
@@ -54,10 +125,12 @@ export default function Navbar() {
       <header className="nav">
         <div className="brandArea">
           <button
+            ref={brandRef}
             type="button"
             className="brand brandButton"
             onClick={handleBrandClick}
             aria-label="Local Jagoff navigation"
+            aria-expanded={menuOpen}
           >
             LOCAL JAGOFF
             <span className={`arrow ${menuOpen ? "open" : ""}`} />
@@ -71,11 +144,14 @@ export default function Navbar() {
         </nav>
 
         <button className="cartTrigger" onClick={() => setOpen(true)}>
-          CART ({cart.length})
+          CART ({totalItems})
         </button>
       </header>
 
-      <div className={`mobileMenu ${menuOpen ? "menuOpen" : ""}`}>
+      <div
+        ref={menuRef}
+        className={`mobileMenu ${menuOpen ? "menuOpen" : ""}`}
+      >
         <Link href="/" onClick={() => setMenuOpen(false)}>
           HOME
         </Link>
@@ -104,32 +180,82 @@ export default function Navbar() {
 
             {cart.length === 0 && (
               <div className="emptyState">
-                <p>Your cart is empty.</p>
-                <p className="muted">Fix that, jagoff.</p>
+                <p>Cart’s empty.</p>
+                <p className="muted">Fix it, jagoff.</p>
               </div>
             )}
 
-            {cart.map((item, i) => (
-              <div key={i} className="item">
-                <img
-                  src={item.image || "/images/placeholder.jpg"}
-                  className="img"
-                  alt={item.name}
-                />
+            {cart.length > 0 && (
+              <>
+                <div className="cartItems">
+                  {cart.map((item, i) => (
+                    <div
+                      key={`${item.id}-${item.variant_id || "default"}-${i}`}
+                      className="item"
+                    >
+                      <img
+                        src={item.image || "/images/placeholder.jpg"}
+                        className="img"
+                        alt={item.name}
+                        loading="lazy"
+                        decoding="async"
+                      />
 
-                <div className="itemInfo">
-                  <p className="itemName">{item.name}</p>
+                      <div className="itemInfo">
+                        <div className="itemTop">
+                          <p className="itemName">{item.name}</p>
 
-                  {item.variant_name && (
-                    <p className="itemMeta">{item.variant_name}</p>
-                  )}
+                          <button
+                            type="button"
+                            className="removeBtn"
+                            onClick={() => removeItem(i)}
+                            aria-label="Remove item"
+                          >
+                            ✕
+                          </button>
+                        </div>
 
-                  <p className="itemMeta">
-                    ${item.price} x {item.quantity}
-                  </p>
+                        {item.variant_name && (
+                          <p className="itemMeta">
+                            Size / Option: {item.variant_name}
+                          </p>
+                        )}
+
+                        <p className="itemMeta">${item.price} each</p>
+
+                        <div className="itemBottom">
+                          <div className="drawerQty">
+                            <button
+                              type="button"
+                              onClick={() => decreaseQty(i)}
+                              aria-label="Decrease quantity"
+                            >
+                              −
+                            </button>
+                            <span>{item.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => increaseQty(i)}
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <strong className="itemTotal">
+                            ${(Number(item.price) * item.quantity).toFixed(2)}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+
+                <button type="button" className="clearCart" onClick={clearCart}>
+                  Clear cart
+                </button>
+              </>
+            )}
 
             <div className="summary">
               <div className="summaryRow">
@@ -299,14 +425,14 @@ export default function Navbar() {
           position: absolute;
           right: 0;
           top: 0;
-          width: 370px;
+          width: 390px;
           max-width: 100%;
           height: 100%;
           background:
             linear-gradient(
               180deg,
-              rgba(255, 230, 0, 0.04),
-              rgba(255, 230, 0, 0) 20%
+              rgba(255, 230, 0, 0.045),
+              rgba(255, 230, 0, 0) 22%
             ),
             #090909;
           padding: 20px 18px 24px;
@@ -347,37 +473,47 @@ export default function Navbar() {
         .emptyState {
           margin-top: 16px;
           border: 1px solid #202020;
-          background: #101010;
-          border-radius: 14px;
+          background:
+            linear-gradient(180deg, rgba(255, 230, 0, 0.04), transparent 28%),
+            #101010;
+          border-radius: 16px;
           padding: 16px;
         }
 
         .emptyState p {
           margin: 0;
+          font-weight: 800;
         }
 
         .muted {
           color: #9a9a9a;
           margin-top: 6px !important;
+          font-weight: 600 !important;
+        }
+
+        .cartItems {
+          display: grid;
+          gap: 12px;
         }
 
         .item {
           display: grid;
-          grid-template-columns: 72px 1fr;
+          grid-template-columns: 76px 1fr;
           gap: 12px;
-          margin-bottom: 14px;
           border: 1px solid #1f1f1f;
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.025);
+          border-radius: 16px;
           padding: 10px;
         }
 
         .img {
-          width: 72px;
-          height: 72px;
-          object-fit: cover;
-          border-radius: 10px;
-          background: #111;
+          width: 76px;
+          height: 76px;
+          object-fit: contain;
+          border-radius: 12px;
+          background:
+            radial-gradient(circle at top, rgba(255, 230, 0, 0.08), transparent 45%),
+            #111;
           border: 1px solid #1d1d1d;
         }
 
@@ -385,16 +521,104 @@ export default function Navbar() {
           min-width: 0;
         }
 
+        .itemTop {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          align-items: start;
+        }
+
         .itemName {
           margin: 0 0 6px;
-          font-weight: 700;
-          line-height: 1.35;
+          font-weight: 800;
+          line-height: 1.3;
+          font-size: 14px;
+        }
+
+        .removeBtn {
+          width: 24px;
+          height: 24px;
+          border: 1px solid #2a2a2a;
+          border-radius: 999px;
+          background: #111;
+          color: #888;
+          cursor: pointer;
+          font-size: 12px;
+          line-height: 1;
+        }
+
+        .removeBtn:hover {
+          color: #fff;
+          border-color: #444;
         }
 
         .itemMeta {
           margin: 0 0 4px;
           color: #bcbcbc;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+
+        .itemBottom {
+          margin-top: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .drawerQty {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #0e0e0e;
+          border: 1px solid #333;
+          border-radius: 13px;
+          padding: 4px;
+        }
+
+        .drawerQty button {
+          width: 30px;
+          height: 30px;
+          border: none;
+          border-radius: 9px;
+          background: #1c1c1c;
+          color: #fff;
+          font-size: 17px;
+          cursor: pointer;
+        }
+
+        .drawerQty button:hover {
+          background: #ffe600;
+          color: #000;
+        }
+
+        .drawerQty span {
+          min-width: 20px;
+          text-align: center;
+          font-weight: 900;
           font-size: 13px;
+        }
+
+        .itemTotal {
+          color: #ffe600;
+          font-size: 14px;
+          white-space: nowrap;
+        }
+
+        .clearCart {
+          justify-self: start;
+          margin-top: 2px;
+          border: none;
+          background: none;
+          color: #888;
+          cursor: pointer;
+          font-weight: 800;
+          padding: 8px 0;
+        }
+
+        .clearCart:hover {
+          color: #fff;
         }
 
         .summary {
@@ -418,9 +642,10 @@ export default function Navbar() {
           border: none;
           border-radius: 14px;
           color: #000;
-          font-weight: 800;
+          font-weight: 900;
           cursor: pointer;
           box-shadow: 0 10px 24px rgba(255, 230, 0, 0.16);
+          letter-spacing: 0.4px;
         }
 
         .checkoutBtn:disabled {
@@ -438,6 +663,7 @@ export default function Navbar() {
           border-radius: 12px;
           border: 1px solid #2a2a2a;
           background: #111;
+          font-weight: 800;
         }
 
         .viewCart:hover {
