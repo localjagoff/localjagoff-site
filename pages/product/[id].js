@@ -502,7 +502,7 @@ export default function ProductPage({ initialProductId }) {
             </div>
             <div>
               <strong>PITTSBURGH APPROVED</strong>
-              <span>If yinz wouldn’t wear it, we wouldn’t sell it.</span>
+              <span>Tested by jagoffs. Approved by jagoffs.</span>
             </div>
           </div>
         </section>
