@@ -313,9 +313,10 @@ export default function ProductPage({ initialProductId }) {
         <style jsx>{`
           .product-page {
             min-height: 100vh;
-            background: #000;
+            background: transparent;
             color: #fff;
           }
+          
 
           .loading-wrap {
             padding: 24px;
