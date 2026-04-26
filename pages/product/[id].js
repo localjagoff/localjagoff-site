@@ -493,12 +493,16 @@ export default function ProductPage({ initialProductId }) {
 
           <div className="trust-box">
             <div>
-              <strong>Secure checkout</strong>
-              <span>Powered by Stripe.</span>
+              <strong>NO CORPORATE BULLSH*T</strong>
+              <span>This ain’t mass-produced garbage.</span>
             </div>
             <div>
-              <strong>Local Jagoff promise</strong>
-              <span>No boring merch. No corporate personality.</span>
+              <strong>MADE WHEN YOU ORDER</strong>
+              <span>Fresh print. No dusty warehouse junk.</span>
+            </div>
+            <div>
+              <strong>PITTSBURGH APPROVED</strong>
+              <span>If yinz wouldn’t wear it, we wouldn’t sell it.</span>
             </div>
           </div>
         </section>
