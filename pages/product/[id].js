@@ -67,6 +67,15 @@ const productFallbackNames = {
   428980566: "Local Jagoff Trucker Hat",
   429208592: "Local Jagoff Keystone Hoodie",
   429536493: "Local Jagoff 412 Tee",
+  429821634: "LOCAL JAGOFF Tee"
+};
+
+const productSignals = {
+  // Hoodie example:
+  "428821578": "⚡ Moving fast",
+
+  // T-shirt example:
+  "429821634": "People keep grabbing this one.",
 };
 
 function absoluteImageUrl(path) {
@@ -104,6 +113,7 @@ export default function ProductPage({ initialProductId }) {
     productDescriptions[productId] || "Certified nonsense. Pittsburgh attitude.";
   const shareImage = absoluteImageUrl(selectedImage || fallbackImage);
   const shareUrl = `${SITE_URL}/product/${productId}`;
+  const productSignal = productSignals[productId];
 
   useEffect(() => {
     if (!id) return;
@@ -421,6 +431,13 @@ export default function ProductPage({ initialProductId }) {
               {variantLabel && <span className="selected-pill">{variantLabel}</span>}
             </div>
 
+            {productSignal && (
+              <div className="product-signal">
+                <span className="signal-dot" />
+                <span>{productSignal}</span>
+              </div>
+            )}
+
             <p className="description">
               {productDescriptions[product.id] || "Local Jagoff merch."}
             </p>
@@ -488,7 +505,7 @@ export default function ProductPage({ initialProductId }) {
           </button>
 
           <button type="button" className="secondary-btn" onClick={handleShare}>
-            {copied ? "COPIED, JAGOFF" : "SHARE TO A JAGOFF"}
+            {copied ? "COPIED, JAGOFF" : "SEND THIS TO A JAGOFF"}
           </button>
 
           <div className="trust-box">
@@ -621,10 +638,6 @@ export default function ProductPage({ initialProductId }) {
           align-items: center;
           justify-content: center;
           padding-bottom: 6px;
-          transition:
-            background 0.15s ease,
-            transform 0.15s ease,
-            border-color 0.15s ease;
         }
 
         .gallery-arrow:hover {
@@ -662,10 +675,6 @@ export default function ProductPage({ initialProductId }) {
           padding: 4px;
           cursor: pointer;
           flex: 0 0 auto;
-          transition:
-            border-color 0.15s ease,
-            transform 0.15s ease,
-            opacity 0.15s ease;
           opacity: 0.78;
         }
 
@@ -713,7 +722,7 @@ export default function ProductPage({ initialProductId }) {
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
-          margin: 16px 0 14px;
+          margin: 16px 0 10px;
         }
 
         .price {
@@ -733,6 +742,33 @@ export default function ProductPage({ initialProductId }) {
           background: rgba(255, 255, 255, 0.04);
           font-size: 12px;
           font-weight: 800;
+        }
+
+        .product-signal {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 16px;
+          padding: 9px 12px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 230, 0, 0.35);
+          background:
+            radial-gradient(circle at left center, rgba(255, 230, 0, 0.16), transparent 58%),
+            rgba(255, 255, 255, 0.035);
+          color: #ffe600;
+          font-size: 13px;
+          font-weight: 900;
+          letter-spacing: 0.2px;
+          box-shadow: 0 10px 22px rgba(255, 230, 0, 0.08);
+        }
+
+        .signal-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #ffe600;
+          box-shadow: 0 0 14px rgba(255, 230, 0, 0.75);
+          flex: 0 0 auto;
         }
 
         .description {
@@ -816,9 +852,6 @@ export default function ProductPage({ initialProductId }) {
           color: #fff;
           font-size: 20px;
           cursor: pointer;
-          transition:
-            background 0.15s ease,
-            color 0.15s ease;
         }
 
         .qty-btn:hover {
@@ -868,10 +901,6 @@ export default function ProductPage({ initialProductId }) {
           letter-spacing: 0.7px;
           box-shadow: 0 12px 26px rgba(255, 230, 0, 0.2);
           margin-bottom: 10px;
-          transition:
-            transform 0.15s ease,
-            filter 0.15s ease,
-            box-shadow 0.15s ease;
         }
 
         .primary-btn:hover {
@@ -891,10 +920,6 @@ export default function ProductPage({ initialProductId }) {
           padding: 16px 18px;
           cursor: pointer;
           letter-spacing: 0.5px;
-          transition:
-            border-color 0.15s ease,
-            color 0.15s ease,
-            background 0.15s ease;
         }
 
         .secondary-btn:hover {
@@ -994,6 +1019,12 @@ export default function ProductPage({ initialProductId }) {
 
           .description {
             font-size: 15px;
+          }
+
+          .product-signal {
+            margin-bottom: 14px;
+            font-size: 13px;
+            padding: 9px 11px;
           }
 
           .purchase-row {
