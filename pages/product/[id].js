@@ -509,7 +509,7 @@ export default function ProductPage({ initialProductId }) {
 
           <div className="trust-box">
             <div>
-              <strong>NO CORPORATE BULLSH*T</strong>
+              <strong>NO CORPORATE BULLSHIT</strong>
               <span>This ain’t mass-produced garbage.</span>
             </div>
             <div>
