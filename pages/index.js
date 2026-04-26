@@ -3,6 +3,7 @@ import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 import { getProductImages, getProductThumbnail } from "../lib/getProductImages";
+import { sortProducts } from "../lib/productSort";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -24,10 +25,10 @@ export default function Home() {
       .catch(() => setProducts([]));
   }, []);
 
-  const tees = products.filter((p) => p.category === "tees");
-  const hoodies = products.filter((p) => p.category === "hoodies");
-  const hats = products.filter((p) => p.category === "hats");
-  const other = products.filter((p) => p.category === "other");
+  const tees = sortProducts(products.filter((p) => p.category === "tees"));
+  const hoodies = sortProducts(products.filter((p) => p.category === "hoodies"));
+  const hats = sortProducts(products.filter((p) => p.category === "hats"));
+  const other = sortProducts(products.filter((p) => p.category === "other"));
 
   return (
     <div className="page-shell">
@@ -35,10 +36,7 @@ export default function Home() {
 
       <div className="banner-shell">
         <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet="/images/banner-mobile.jpg"
-          />
+          <source media="(max-width: 768px)" srcSet="/images/banner-mobile.jpg" />
           <img src="/images/banner.jpg" alt="Local Jagoff Banner" />
         </picture>
       </div>
@@ -46,7 +44,7 @@ export default function Home() {
       <section className="section-wrap">
         <div className="section-head">
           <div>
-            <p className="section-kicker">REP THE 412</p>
+            <p className="section-kicker">NO BORING SHIRTS</p>
             <h2>T-Shirts</h2>
           </div>
         </div>
@@ -60,7 +58,7 @@ export default function Home() {
       <section className="section-wrap">
         <div className="section-head">
           <div>
-            <p className="section-kicker">HEAVY HITTERS</p>
+            <p className="section-kicker">COLD WEATHER, STILL A JAGOFF</p>
             <h2>Hoodies</h2>
           </div>
         </div>
@@ -74,7 +72,7 @@ export default function Home() {
       <section className="section-wrap">
         <div className="section-head">
           <div>
-            <p className="section-kicker">TOP IT OFF</p>
+            <p className="section-kicker">PUT SOMETHIN ON YOUR HEAD</p>
             <h2>Hats</h2>
           </div>
         </div>
@@ -89,7 +87,7 @@ export default function Home() {
         <section className="section-wrap">
           <div className="section-head">
             <div>
-              <p className="section-kicker">MISC JAGOFFERY</p>
+              <p className="section-kicker">RANDOM JAGOFFERY</p>
               <h2>Other Gear</h2>
             </div>
           </div>
