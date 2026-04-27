@@ -49,8 +49,7 @@ export default function Home() {
       {featured.length > 0 && (
         <section className="featured-wrap">
           <div className="section-head">
-            <div>
-              <p className="section-kicker">STUFF WORTH CLICKING</p>
+            <div>              
               <h2>Featured Picks</h2>
             </div>
             <p className="mobile-scroll-hint">Swipe →</p>
