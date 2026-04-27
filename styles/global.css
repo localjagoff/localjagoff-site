@@ -8,6 +8,7 @@ body {
   color: #fff;
   font-family: "Inter", sans-serif;
   min-height: 100vh;
+  overflow-y: auto;
   background:
     linear-gradient(160deg, rgba(255, 230, 0, 0.13) 0%, rgba(20, 18, 0, 0.12) 24%, transparent 52%),
     linear-gradient(20deg, rgba(255, 230, 0, 0.09) 0%, rgba(18, 16, 0, 0.1) 28%, transparent 58%),
@@ -27,7 +28,7 @@ body {
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;  
+  overflow-x: hidden;
 }
 
 h1,
