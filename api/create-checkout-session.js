@@ -1,55 +1,27 @@
 const Stripe = require("stripe");
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const STORE_ID = "18032822";
-
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  try {
-    const { items } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Invalid items" });
-    }
-
-    const siteUrl = req.headers.origin || "https://www.localjagoff.com";
-
-    const makeAbsoluteImageUrl = (image) => {
-      if (!image || typeof image !== "string") return null;
-
-      if (image.startsWith("http://") || image.startsWith("https://")) {
-        return image;
-      }
-
-      if (image.startsWith("/")) {
-        return `${siteUrl}${image}`;
-      }
-
-      return `${siteUrl}/${image}`;
-    };
-
     const line_items = items.map((item) => {
       const imageUrl = makeAbsoluteImageUrl(item.image);
+      const cleanName = item.name || "Local Jagoff Item";
+      const cleanVariant = item.variant_name || "";
+      const quantity = item.quantity || 1;
 
       return {
         price_data: {
           currency: "usd",
           product_data: {
-            name: item.variant_name
-              ? `${item.name} - ${item.variant_name}`
-              : item.name,
+            name: cleanName,
+            description: cleanVariant
+              ? `Size / Option: ${cleanVariant} • Quantity: ${quantity}`
+              : `Quantity: ${quantity}`,
             images: imageUrl ? [imageUrl] : [],
           },
           unit_amount: Math.round(parseFloat(item.price) * 100),
         },
-        quantity: item.quantity || 1,
+        quantity,
       };
     });
 
+    // Metadata for Printful webhook (DO NOT TOUCH)
     const printfulMetadataItems = items.map((item) => ({
       product_id: item.id,
       sync_variant_id: item.variant_id,
