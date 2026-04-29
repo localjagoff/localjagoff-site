@@ -68,8 +68,6 @@ export default async function handler(req, res) {
     }));
 
     const orderPayload = {
-      external_id: session.id,
-
       recipient: {
         name: customer.name,
         address1: customer.address.line1,
