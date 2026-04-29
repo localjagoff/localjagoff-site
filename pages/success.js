@@ -1,13 +1,20 @@
+
+import { useEffect } from "react";
 import Link from "next/link";
 
 export default function SuccessPage() {
+  useEffect(() => {
+    localStorage.removeItem("cart");
+    window.dispatchEvent(new Event("cartUpdated"));
+  }, []);
+
   return (
     <div style={styles.container}>
       <div style={styles.box}>
         <h1 style={styles.title}>ORDER RECEIVED</h1>
 
         <p style={styles.subtitle}>
-          You're officially less of a jagoff now.
+          You're officially now.
         </p>
 
         <p style={styles.text}>
@@ -59,28 +66,4 @@ const styles = {
   },
 
   subtitle: {
-    color: "yellow",
-    marginBottom: "20px",
-  },
-
-  text: {
-    marginBottom: "15px",
-    color: "#ccc",
-  },
-
-  note: {
-    marginTop: "20px",
-    fontSize: "14px",
-    color: "#888",
-  },
-
-  button: {
-    display: "inline-block",
-    marginTop: "30px",
-    padding: "12px 24px",
-    backgroundColor: "yellow",
-    color: "#000",
-    fontWeight: "bold",
-    textDecoration: "none",
-  },
 };
