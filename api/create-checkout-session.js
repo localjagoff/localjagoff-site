@@ -16,22 +16,40 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "Invalid items" });
     }
 
-    // 🔥 FIX 1: Add product images to Stripe
-    const line_items = items.map((item) => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.variant_name
-            ? `${item.name} - ${item.variant_name}`
-            : item.name,
-          images: item.image ? [item.image] : [], // IMPORTANT
-        },
-        unit_amount: Math.round(parseFloat(item.price) * 100),
-      },
-      quantity: item.quantity || 1,
-    }));
+    const siteUrl = req.headers.origin || "https://www.localjagoff.com";
 
-    // Metadata for Printful webhook (DO NOT TOUCH)
+    const makeAbsoluteImageUrl = (image) => {
+      if (!image || typeof image !== "string") return null;
+
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+
+      if (image.startsWith("/")) {
+        return `${siteUrl}${image}`;
+      }
+
+      return `${siteUrl}/${image}`;
+    };
+
+    const line_items = items.map((item) => {
+      const imageUrl = makeAbsoluteImageUrl(item.image);
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.variant_name
+              ? `${item.name} - ${item.variant_name}`
+              : item.name,
+            images: imageUrl ? [imageUrl] : [],
+          },
+          unit_amount: Math.round(parseFloat(item.price) * 100),
+        },
+        quantity: item.quantity || 1,
+      };
+    });
+
     const printfulMetadataItems = items.map((item) => ({
       product_id: item.id,
       sync_variant_id: item.variant_id,
@@ -43,18 +61,16 @@ module.exports = async function handler(req, res) {
       line_items,
       mode: "payment",
 
-      // 🔥 Shipping address collection
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
 
-      // 🔥 FIX 2: Add shipping cost
       shipping_options: [
         {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: 599, // $5.99 shipping
+              amount: 599,
               currency: "usd",
             },
             display_name: "Standard Shipping",
@@ -75,13 +91,16 @@ module.exports = async function handler(req, res) {
         items: JSON.stringify(printfulMetadataItems),
       },
 
-      success_url: `${req.headers.origin}/success`,
-      cancel_url: `${req.headers.origin}/cart`,
+      success_url: `${siteUrl}/success`,
+      cancel_url: `${siteUrl}/cart`,
     });
 
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("Stripe checkout error:", err);
-    return res.status(500).json({ error: "Checkout failed" });
+    return res.status(500).json({
+      error: "Checkout failed",
+      message: err.message,
+    });
   }
 };
