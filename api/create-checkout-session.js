@@ -32,9 +32,11 @@ const Stripe = require("stripe");
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
+      
+      allow_promotion_codes: true,
 
       shipping_address_collection: {
-        allowed_countries: ["US"],
+      allowed_countries: ["US"],
       },
 
       shipping_options: [
