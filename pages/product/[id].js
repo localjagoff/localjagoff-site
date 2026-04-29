@@ -449,9 +449,44 @@ export default function ProductPage({ initialProductId }) {
               </div>
             )}
 
-            <p className="description">
-              {productDescriptions[product.id] || "Local Jagoff merch."}
-            </p>
+            {product?.category === "tees" ? (
+              <div className="premium-tee-description">
+                <p className="premium-lead">Not your average throwaway tee.</p>
+
+                <p className="premium-copy">
+                  This is a premium, soft-washed shirt made from 100% combed
+                  ring-spun cotton — meaning it actually feels good the second
+                  you put it on and holds up after real wear.
+                </p>
+
+                <p className="premium-punch">
+                  No stiff fabric. No cheap prints. No weird fit.
+                </p>
+
+                <ul className="premium-list">
+                  <li>Ultra-soft feel with a smooth finish</li>
+                  <li>Durable print that won’t crack after a couple washes</li>
+                  <li>True-to-size fit — not boxy, not slim nonsense</li>
+                  <li>
+                    Midweight 5.5 oz fabric — not thin, not heavy, right where
+                    it should be
+                  </li>
+                  <li>Side-seamed construction for a better shape</li>
+                </ul>
+
+                <p className="premium-copy">
+                  Built for everyday wear — not just one good photo.
+                </p>
+
+                <p className="premium-tagline">
+                  Tested by jagoffs. Approved by jagoffs.
+                </p>
+              </div>
+            ) : (
+              <p className="description">
+                {productDescriptions[product.id] || "Local Jagoff merch."}
+              </p>
+            )}
           </div>
 
           <div className="divider" />
@@ -784,6 +819,75 @@ export default function ProductPage({ initialProductId }) {
           line-height: 1.55;
           margin: 0;
           font-size: 15px;
+        }
+
+        .premium-tee-description {
+          margin-top: 16px;
+          padding: 18px;
+          border: 1px solid #252525;
+          border-radius: 18px;
+          background:
+            linear-gradient(180deg, rgba(255, 230, 0, 0.05), rgba(255, 230, 0, 0) 32%),
+            rgba(255, 255, 255, 0.025);
+        }
+
+        .premium-lead {
+          margin: 0 0 10px;
+          color: #fff;
+          font-size: 18px;
+          font-weight: 900;
+          line-height: 1.25;
+        }
+
+        .premium-copy {
+          margin: 0 0 12px;
+          color: #cfcfcf;
+          font-size: 15px;
+          line-height: 1.55;
+        }
+
+        .premium-punch {
+          margin: 0 0 14px;
+          color: #fff;
+          font-size: 15px;
+          font-weight: 900;
+          line-height: 1.45;
+        }
+
+        .premium-list {
+          display: grid;
+          gap: 9px;
+          margin: 14px 0 14px;
+          padding: 0;
+          list-style: none;
+        }
+
+        .premium-list li {
+          position: relative;
+          padding-left: 20px;
+          color: #e7e7e7;
+          font-size: 14px;
+          line-height: 1.45;
+        }
+
+        .premium-list li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0.62em;
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: #ffe600;
+          box-shadow: 0 0 12px rgba(255, 230, 0, 0.45);
+        }
+
+        .premium-tagline {
+          margin: 16px 0 0;
+          color: #ffe600;
+          font-size: 15px;
+          font-weight: 900;
+          line-height: 1.4;
         }
 
         .divider {
