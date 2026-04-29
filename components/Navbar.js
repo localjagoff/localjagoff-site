@@ -271,21 +271,23 @@ export default function Navbar() {
                 CHECKOUT
               </button>
 
-              <Link
-                href="/cart"
-                className="viewCart"
-                onClick={() => setOpen(false)}
-              >
-                View Cart
-              </Link>
+              <div className="drawerLinks">
+                <Link
+                  href="/cart"
+                  className="viewCart"
+                  onClick={() => setOpen(false)}
+                >
+                  View Cart
+                </Link>
 
-              <Link
-                href="/"
-                className="continueShopping"
-                onClick={() => setOpen(false)}
-              >
-                ← Continue Shopping
-              </Link>
+                <Link
+                  href="/"
+                  className="continueShopping"
+                  onClick={() => setOpen(false)}
+                >
+                  Continue Shopping
+                </Link>
+              </div>
             </div>
           </aside>
         </div>
@@ -657,40 +659,62 @@ export default function Navbar() {
         }
 
         .checkoutBtn:disabled {
-          opacity: 0.5;
+          opacity: 0.46;
           cursor: not-allowed;
           box-shadow: none;
         }
 
-        .viewCart {
-          display: block;
-          margin-top: 10px;
-          text-align: center;
-          color: #cfcfcf;
-          padding: 12px;
-          border-radius: 12px;
-          border: 1px solid #2a2a2a;
-          background: #111;
-          font-weight: 800;
+        .drawerLinks {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 12px;
         }
 
-        .viewCart:hover {
-          color: #ffe600;
-          border-color: rgba(255, 230, 0, 0.45);
+        .viewCart,
+        .continueShopping {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 46px;
+          text-align: center;
+          border-radius: 14px;
+          font-weight: 900;
+          font-size: 14px;
+          line-height: 1.1;
+          transition:
+            color 0.15s ease,
+            border-color 0.15s ease,
+            background 0.15s ease,
+            transform 0.15s ease;
+        }
+
+        .viewCart {
+          color: #fff;
+          border: 1px solid rgba(255, 230, 0, 0.38);
+          background: rgba(255, 230, 0, 0.07);
         }
 
         .continueShopping {
-          display: block;
-          margin-top: 10px;
-          text-align: center;
-          color: #aaa;
-          padding: 10px;
-          border-radius: 12px;
-          font-weight: 800;
+          color: #cfcfcf;
+          border: 1px solid #2a2a2a;
+          background: rgba(255, 255, 255, 0.035);
+        }
+
+        .viewCart:hover,
+        .continueShopping:hover {
+          transform: translateY(-1px);
+        }
+
+        .viewCart:hover {
+          color: #000;
+          border-color: #ffe600;
+          background: #ffe600;
         }
 
         .continueShopping:hover {
           color: #ffe600;
+          border-color: rgba(255, 230, 0, 0.45);
           background: rgba(255, 230, 0, 0.04);
         }
 
@@ -738,6 +762,15 @@ export default function Navbar() {
 
           h2 {
             font-size: 24px;
+          }
+
+          .drawerLinks {
+            grid-template-columns: 1fr;
+          }
+
+          .viewCart,
+          .continueShopping {
+            min-height: 48px;
           }
         }
       `}</style>
