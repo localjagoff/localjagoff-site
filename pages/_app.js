@@ -2,6 +2,9 @@ import "../styles/global.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
 
+const SITE_URL = "https://www.localjagoff.com";
+const SOCIAL_IMAGE = `${SITE_URL}/images/social-share.jpg`;
+
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const isProductPage = router.pathname === "/product/[id]";
@@ -32,16 +35,16 @@ export default function App({ Component, pageProps }) {
               content="Pittsburgh attitude. No corporate nonsense."
               key="og:description"
             />
+            <meta property="og:image" content={SOCIAL_IMAGE} key="og:image" />
             <meta
-              property="og:image"
-              content="https://www.localjagoff.com/images/banner.jpg"
-              key="og:image"
+              property="og:image:secure_url"
+              content={SOCIAL_IMAGE}
+              key="og:image:secure_url"
             />
-            <meta
-              property="og:url"
-              content="https://www.localjagoff.com"
-              key="og:url"
-            />
+            <meta property="og:image:width" content="1200" key="og:image:width" />
+            <meta property="og:image:height" content="630" key="og:image:height" />
+            <meta property="og:image:alt" content="Local Jagoff" key="og:image:alt" />
+            <meta property="og:url" content={SITE_URL} key="og:url" />
             <meta property="og:type" content="website" key="og:type" />
 
             <meta
@@ -59,11 +62,7 @@ export default function App({ Component, pageProps }) {
               content="Pittsburgh attitude. No corporate nonsense."
               key="twitter:description"
             />
-            <meta
-              name="twitter:image"
-              content="https://www.localjagoff.com/images/banner.jpg"
-              key="twitter:image"
-            />
+            <meta name="twitter:image" content={SOCIAL_IMAGE} key="twitter:image" />
           </>
         )}
 
