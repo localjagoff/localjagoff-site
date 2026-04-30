@@ -78,9 +78,10 @@ const productSignals = {
 };
 
 function absoluteImageUrl(path) {
-  if (!path) return `${SITE_URL}/images/banner.jpg`;
-  if (path.startsWith("http")) return path;
-  return `${SITE_URL}${path}`;
+  if (!path) return `${SITE_URL}/images/social-share.jpg`;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/")) return `${SITE_URL}${path}`;
+  return `${SITE_URL}/${path}`;
 }
 
 export default function ProductPage({ initialProductId }) {
@@ -100,11 +101,11 @@ export default function ProductPage({ initialProductId }) {
 
   const fallbackProductForImages = {
     id: productId,
-    thumbnail_url: "/images/banner.jpg",
+    thumbnail_url: "/images/social-share.jpg",
   };
 
   const fallbackImage =
-    getProductImages(fallbackProductForImages)[0] || "/images/banner.jpg";
+    getProductImages(fallbackProductForImages)[0] || "/images/social-share.jpg";
 
   const shareTitle =
     product?.name || productFallbackNames[productId] || "Local Jagoff";
@@ -232,7 +233,11 @@ export default function ProductPage({ initialProductId }) {
         name: product.name,
         price: displayedPrice,
         quantity,
-        image: selectedImage || images[0],
+        image:
+          (selectedImage || images[0]) &&
+          (selectedImage || images[0]).startsWith("http")
+            ? selectedImage || images[0]
+            : `${window.location.origin}${selectedImage || images[0]}`,
       });
     }
 
@@ -279,7 +284,7 @@ export default function ProductPage({ initialProductId }) {
         <Head>
           <title>{shareTitle} | Local Jagoff</title>
           <meta name="description" content={shareDescription} key="description" />
-          <meta property="og:title" content={shareTitle} key="og:title" />
+          <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
           <meta
             property="og:description"
             content={shareDescription}
@@ -289,6 +294,7 @@ export default function ProductPage({ initialProductId }) {
           <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
           <meta property="og:image:width" content="1200" key="og:image:width" />
           <meta property="og:image:height" content="1200" key="og:image:height" />
+          <meta property="og:image:alt" content={shareTitle} key="og:image:alt" />
           <meta property="og:url" content={shareUrl} key="og:url" />
           <meta property="og:type" content="product" key="og:type" />
           <meta
@@ -296,7 +302,7 @@ export default function ProductPage({ initialProductId }) {
             content="summary_large_image"
             key="twitter:card"
           />
-          <meta name="twitter:title" content={shareTitle} key="twitter:title" />
+          <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
           <meta name="twitter:description" content={shareDescription} key="twitter:description" />
           <meta name="twitter:image" content={shareImage} key="twitter:image" />
         </Head>
@@ -352,7 +358,7 @@ export default function ProductPage({ initialProductId }) {
       <Head>
         <title>{shareTitle} | Local Jagoff</title>
         <meta name="description" content={shareDescription} key="description" />
-        <meta property="og:title" content={shareTitle} key="og:title" />
+        <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
         <meta
           property="og:description"
           content={shareDescription}
@@ -369,7 +375,7 @@ export default function ProductPage({ initialProductId }) {
           content="summary_large_image"
           key="twitter:card"
         />
-        <meta name="twitter:title" content={shareTitle} key="twitter:title" />
+        <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
         <meta name="twitter:description" content={shareDescription} key="twitter:description" />
         <meta name="twitter:image" content={shareImage} key="twitter:image" />
       </Head>
