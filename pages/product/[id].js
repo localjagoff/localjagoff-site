@@ -37,9 +37,7 @@ const productDescriptions = {
     "Front and back print that actually hits. Not subtle. Not supposed to be.",
   428851513:
     "Different angle, same attitude. 412 sideways but still loud.",
-  428550417:
-    "You know exactly what this means. No explanation needed.",
-  428821578:
+    428821578:
     "Warm hoodie. Cold attitude. Perfect for when Pittsburgh does its thing.",
   428851907:
     "Throw it on and go. Clean, simple, does the job.",
@@ -58,8 +56,7 @@ const productDescriptions = {
 const productFallbackNames = {
   428851698: "Local Jagoff Keystone 412 Tee",
   428851608: "Local Jagoff Steel City Front and Back Tee",
-  428851513: "Local Jagoff 412 Sideways Tee",
-  428550417: "Certified Jagoff T-Shirt",
+  428851513: "Local Jagoff 412 Sideways Tee",  
   428821578: "Pittsburgh Local Jagoff Keystone Hoodie",
   428851907: "Local Jagoff Trucker Cap",
   428983169: "Local Jagoff Keystone 412 Hoodie",
