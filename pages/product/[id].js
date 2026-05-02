@@ -334,7 +334,8 @@ export default function ProductPage({ initialProductId }) {
             border: 1px solid #222;
             border-radius: 18px;
             padding: 24px;
-            background: #111;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(2px);
           }
 
           .loading-kicker {
@@ -601,9 +602,10 @@ export default function ProductPage({ initialProductId }) {
           width: 100%;
           min-width: 0;
           background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.045), rgba(255, 230, 0, 0) 24%),
-            rgba(17, 17, 17, 0.96);
-          border: 1px solid #242424;
+            linear-gradient(180deg, rgba(255, 230, 0, 0.055), rgba(255, 230, 0, 0) 28%),
+            rgba(17, 17, 17, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(2px);
           border-radius: 22px;
           padding: 18px;
           box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
