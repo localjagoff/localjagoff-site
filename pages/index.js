@@ -183,9 +183,7 @@ export default function Home() {
           inset: 0;
           z-index: 0;
           pointer-events: none;
-          background:
-            radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 38%),
-            linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.34));
+          background: transparent;
         }
 
         .banner-shell::after {
@@ -197,7 +195,7 @@ export default function Home() {
           height: 92px;
           z-index: 2;
           pointer-events: none;
-          background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.58));
+          background: transparent;
         }
 
         .banner-shell picture {
