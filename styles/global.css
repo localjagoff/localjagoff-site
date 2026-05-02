@@ -130,12 +130,13 @@ select {
 
   body::before {
     background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.68)),
       radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
       url("/images/site-bg-mobile.jpg"),
       #000;
-    background-size: auto, cover, auto;
-    background-position: center top, center top, center top;
-    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-size: auto, auto, cover, auto;
+    background-position: center top, center top, center top, center top;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
   }
 
   h1 {
