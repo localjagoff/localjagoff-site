@@ -124,9 +124,9 @@ select {
       radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
       url("/images/site-bg-mobile.jpg"),
       #000;
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
+    background-size: auto, auto, 100% auto, auto;
+    background-position: center top, center top, center top, 0 0;
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
     background-attachment: scroll;
   }
 
