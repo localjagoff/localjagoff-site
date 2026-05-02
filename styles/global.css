@@ -9,25 +9,15 @@ body {
   font-family: "Inter", sans-serif;
   min-height: 100vh;
   overflow-y: auto;
-  background: #000;
-  position: relative;
-  z-index: 0;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.72)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55)),
     radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 42%),
     url("/images/site-bg.jpg"),
     #000;
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 #__next {
@@ -128,15 +118,16 @@ select {
     background: #000;
   }
 
-  body::before {
+  body {
     background:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.78)),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.58)),
       radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
       url("/images/site-bg-mobile.jpg"),
       #000;
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
+    background-attachment: scroll;
   }
 
   h1 {
