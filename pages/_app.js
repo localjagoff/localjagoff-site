@@ -1,6 +1,7 @@
 import "../styles/global.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { Analytics } from "@vercel/analytics/next";
 
 const SITE_URL = "https://www.localjagoff.com";
 const SOCIAL_IMAGE = `${SITE_URL}/images/social-share.jpg`;
@@ -71,6 +72,7 @@ export default function App({ Component, pageProps }) {
       </Head>
 
       <Component {...pageProps} />
+      <Analytics />
     </>
   );
 }
