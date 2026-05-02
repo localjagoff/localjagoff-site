@@ -351,25 +351,22 @@ export default function Home() {
 
         @media (max-width: 768px) {
           .banner-shell {
-            max-height: 440px;
+            max-height: none;
           }
 
           .banner-shell::before {
-            background:
-              radial-gradient(circle at center, rgba(255, 230, 0, 0.06), transparent 40%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.28));
+            background: transparent;
           }
 
           .banner-shell::after {
-            height: 64px;
-            background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.52));
+            background: transparent;
           }
 
           .banner-shell img {
             width: 100%;
-            height: 440px;
-            max-height: 440px;
-            object-fit: cover;
+            height: auto;
+            max-height: none;
+            object-fit: contain;
             object-position: center top;
           }
 
