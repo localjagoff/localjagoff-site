@@ -9,6 +9,17 @@ body {
   font-family: "Inter", sans-serif;
   min-height: 100vh;
   overflow-y: auto;
+  background: #000;
+  position: relative;
+  z-index: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.72)),
     radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 42%),
@@ -17,7 +28,6 @@ body {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
 }
 
 #__next {
@@ -118,7 +128,7 @@ select {
     background: #000;
   }
 
-  body {
+  body::before {
     background:
       linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.78)),
       radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
@@ -127,7 +137,6 @@ select {
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    background-attachment: scroll;
   }
 
   h1 {
