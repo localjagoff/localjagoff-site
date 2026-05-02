@@ -169,11 +169,41 @@ export default function Home() {
         }
 
         .banner-shell {
+          position: relative;
           width: 100%;
           margin: 0;
           padding: 0;
-          background: #000;
+          background: transparent;
           overflow: hidden;
+        }
+
+        .banner-shell::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 38%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.34));
+        }
+
+        .banner-shell::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -1px;
+          height: 92px;
+          z-index: 2;
+          pointer-events: none;
+          background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.58));
+        }
+
+        .banner-shell picture {
+          position: relative;
+          z-index: 1;
+          display: block;
         }
 
         .banner-shell img {
@@ -184,6 +214,7 @@ export default function Home() {
           object-position: center;
           display: block;
           margin: 0 auto;
+          filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.48));
         }
 
         .featured-wrap {
