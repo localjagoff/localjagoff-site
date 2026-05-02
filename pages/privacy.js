@@ -41,7 +41,7 @@ export default function Privacy() {
 }
 
 const styles = {
-  page: { background: "#000", minHeight: "100vh" },
+  page: { background: "transparent", minHeight: "100vh" },
   container: {
     maxWidth: "800px",
     margin: "0 auto",
