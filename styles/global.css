@@ -10,9 +10,13 @@ body {
   min-height: 100vh;
   overflow-y: auto;
   background:
-    linear-gradient(160deg, rgba(255, 230, 0, 0.13) 0%, rgba(20, 18, 0, 0.12) 24%, transparent 52%),
-    linear-gradient(20deg, rgba(255, 230, 0, 0.09) 0%, rgba(18, 16, 0, 0.1) 28%, transparent 58%),
-    linear-gradient(180deg, #090900 0%, #000000 42%, #090900 100%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.72)),
+    radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 42%),
+    url("/images/site-bg.jpg"),
+    #000;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
@@ -116,9 +120,13 @@ select {
 
   body {
     background:
-      linear-gradient(160deg, rgba(255, 230, 0, 0.12) 0%, rgba(18, 16, 0, 0.12) 30%, transparent 62%),
-      linear-gradient(20deg, rgba(255, 230, 0, 0.08) 0%, rgba(18, 16, 0, 0.1) 36%, transparent 68%),
-      linear-gradient(180deg, #080800 0%, #000000 48%, #080800 100%);
+      linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.78)),
+      radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
+      url("/images/site-bg-mobile.jpg"),
+      #000;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
     background-attachment: scroll;
   }
 
