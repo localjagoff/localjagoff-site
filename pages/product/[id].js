@@ -37,7 +37,9 @@ const productDescriptions = {
     "Front and back print that actually hits. Not subtle. Not supposed to be.",
   428851513:
     "Different angle, same attitude. 412 sideways but still loud.",
-    428821578:
+  428550417:
+    "You know exactly what this means. No explanation needed.",
+  428821578:
     "Warm hoodie. Cold attitude. Perfect for when Pittsburgh does its thing.",
   428851907:
     "Throw it on and go. Clean, simple, does the job.",
@@ -56,7 +58,8 @@ const productDescriptions = {
 const productFallbackNames = {
   428851698: "Local Jagoff Keystone 412 Tee",
   428851608: "Local Jagoff Steel City Front and Back Tee",
-  428851513: "Local Jagoff 412 Sideways Tee",  
+  428851513: "Local Jagoff 412 Sideways Tee",
+  428550417: "Certified Jagoff T-Shirt",
   428821578: "Pittsburgh Local Jagoff Keystone Hoodie",
   428851907: "Local Jagoff Trucker Cap",
   428983169: "Local Jagoff Keystone 412 Hoodie",
@@ -93,6 +96,7 @@ export default function ProductPage({ initialProductId }) {
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const [added, setAdded] = useState(false);
+  const [imageZoomOpen, setImageZoomOpen] = useState(false);
 
   const touchStartX = useRef(null);
 
@@ -139,6 +143,19 @@ export default function ProductPage({ initialProductId }) {
       })
       .catch(() => setProduct(null));
   }, [id]);
+
+  useEffect(() => {
+    if (!imageZoomOpen) return;
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setImageZoomOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [imageZoomOpen]);
 
   const images = useMemo(() => {
     if (!product) return [fallbackImage];
@@ -245,6 +262,14 @@ export default function ProductPage({ initialProductId }) {
     setTimeout(() => setAdded(false), 1600);
   };
 
+  const openImageZoom = () => {
+    if (typeof window === "undefined") return;
+
+    if (window.innerWidth <= 768) {
+      setImageZoomOpen(true);
+    }
+  };
+
   const handleShare = async () => {
     if (!product) return;
 
@@ -331,8 +356,7 @@ export default function ProductPage({ initialProductId }) {
             border: 1px solid #222;
             border-radius: 18px;
             padding: 24px;
-            background: rgba(17, 17, 17, 0.9);
-            backdrop-filter: blur(2px);
+            background: #111;
           }
 
           .loading-kicker {
@@ -396,6 +420,7 @@ export default function ProductPage({ initialProductId }) {
               src={selectedImage || images[0]}
               alt={product.name}
               className="main-image"
+              onClick={openImageZoom}
             />
 
             {images.length > 1 && (
@@ -575,6 +600,28 @@ export default function ProductPage({ initialProductId }) {
         </section>
       </main>
 
+      {imageZoomOpen && (
+        <div
+          className="image-lightbox"
+          onClick={() => setImageZoomOpen(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Close enlarged product image"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setImageZoomOpen(false);
+            }
+          }}
+        >
+          <img
+            src={selectedImage || images[0]}
+            alt={product.name}
+            className="image-lightbox-img"
+          />
+          <p className="image-lightbox-hint">Tap image to close</p>
+        </div>
+      )}
+
       <style jsx>{`
         .product-page {
           min-height: 100vh;
@@ -599,10 +646,9 @@ export default function ProductPage({ initialProductId }) {
           width: 100%;
           min-width: 0;
           background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.055), rgba(255, 230, 0, 0) 28%),
-            rgba(17, 17, 17, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(2px);
+            linear-gradient(180deg, rgba(255, 230, 0, 0.045), rgba(255, 230, 0, 0) 24%),
+            rgba(17, 17, 17, 0.96);
+          border: 1px solid #242424;
           border-radius: 22px;
           padding: 18px;
           box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
@@ -1071,6 +1117,46 @@ export default function ProductPage({ initialProductId }) {
           line-height: 1.35;
         }
 
+        .image-lightbox {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          padding: 18px;
+          background: rgba(0, 0, 0, 0.88);
+          backdrop-filter: blur(4px);
+          cursor: zoom-out;
+        }
+
+        .image-lightbox-img {
+          width: 100%;
+          max-width: 96vw;
+          max-height: 84vh;
+          object-fit: contain;
+          border-radius: 18px;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+          background: #0b0b0b;
+        }
+
+        .image-lightbox-hint {
+          position: fixed;
+          left: 50%;
+          bottom: 22px;
+          transform: translateX(-50%);
+          margin: 0;
+          padding: 8px 12px;
+          border: 1px solid rgba(255, 230, 0, 0.35);
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.72);
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.7px;
+          white-space: nowrap;
+        }
+
         @media (max-width: 980px) {
           .product-layout {
             grid-template-columns: 1fr;
@@ -1123,6 +1209,11 @@ export default function ProductPage({ initialProductId }) {
             height: 100%;
             object-fit: contain;
             object-position: center;
+            cursor: zoom-in;
+          }
+
+          .image-lightbox {
+            display: flex;
           }
 
           h1 {
