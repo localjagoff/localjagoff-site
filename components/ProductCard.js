@@ -39,9 +39,11 @@ export default function ProductCard({ product }) {
         <style jsx>{`
           .card-link {
             display: block;
+            height: 100%;
           }
 
           .product-card {
+            height: 100%;
             cursor: pointer;
             background:
               linear-gradient(180deg, rgba(255, 230, 0, 0.04) 0%, rgba(255, 230, 0, 0) 22%),
@@ -50,6 +52,8 @@ export default function ProductCard({ product }) {
             border-radius: 16px;
             padding: 14px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
             transition:
               transform 0.2s ease,
               border-color 0.2s ease,
@@ -74,6 +78,7 @@ export default function ProductCard({ product }) {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex: 0 0 auto;
           }
 
           .product-image {
@@ -85,6 +90,9 @@ export default function ProductCard({ product }) {
 
           .info {
             padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
           }
 
           h3 {
@@ -92,14 +100,38 @@ export default function ProductCard({ product }) {
             line-height: 1.35;
             margin: 0;
             color: #fff;
-            min-height: 38px;
+            min-height: calc(1.35em * 3);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
           }
 
           p {
-            margin: 8px 0 0;
+            margin: auto 0 0;
+            padding-top: 8px;
             font-weight: 700;
             color: #ffe600;
             font-size: 15px;
+          }
+
+          @media (max-width: 768px) {
+            .product-card {
+              border-radius: 18px;
+              padding: 14px;
+            }
+
+            h3 {
+              font-size: 17px;
+              line-height: 1.28;
+              min-height: calc(1.28em * 3);
+              -webkit-line-clamp: 3;
+            }
+
+            p {
+              font-size: 18px;
+              padding-top: 10px;
+            }
           }
         `}</style>
       </article>
