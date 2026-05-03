@@ -1,159 +1,140 @@
-html {
-  scroll-behavior: smooth;
-  background: #000;
-}
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-body {
-  margin: 0;
-  color: #fff;
-  font-family: "Inter", sans-serif;
-  min-height: 100vh;
-  overflow-y: auto;
-  background: #000;
-  position: relative;
-}
+export default function ProductCard({ product }) {
+  const [hovered, setHovered] = useState(false);
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at center, rgba(255, 230, 0, 0.08), transparent 42%),
-    url("/images/site-bg.jpg"),
-    #000;
-  background-size: auto, cover, auto;
-  background-position: center center, center center, center center;
-  background-repeat: no-repeat, no-repeat, no-repeat;
-}
+  const images = useMemo(() => {
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      return product.images;
+    }
+    return [product.thumbnail_url || "/images/placeholder.jpg"];
+  }, [product]);
 
-#__next {
-  min-height: 100vh;
-  background: transparent;
-  position: relative;
-  z-index: 1;
-}
+  const displayImage = hovered && images[1] ? images[1] : images[0];
+  const priceText = product.retail_price ? `$${product.retail_price}` : "";
 
-* {
-  box-sizing: border-box;
-}
+  return (
+    <Link href={`/product/${product.id}`} className="card-link">
+      <article
+        className="product-card"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div className="image-wrap">
+          <img
+            src={displayImage}
+            alt={product.name}
+            className="product-image"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
-}
+        <div className="info">
+          <h3>{product.name}</h3>
+          <p>{priceText}</p>
+        </div>
 
-h1,
-h2,
-h3 {
-  margin: 0;
-  font-family: "Oswald", sans-serif;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
+        <style jsx>{`
+          .card-link {
+            display: block;
+            height: 100%;
+          }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
+          .product-card {
+            height: 100%;
+            cursor: pointer;
+            background:
+              linear-gradient(180deg, rgba(255, 230, 0, 0.04) 0%, rgba(255, 230, 0, 0) 22%),
+              rgba(17, 17, 17, 0.95);
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            transition:
+              transform 0.2s ease,
+              border-color 0.2s ease,
+              box-shadow 0.2s ease;
+          }
 
-img {
-  max-width: 100%;
-}
+          .product-card:hover {
+            transform: translateY(-3px);
+            border-color: #3b3b3b;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+          }
 
-button,
-select {
-  font: inherit;
-}
+          .image-wrap {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background:
+              radial-gradient(circle at top, rgba(255, 230, 0, 0.08), transparent 45%),
+              #0b0b0b;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 1px solid #1d1d1d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+          }
 
-::selection {
-  background: #ffe600;
-  color: #000;
-}
+          .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+          }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
+          .info {
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+          }
 
-::-webkit-scrollbar-track {
-  background: #0b0b0b;
-}
+          h3 {
+            font-size: 14px;
+            line-height: 1.35;
+            margin: 0;
+            color: #fff;
+            min-height: calc(1.35em * 3);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
 
-::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 999px;
-  border: 2px solid #0b0b0b;
-}
+          p {
+            margin: auto 0 0;
+            padding-top: 8px;
+            font-weight: 700;
+            color: #ffe600;
+            font-size: 15px;
+          }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
-}
+          @media (max-width: 768px) {
+            .product-card {
+              border-radius: 18px;
+              padding: 14px;
+            }
 
-.btn {
-  background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
-  color: #000;
-  padding: 14px 28px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  border: none;
-  border-radius: 14px;
-  display: inline-block;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    filter 0.15s ease;
-  box-shadow: 0 10px 24px rgba(255, 230, 0, 0.16);
-}
+            h3 {
+              font-size: 17px;
+              line-height: 1.28;
+              min-height: calc(1.28em * 3);
+              -webkit-line-clamp: 3;
+            }
 
-.btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.02);
-}
-
-.card {
-  background: #111;
-  border: 1px solid #222;
-}
-
-.img {
-  width: 100%;
-  display: block;
-}
-
-@media (max-width: 768px) {
-  html {
-    background: #000;
-  }
-
-  body::before {
-    background:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.68)),
-      radial-gradient(circle at top center, rgba(255, 230, 0, 0.08), transparent 38%),
-      url("/images/site-bg-mobile.jpg"),
-      #000;
-    background-size: auto, auto, cover, auto;
-    background-position: center top, center top, center top, center top;
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-  }
-
-  h1 {
-    font-size: 34px !important;
-  }
-
-  h2 {
-    font-size: 22px !important;
-  }
-
-  h3 {
-    font-size: 16px !important;
-  }
-
-  .btn {
-    width: 100%;
-    text-align: center;
-    padding: 16px;
-  }
+            p {
+              font-size: 18px;
+              padding-top: 10px;
+            }
+          }
+        `}</style>
+      </article>
+    </Link>
+  );
 }
