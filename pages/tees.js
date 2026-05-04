@@ -36,19 +36,6 @@ export default function TeesPage() {
         <Link href="/" className="back-link">
           ← Back
         </Link>
-        {products724.length > 0 && (
-          <section className="category-section">
-            <p className="section-kicker">SAME ATTITUDE, DIFFERENT AREA CODE</p>
-            <h1>For the 724, Jagoffs</h1>
-
-            <div className="grid">
-              {products724.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </section>
-        )}
-
         {tees.length > 0 && (
           <section className="category-section">
             <p className="section-kicker">NO BORING SHIRTS</p>
@@ -56,6 +43,19 @@ export default function TeesPage() {
 
             <div className="grid">
               {tees.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {products724.length > 0 && (
+          <section className="category-section">
+            <p className="section-kicker">SAME ATTITUDE, DIFFERENT AREA CODE</p>
+            <h1>For the 724, Jagoffs</h1>
+
+            <div className="grid">
+              {products724.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
