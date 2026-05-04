@@ -27,6 +27,7 @@ export default function Home() {
   }, []);
 
   const featured = getFeaturedProducts(products);
+  const products724 = sortProducts(products.filter((p) => p.category === "724"));
   const tees = sortProducts(products.filter((p) => p.category === "tees"));
   const hoodies = sortProducts(products.filter((p) => p.category === "hoodies"));
   const hats = sortProducts(products.filter((p) => p.category === "hats"));
@@ -69,10 +70,27 @@ export default function Home() {
       )}
 
       <nav className="quick-links" aria-label="Product categories">
+        {products724.length > 0 && <a href="#seven-two-four">724</a>}
         {tees.length > 0 && <a href="#tees">TEES</a>}
         {hoodies.length > 0 && <a href="#hoodies">HOODIES</a>}
         {hats.length > 0 && <a href="#hats">HATS</a>}
       </nav>
+
+      {products724.length > 0 && (
+        <section id="seven-two-four" className="section-wrap">
+          <div className="section-head">
+            <div>
+              <p className="section-kicker">SAME ATTITUDE, DIFFERENT AREA CODE</p>
+              <h2>For the 724, Jagoffs</h2>
+            </div>
+          </div>
+          <div className="grid">
+            {products724.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {tees.length > 0 && (
         <section id="tees" className="section-wrap">
