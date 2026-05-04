@@ -25,6 +25,7 @@ export default function TeesPage() {
       });
   }, []);
 
+  const products724 = products.filter((p) => p.category === "724");
   const tees = products.filter((p) => p.category === "tees");
 
   return (
@@ -35,13 +36,31 @@ export default function TeesPage() {
         <Link href="/" className="back-link">
           ← Back
         </Link>
-        <h1>T-Shirts</h1>
+        {products724.length > 0 && (
+          <section className="category-section">
+            <p className="section-kicker">SAME ATTITUDE, DIFFERENT AREA CODE</p>
+            <h1>For the 724, Jagoffs</h1>
 
-        <div className="grid">
-          {tees.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+            <div className="grid">
+              {products724.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {tees.length > 0 && (
+          <section className="category-section">
+            <p className="section-kicker">NO BORING SHIRTS</p>
+            <h1>T-Shirts</h1>
+
+            <div className="grid">
+              {tees.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <style jsx>{`
@@ -59,6 +78,22 @@ export default function TeesPage() {
           display: inline-block;
           margin-bottom: 14px;
           color: #ccc;
+        }
+
+        .category-section {
+          margin-bottom: 36px;
+        }
+
+        .category-section:last-of-type {
+          margin-bottom: 0;
+        }
+
+        .section-kicker {
+          margin: 0 0 6px;
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 1.4px;
         }
 
         h1 {
