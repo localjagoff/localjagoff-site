@@ -27,6 +27,10 @@ export default async function handler(req, res) {
 
       const hasAnyWord = (terms) => terms.some((term) => words.includes(term));
 
+      if (words.includes("724") || name.includes("724")) {
+        return "724";
+      }
+
       if (
         hasAnyWord([
           "hoodie",
