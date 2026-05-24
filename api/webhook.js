@@ -20,6 +20,51 @@ async function buffer(readable) {
   return Buffer.concat(chunks);
 }
 
+function getShippingDetails(session) {
+  return (
+    session.collected_information?.shipping_details ||
+    session.shipping_details ||
+    null
+  );
+}
+
+function getRecipientFromSession(session) {
+  const customer = session.customer_details || {};
+  const shippingDetails = getShippingDetails(session);
+  const shippingAddress = shippingDetails?.address || null;
+  const billingAddress = customer.address || null;
+
+  const address = shippingAddress || billingAddress;
+
+  if (
+    !address ||
+    !address.line1 ||
+    !address.city ||
+    !address.state ||
+    !address.country ||
+    !address.postal_code
+  ) {
+    throw new Error(
+      `Missing customer shipping address fields: ${JSON.stringify({
+        shippingDetails,
+        customerDetails: customer,
+      })}`
+    );
+  }
+
+  return {
+    name: shippingDetails?.name || customer.name || "Local Jagoff Customer",
+    address1: address.line1,
+    address2: address.line2 || "",
+    city: address.city,
+    state_code: address.state,
+    country_code: address.country,
+    zip: address.postal_code,
+    email: customer.email || session.customer_email || "",
+    phone: customer.phone || "",
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).send("Method not allowed");
@@ -56,29 +101,15 @@ export default async function handler(req, res) {
       throw new Error("Missing Printful metadata items");
     }
 
-    const customer = session.customer_details;
-
-    if (!customer?.address) {
-      throw new Error("Missing customer shipping address");
-    }
-
     const printfulItems = metadataItems.map((item) => ({
       sync_variant_id: Number(item.sync_variant_id),
       quantity: Number(item.quantity || 1),
     }));
 
     const orderPayload = {
-      recipient: {
-        name: customer.name,
-        address1: customer.address.line1,
-        address2: customer.address.line2 || "",
-        city: customer.address.city,
-        state_code: customer.address.state,
-        country_code: customer.address.country,
-        zip: customer.address.postal_code,
-        email: customer.email,
-        phone: customer.phone || "",
-      },
+      external_id: session.id,
+
+      recipient: getRecipientFromSession(session),
 
       items: printfulItems,
 
