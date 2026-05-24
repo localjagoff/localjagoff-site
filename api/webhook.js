@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import crypto from "crypto";
 
 export const config = {
   api: {
@@ -65,6 +66,16 @@ function getRecipientFromSession(session) {
   };
 }
 
+function getPrintfulExternalId(session) {
+  const source = session.id || session.payment_intent || Date.now().toString();
+
+  return `LJ${crypto
+    .createHash("sha256")
+    .update(source)
+    .digest("hex")
+    .slice(0, 24)}`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).send("Method not allowed");
@@ -107,7 +118,7 @@ export default async function handler(req, res) {
     }));
 
     const orderPayload = {
-      external_id: session.id,
+      external_id: getPrintfulExternalId(session),
 
       recipient: getRecipientFromSession(session),
 
