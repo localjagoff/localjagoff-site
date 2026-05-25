@@ -23,9 +23,31 @@ export default function Terms() {
           Prices are listed in USD and may change without notice.
         </p>
 
-        <h3>Returns</h3>
+        <h3>Returns and Refunds</h3>
         <p>
-          All sales are final unless an item arrives damaged or incorrect.
+          Because our items are made to order, returns or exchanges are only
+          accepted for damaged, defective, incorrect, or misprinted items.
+        </p>
+        <p>
+          If there is an issue with your order, please contact us within 14 days
+          of delivery with your order number and photos of the issue.
+        </p>
+        <p>
+          Approved returns are accepted by mail only. Return shipping is the
+          customer&apos;s responsibility unless the item was damaged, defective,
+          incorrect, or misprinted.
+        </p>
+        <p>
+          We do not charge a restocking fee.
+        </p>
+        <p>
+          If a refund is approved, it will be processed back to the original
+          payment method. Please allow 5–10 business days for the refund to
+          appear, depending on your bank or card issuer.
+        </p>
+        <p>
+          Local Jagoff reserves the right to deny return or refund requests that
+          do not meet this policy.
         </p>
 
         <h3>Use of Site</h3>
