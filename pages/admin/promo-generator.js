@@ -24,13 +24,50 @@ const TONES = [
   { value: "savage_but_safe", label: "Savage but Safe" },
 ];
 
-function copyText(value) {
-  if (!value) return;
-  navigator.clipboard.writeText(value);
-}
+const FREE_HOOKS = [
+  "New drop for anyone who knows exactly what a jagoff is.",
+  "For the people who can talk trash and still hold the door open.",
+  "Western PA attitude, cleaned up just enough for public viewing.",
+  "Not tourist gear. Not fake tough. Just Local Jagoff.",
+  "Put this one on before somebody asks a dumb question.",
+  "Local gear for local behavior.",
+  "For the 412, 724, and every jagoff in between.",
+  "A little Pittsburgh. A little problem. A lot of Local Jagoff.",
+  "Black-and-gold attitude without looking like a stadium gift shop.",
+  "For anyone who says they are leaving in five and absolutely is not.",
+];
 
-function formatHashtags(tags) {
-  return Array.isArray(tags) ? tags.join(" ") : "";
+const FREE_OVERLAYS = [
+  "LOCAL JAGOFF ENERGY",
+  "NEW DROP LIVE",
+  "FOR THE LOCALS",
+  "BUILT FOR JAGOFFS",
+  "PITTSBURGH ATTITUDE",
+  "412 / 724 READY",
+  "NO BORING GEAR",
+  "LOCALJAGOFF.COM",
+];
+
+const FREE_CTAS = [
+  "Grab it at localjagoff.com.",
+  "Shop the drop at localjagoff.com.",
+  "Get yours at localjagoff.com.",
+  "Go be a jagoff in something better: localjagoff.com.",
+  "New gear is live now at localjagoff.com.",
+];
+
+const SECTION_LABELS = {
+  create: "Create",
+  results: "Current Pack",
+  saved: "Saved",
+  queue: "Queue",
+  products: "Products",
+  rules: "Rules",
+};
+
+function copyText(value) {
+  if (!value || typeof navigator === "undefined") return;
+  navigator.clipboard.writeText(value);
 }
 
 function normalizeProduct(product) {
@@ -41,6 +78,176 @@ function normalizeProduct(product) {
     category: product?.category || "gear",
     thumbnail_url: product?.thumbnail_url || product?.image || "",
   };
+}
+
+function formatHashtags(tags) {
+  return Array.isArray(tags) ? tags.join(" ") : "";
+}
+
+function pick(list, seed = 0) {
+  if (!Array.isArray(list) || list.length === 0) return "";
+  return list[Math.abs(seed) % list.length];
+}
+
+function niceDate(value) {
+  if (!value) return "Not scheduled";
+  try {
+    return new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch (err) {
+    return value;
+  }
+}
+
+function productType(product) {
+  const name = String(product?.name || "").toLowerCase();
+  const category = String(product?.category || "gear").toLowerCase();
+
+  if (category === "hoodies" || name.includes("hoodie")) return "hoodie";
+  if (category === "tees" || name.includes("tee") || name.includes("shirt")) return "shirt";
+  if (category === "hats" || name.includes("hat") || name.includes("cap")) return "hat";
+  if (category === "724" || name.includes("724")) return "724 gear";
+  return "gear";
+}
+
+function makeHashtags(product) {
+  const tags = [
+    "#LocalJagoff",
+    "#Pittsburgh",
+    "#Yinzer",
+    "#WesternPA",
+    "#412",
+    "#724",
+  ];
+
+  const type = productType(product);
+
+  if (type === "hoodie") tags.push("#HoodieSeason");
+  if (type === "shirt") tags.push("#PittsburghShirts");
+  if (type === "hat") tags.push("#PittsburghHats");
+
+  return tags;
+}
+
+function makeFreePromoPack(product, options = {}) {
+  const cleanProduct = normalizeProduct(product);
+  const name = cleanProduct.name;
+  const type = productType(cleanProduct);
+  const seed = Date.now() + name.length + String(options.notes || "").length;
+  const hookOne = pick(FREE_HOOKS, seed + 1);
+  const hookTwo = pick(FREE_HOOKS, seed + 2);
+  const hookThree = pick(FREE_HOOKS, seed + 3);
+  const cta = pick(FREE_CTAS, seed + 4);
+  const overlayOne = pick(FREE_OVERLAYS, seed + 5);
+  const overlayTwo = pick(FREE_OVERLAYS, seed + 6);
+  const tone = options.toneIntensity || "balanced";
+
+  const cleanLine = `${name} is live at Local Jagoff — Pittsburgh-inspired ${type} with a local edge.`;
+  const edgeLine =
+    tone === "clean"
+      ? cleanLine
+      : `${name}. Local gear for anyone who knows a jagoff when they see one.`;
+
+  return {
+    brand_angle:
+      "A Local Jagoff promo pack built from saved templates. No API call, no extra cost.",
+    facebook_post: `${hookOne}\n\n${edgeLine}\n\n${cta}`,
+    instagram_caption: `${name} just hit the site. ${hookTwo}\n\n${cta}\n\n${formatHashtags(
+      makeHashtags(cleanProduct)
+    )}`,
+    tiktok_caption: `${hookThree} ${cta} ${formatHashtags(
+      makeHashtags(cleanProduct).slice(0, 4)
+    )}`,
+    youtube_shorts_title: `${name} | Local Jagoff Drop`,
+    youtube_shorts_description: `${name} from Local Jagoff. Pittsburgh / Western PA attitude, no boring gear. ${cta}`,
+    hashtags: makeHashtags(cleanProduct),
+    video_hooks: [
+      hookOne,
+      hookTwo,
+      hookThree,
+      `If you know what jagoff means, this ${type} makes sense.`,
+      `Local Jagoff drop check: ${name}.`,
+    ],
+    short_video_script: [
+      {
+        scene: "Scene 1",
+        visual: "Product image pops in over a gritty black-and-gold background.",
+        on_screen_text: overlayOne,
+        voiceover: hookOne,
+      },
+      {
+        scene: "Scene 2",
+        visual: "Quick zoom on the design/product details.",
+        on_screen_text: name,
+        voiceover: edgeLine,
+      },
+      {
+        scene: "Scene 3",
+        visual: "End card with Local Jagoff logo/site URL.",
+        on_screen_text: "LOCALJAGOFF.COM",
+        voiceover: cta,
+      },
+    ],
+    image_overlay_text: [overlayOne, overlayTwo, "LOCALJAGOFF.COM"],
+    alt_text: `${name} from Local Jagoff, shown as Pittsburgh-inspired ${type}.`,
+    clean_ad_version: `${name} is available now from Local Jagoff. Pittsburgh-inspired ${type} with a bold local feel. ${cta}`,
+    edgy_version: edgeLine,
+    cta,
+    warnings: [
+      "Free template mode did not use AI and costs $0.",
+      "Review before posting. No auto-publishing is enabled yet.",
+    ],
+  };
+}
+
+function formatPackText(pack) {
+  if (!pack) return "";
+
+  const script = Array.isArray(pack.short_video_script)
+    ? pack.short_video_script
+        .map(
+          (s) =>
+            `${s.scene}\nVisual: ${s.visual}\nText: ${s.on_screen_text}\nVoiceover: ${s.voiceover}`
+        )
+        .join("\n\n")
+    : "";
+
+  return [
+    `Brand Angle:\n${pack.brand_angle || ""}`,
+    `Facebook Post:\n${pack.facebook_post || ""}`,
+    `Instagram Caption:\n${pack.instagram_caption || ""}`,
+    `TikTok Caption:\n${pack.tiktok_caption || ""}`,
+    `YouTube Shorts Title:\n${pack.youtube_shorts_title || ""}`,
+    `YouTube Shorts Description:\n${pack.youtube_shorts_description || ""}`,
+    `Hashtags:\n${formatHashtags(pack.hashtags)}`,
+    `Video Hooks:\n${(pack.video_hooks || []).join("\n")}`,
+    `Short Video Script:\n${script}`,
+    `Image Overlay Text:\n${(pack.image_overlay_text || []).join("\n")}`,
+    `Alt Text:\n${pack.alt_text || ""}`,
+    `Clean Ad Version:\n${pack.clean_ad_version || ""}`,
+    `Edgy Version:\n${pack.edgy_version || ""}`,
+    `CTA:\n${pack.cta || ""}`,
+  ].join("\n\n---\n\n");
+}
+
+function downloadJson(filename, data) {
+  if (typeof document === "undefined") return;
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(url);
 }
 
 function ResultBlock({ title, value, pre = false }) {
@@ -97,6 +304,45 @@ function ScriptBlock({ scenes }) {
   );
 }
 
+function SavedPackCard({ item, onLoad, onDelete, onQueue }) {
+  return (
+    <article className="savedCard">
+      <div className="savedTop">
+        <div>
+          <p className="miniKicker">{item.source || "Saved Pack"}</p>
+          <h3>{item.product?.name || "Promo Pack"}</h3>
+        </div>
+        {item.product?.thumbnail_url && (
+          <img src={item.product.thumbnail_url} alt={item.product.name || "Product"} />
+        )}
+      </div>
+
+      <p className="savedMeta">
+        {item.mode || "mode"} • {item.platform || "platform"} • {niceDate(item.createdAt)}
+      </p>
+
+      <p className="savedCaption">
+        {item.promo?.brand_angle || item.promo?.facebook_post || "Saved promo pack"}
+      </p>
+
+      <div className="savedActions">
+        <button type="button" onClick={() => onLoad(item)}>
+          Load
+        </button>
+        <button type="button" onClick={() => copyText(formatPackText(item.promo))}>
+          Copy All
+        </button>
+        <button type="button" onClick={() => onQueue(item)}>
+          Queue
+        </button>
+        <button type="button" className="danger" onClick={() => onDelete(item.id)}>
+          Delete
+        </button>
+      </div>
+    </article>
+  );
+}
+
 export default function PromoGenerator() {
   const [products, setProducts] = useState([]);
   const [selectedId, setSelectedId] = useState("");
@@ -108,18 +354,33 @@ export default function PromoGenerator() {
   const [notes, setNotes] = useState("");
   const [recentPhrases, setRecentPhrases] = useState([]);
   const [promo, setPromo] = useState(null);
+  const [promoSource, setPromoSource] = useState("");
+  const [savedPacks, setSavedPacks] = useState([]);
+  const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeSection, setActiveSection] = useState("create");
+  const [productSearch, setProductSearch] = useState("");
+  const [queueDate, setQueueDate] = useState("");
+  const [queuePlatform, setQueuePlatform] = useState("instagram");
 
   useEffect(() => {
     const savedKey = localStorage.getItem("localJagoffPromoKey") || "";
     const savedPhrases = JSON.parse(
       localStorage.getItem("localJagoffRecentPromoPhrases") || "[]"
     );
+    const storedPacks = JSON.parse(
+      localStorage.getItem("localJagoffSavedPromoPacks") || "[]"
+    );
+    const storedQueue = JSON.parse(
+      localStorage.getItem("localJagoffPromoQueue") || "[]"
+    );
 
     setAdminKey(savedKey);
     setRecentPhrases(Array.isArray(savedPhrases) ? savedPhrases : []);
+    setSavedPacks(Array.isArray(storedPacks) ? storedPacks : []);
+    setQueue(Array.isArray(storedQueue) ? storedQueue : []);
   }, []);
 
   useEffect(() => {
@@ -138,9 +399,32 @@ export default function PromoGenerator() {
     return products.find((product) => String(product.id) === String(selectedId));
   }, [products, selectedId]);
 
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+
+    if (!q) return products;
+
+    return products.filter((product) =>
+      [product.name, product.category, product.id]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [products, productSearch]);
+
   const filteredRecentPhrases = useMemo(() => {
     return recentPhrases.filter(Boolean).slice(0, 40);
   }, [recentPhrases]);
+
+  const stats = useMemo(() => {
+    return {
+      productCount: products.length,
+      savedCount: savedPacks.length,
+      queuedCount: queue.length,
+      freeCount: savedPacks.filter((item) => item.source === "Free Template").length,
+      aiCount: savedPacks.filter((item) => item.source === "AI Generated").length,
+    };
+  }, [products, savedPacks, queue]);
 
   const saveRecentPhrases = (nextPromo) => {
     const newPhrases = [
@@ -156,11 +440,12 @@ export default function PromoGenerator() {
       .map((item) => String(item).slice(0, 180));
 
     const next = [...newPhrases, ...recentPhrases].slice(0, 60);
+
     setRecentPhrases(next);
     localStorage.setItem("localJagoffRecentPromoPhrases", JSON.stringify(next));
   };
 
-  const generatePromo = async () => {
+  const generateAiPromo = async () => {
     setError("");
     setPromo(null);
 
@@ -201,7 +486,9 @@ export default function PromoGenerator() {
       }
 
       setPromo(data.promo);
+      setPromoSource("AI Generated");
       saveRecentPhrases(data.promo);
+      setActiveSection("results");
     } catch (err) {
       setError(err.message || "Promo generation failed.");
     } finally {
@@ -209,162 +496,554 @@ export default function PromoGenerator() {
     }
   };
 
+  const generateFreePromo = () => {
+    setError("");
+
+    if (!selectedProduct) {
+      setError("Pick a product first.");
+      return;
+    }
+
+    const pack = makeFreePromoPack(selectedProduct, {
+      mode,
+      platform,
+      goal,
+      toneIntensity,
+      notes,
+    });
+
+    setPromo(pack);
+    setPromoSource("Free Template");
+    saveRecentPhrases(pack);
+    setActiveSection("results");
+  };
+
+  const buildCurrentItem = () => {
+    if (!promo || !selectedProduct) return null;
+
+    return {
+      id: `pack-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      source: promoSource || "Current Pack",
+      createdAt: new Date().toISOString(),
+      mode,
+      platform,
+      toneIntensity,
+      goal,
+      notes,
+      product: selectedProduct,
+      promo,
+    };
+  };
+
+  const saveCurrentPack = () => {
+    const item = buildCurrentItem();
+
+    if (!item) return;
+
+    const next = [item, ...savedPacks].slice(0, 80);
+
+    setSavedPacks(next);
+    localStorage.setItem("localJagoffSavedPromoPacks", JSON.stringify(next));
+    setActiveSection("saved");
+  };
+
+  const deleteSavedPack = (id) => {
+    const next = savedPacks.filter((item) => item.id !== id);
+
+    setSavedPacks(next);
+    localStorage.setItem("localJagoffSavedPromoPacks", JSON.stringify(next));
+  };
+
+  const loadSavedPack = (item) => {
+    setPromo(item.promo);
+    setPromoSource(item.source || "Saved Pack");
+    setSelectedId(String(item.product?.id || selectedId));
+    setMode(item.mode || mode);
+    setPlatform(item.platform || platform);
+    setToneIntensity(item.toneIntensity || toneIntensity);
+    setGoal(item.goal || goal);
+    setNotes(item.notes || "");
+    setActiveSection("results");
+  };
+
+  const addToQueue = (item) => {
+    const packItem = item || buildCurrentItem();
+
+    if (!packItem) return;
+
+    const nextItem = {
+      ...packItem,
+      queueId: `queue-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      queuedAt: new Date().toISOString(),
+      scheduledDate: queueDate || "",
+      scheduledPlatform: queuePlatform,
+      status: "Draft",
+    };
+
+    const next = [nextItem, ...queue].slice(0, 80);
+
+    setQueue(next);
+    localStorage.setItem("localJagoffPromoQueue", JSON.stringify(next));
+    setActiveSection("queue");
+  };
+
+  const removeQueueItem = (queueId) => {
+    const next = queue.filter((item) => item.queueId !== queueId);
+
+    setQueue(next);
+    localStorage.setItem("localJagoffPromoQueue", JSON.stringify(next));
+  };
+
   const clearMemory = () => {
     setRecentPhrases([]);
     localStorage.removeItem("localJagoffRecentPromoPhrases");
   };
 
+  const exportDashboard = () => {
+    downloadJson("local-jagoff-promo-dashboard.json", {
+      exportedAt: new Date().toISOString(),
+      savedPacks,
+      queue,
+    });
+  };
+
   return (
     <div className="promoPage">
       <Head>
-        <title>Local Jagoff Promo Generator</title>
+        <title>Local Jagoff Promo Command Center</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
 
       <main className="wrap">
         <header className="hero">
-          <p className="kicker">PRIVATE ADMIN TOOL</p>
-          <h1>Local Jagoff Promo Generator</h1>
-          <p>
-            Pick a product, choose a vibe, and generate fresh social posts,
-            hooks, hashtags, video script, image overlay text, and ad-safe copy.
-          </p>
+          <div>
+            <p className="kicker">PRIVATE ADMIN TOOL</p>
+            <h1>Promo Command Center</h1>
+            <p>
+              Generate Local Jagoff posts, save promo packs, queue campaign ideas,
+              and use a free template mode when you do not want to spend API money.
+            </p>
+          </div>
+
+          <div className="heroCard">
+            <p>No auto-posting yet.</p>
+            <strong>You approve everything before it goes public.</strong>
+          </div>
         </header>
 
-        <section className="panel controls">
-          <div className="field full">
-            <label>Promo generation key</label>
-            <input
-              type="password"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              placeholder="Enter your private generation key"
-              autoComplete="off"
-            />
+        <section className="statsGrid">
+          <div className="statCard">
+            <span>{stats.productCount}</span>
+            <p>Products loaded</p>
           </div>
-
-          <div className="field full">
-            <label>Product</label>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              disabled={productsLoading}
-            >
-              {productsLoading && <option>Loading products...</option>}
-              {!productsLoading && products.length === 0 && (
-                <option>No products found</option>
-              )}
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
+          <div className="statCard">
+            <span>{stats.savedCount}</span>
+            <p>Saved packs</p>
           </div>
-
-          {selectedProduct && (
-            <div className="selectedProduct full">
-              <img
-                src={selectedProduct.thumbnail_url || "/images/placeholder.jpg"}
-                alt={selectedProduct.name}
-              />
-              <div>
-                <h2>{selectedProduct.name}</h2>
-                <p>
-                  {selectedProduct.category} {selectedProduct.retail_price && `• $${selectedProduct.retail_price}`}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="field">
-            <label>Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)}>
-              {MODES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+          <div className="statCard">
+            <span>{stats.queuedCount}</span>
+            <p>Queued drafts</p>
           </div>
-
-          <div className="field">
-            <label>Platform</label>
-            <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-              {PLATFORMS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+          <div className="statCard">
+            <span>{stats.freeCount}</span>
+            <p>Free saves</p>
           </div>
-
-          <div className="field">
-            <label>Tone</label>
-            <select
-              value={toneIntensity}
-              onChange={(e) => setToneIntensity(e.target.value)}
-            >
-              {TONES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+          <div className="statCard">
+            <span>{stats.aiCount}</span>
+            <p>AI saves</p>
           </div>
-
-          <div className="field">
-            <label>Goal</label>
-            <input
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="sell_product, product_drop, brand_awareness..."
-            />
-          </div>
-
-          <div className="field full">
-            <label>Extra notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Example: make it more 724, less salesy, mention hoodie season, avoid Steelers references, etc."
-            />
-          </div>
-
-          <div className="actions full">
-            <button type="button" className="primary" onClick={generatePromo} disabled={loading}>
-              {loading ? "Generating..." : "Generate Promo Pack"}
-            </button>
-            <button type="button" className="ghost" onClick={clearMemory}>
-              Clear No-Repeat Memory
-            </button>
-          </div>
-
-          {error && <div className="error full">{error}</div>}
         </section>
 
-        {promo && (
-          <section className="results">
-            <ResultBlock title="Brand Angle" value={promo.brand_angle} />
-            <ResultBlock title="Facebook Post" value={promo.facebook_post} />
-            <ResultBlock title="Instagram Caption" value={promo.instagram_caption} />
-            <ResultBlock title="TikTok Caption" value={promo.tiktok_caption} />
-            <ResultBlock title="YouTube Shorts Title" value={promo.youtube_shorts_title} />
-            <ResultBlock
-              title="YouTube Shorts Description"
-              value={promo.youtube_shorts_description}
-            />
-            <ResultBlock title="Hashtags" value={formatHashtags(promo.hashtags)} />
-            <ResultBlock title="Video Hooks" value={promo.video_hooks} pre />
-            <ScriptBlock scenes={promo.short_video_script} />
-            <ResultBlock title="Image Overlay Text" value={promo.image_overlay_text} pre />
-            <ResultBlock title="Alt Text" value={promo.alt_text} />
-            <ResultBlock title="Clean Ad Version" value={promo.clean_ad_version} />
-            <ResultBlock title="Edgy Version" value={promo.edgy_version} />
-            <ResultBlock title="CTA" value={promo.cta} />
-            {promo.warnings?.length > 0 && (
-              <ResultBlock title="Warnings / Notes" value={promo.warnings} pre />
+        <nav className="dashboardNav" aria-label="Promo dashboard sections">
+          {Object.entries(SECTION_LABELS).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={activeSection === value ? "active" : ""}
+              onClick={() => setActiveSection(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {activeSection === "create" && (
+          <section className="dashboardGrid">
+            <div className="panel controls">
+              <div className="panelHead">
+                <p className="miniKicker">CREATE PACK</p>
+                <h2>Generate content</h2>
+              </div>
+
+              <div className="field full">
+                <label>Promo generation key</label>
+                <input
+                  type="password"
+                  value={adminKey}
+                  onChange={(e) => setAdminKey(e.target.value)}
+                  placeholder="Enter your private generation key"
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="field full">
+                <label>Product</label>
+                <select
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  disabled={productsLoading}
+                >
+                  {productsLoading && <option>Loading products...</option>}
+                  {!productsLoading && products.length === 0 && (
+                    <option>No products found</option>
+                  )}
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Mode</label>
+                <select value={mode} onChange={(e) => setMode(e.target.value)}>
+                  {MODES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Platform</label>
+                <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+                  {PLATFORMS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Tone</label>
+                <select
+                  value={toneIntensity}
+                  onChange={(e) => setToneIntensity(e.target.value)}
+                >
+                  {TONES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Goal</label>
+                <input
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="sell_product, product_drop, brand_awareness..."
+                />
+              </div>
+
+              <div className="field full">
+                <label>Extra notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Example: make it more 724, less salesy, mention hoodie season, avoid Steelers references, etc."
+                />
+              </div>
+
+              <div className="actions full">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={generateAiPromo}
+                  disabled={loading}
+                >
+                  {loading ? "Generating..." : "Generate With AI"}
+                </button>
+
+                <button type="button" className="freeBtn" onClick={generateFreePromo}>
+                  Generate Free Template Pack
+                </button>
+
+                <button type="button" className="ghost" onClick={clearMemory}>
+                  Clear No-Repeat Memory
+                </button>
+              </div>
+
+              {error && <div className="error full">{error}</div>}
+            </div>
+
+            <aside className="sidePanel">
+              <div className="selectedProduct">
+                {selectedProduct?.thumbnail_url && (
+                  <img src={selectedProduct.thumbnail_url} alt={selectedProduct.name} />
+                )}
+
+                <div>
+                  <p className="miniKicker">SELECTED PRODUCT</p>
+                  <h2>{selectedProduct?.name || "No product selected"}</h2>
+                  <p>
+                    {selectedProduct?.category || "gear"}{" "}
+                    {selectedProduct?.retail_price && `• $${selectedProduct.retail_price}`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="costCard">
+                <p className="miniKicker">COST CONTROL</p>
+                <h3>Two ways to generate</h3>
+                <p>
+                  <strong>AI button:</strong> uses your OpenAI API key and may cost a tiny amount.
+                </p>
+                <p>
+                  <strong>Free button:</strong> uses saved Local Jagoff templates and costs $0.
+                </p>
+              </div>
+
+              <div className="queueSetup">
+                <p className="miniKicker">QUEUE DEFAULTS</p>
+
+                <label>Planned date</label>
+                <input
+                  type="date"
+                  value={queueDate}
+                  onChange={(e) => setQueueDate(e.target.value)}
+                />
+
+                <label>Planned platform</label>
+                <select
+                  value={queuePlatform}
+                  onChange={(e) => setQueuePlatform(e.target.value)}
+                >
+                  {PLATFORMS.filter((p) => p.value !== "full_pack").map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </aside>
+          </section>
+        )}
+
+        {activeSection === "results" && (
+          <section>
+            {!promo && (
+              <div className="emptyPanel">
+                <h2>No current promo pack yet.</h2>
+                <p>Generate one with AI or free template mode first.</p>
+                <button type="button" className="primary" onClick={() => setActiveSection("create")}>
+                  Create One
+                </button>
+              </div>
             )}
+
+            {promo && (
+              <>
+                <div className="resultToolbar">
+                  <div>
+                    <p className="miniKicker">{promoSource || "CURRENT PACK"}</p>
+                    <h2>{selectedProduct?.name || "Promo Pack"}</h2>
+                  </div>
+
+                  <div className="toolbarActions">
+                    <button type="button" onClick={() => copyText(formatPackText(promo))}>
+                      Copy Full Pack
+                    </button>
+                    <button type="button" onClick={saveCurrentPack}>
+                      Save Pack
+                    </button>
+                    <button type="button" onClick={() => addToQueue()}>
+                      Add to Queue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadJson("local-jagoff-current-promo.json", promo)}
+                    >
+                      Export JSON
+                    </button>
+                  </div>
+                </div>
+
+                <section className="results">
+                  <ResultBlock title="Brand Angle" value={promo.brand_angle} />
+                  <ResultBlock title="Facebook Post" value={promo.facebook_post} />
+                  <ResultBlock title="Instagram Caption" value={promo.instagram_caption} />
+                  <ResultBlock title="TikTok Caption" value={promo.tiktok_caption} />
+                  <ResultBlock title="YouTube Shorts Title" value={promo.youtube_shorts_title} />
+                  <ResultBlock
+                    title="YouTube Shorts Description"
+                    value={promo.youtube_shorts_description}
+                  />
+                  <ResultBlock title="Hashtags" value={formatHashtags(promo.hashtags)} />
+                  <ResultBlock title="Video Hooks" value={promo.video_hooks} pre />
+                  <ScriptBlock scenes={promo.short_video_script} />
+                  <ResultBlock title="Image Overlay Text" value={promo.image_overlay_text} pre />
+                  <ResultBlock title="Alt Text" value={promo.alt_text} />
+                  <ResultBlock title="Clean Ad Version" value={promo.clean_ad_version} />
+                  <ResultBlock title="Edgy Version" value={promo.edgy_version} />
+                  <ResultBlock title="CTA" value={promo.cta} />
+                  {promo.warnings?.length > 0 && (
+                    <ResultBlock title="Warnings / Notes" value={promo.warnings} pre />
+                  )}
+                </section>
+              </>
+            )}
+          </section>
+        )}
+
+        {activeSection === "saved" && (
+          <section className="panel libraryPanel">
+            <div className="panelHead rowHead">
+              <div>
+                <p className="miniKicker">CONTENT LIBRARY</p>
+                <h2>Saved promo packs</h2>
+              </div>
+
+              <button type="button" onClick={exportDashboard}>
+                Export Dashboard
+              </button>
+            </div>
+
+            {savedPacks.length === 0 && <p className="muted">No saved packs yet.</p>}
+
+            <div className="savedGrid">
+              {savedPacks.map((item) => (
+                <SavedPackCard
+                  key={item.id}
+                  item={item}
+                  onLoad={loadSavedPack}
+                  onDelete={deleteSavedPack}
+                  onQueue={addToQueue}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeSection === "queue" && (
+          <section className="panel libraryPanel">
+            <div className="panelHead rowHead">
+              <div>
+                <p className="miniKicker">CAMPAIGN QUEUE</p>
+                <h2>Draft schedule board</h2>
+              </div>
+
+              <button type="button" onClick={exportDashboard}>
+                Export Queue
+              </button>
+            </div>
+
+            <p className="muted">
+              Planning queue only. It does not publish to Facebook, Instagram, TikTok, or YouTube yet.
+            </p>
+
+            {queue.length === 0 && <p className="muted">Nothing queued yet.</p>}
+
+            <div className="queueList">
+              {queue.map((item) => (
+                <article key={item.queueId} className="queueItem">
+                  <div>
+                    <p className="miniKicker">
+                      {item.scheduledPlatform} • {niceDate(item.scheduledDate)}
+                    </p>
+                    <h3>{item.product?.name || "Queued Promo"}</h3>
+                    <p>{item.promo?.brand_angle || item.promo?.facebook_post}</p>
+                  </div>
+
+                  <div className="queueActions">
+                    <button type="button" onClick={() => loadSavedPack(item)}>
+                      Load
+                    </button>
+                    <button type="button" onClick={() => copyText(formatPackText(item.promo))}>
+                      Copy
+                    </button>
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => removeQueueItem(item.queueId)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeSection === "products" && (
+          <section className="panel libraryPanel">
+            <div className="panelHead rowHead">
+              <div>
+                <p className="miniKicker">PRODUCT LIBRARY</p>
+                <h2>Loaded from your store API</h2>
+              </div>
+
+              <input
+                className="searchInput"
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Search products..."
+              />
+            </div>
+
+            <div className="productGrid">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  className={`productTile ${
+                    String(product.id) === String(selectedId) ? "selected" : ""
+                  }`}
+                  onClick={() => {
+                    setSelectedId(String(product.id));
+                    setActiveSection("create");
+                  }}
+                >
+                  <img src={product.thumbnail_url || "/images/placeholder.jpg"} alt={product.name} />
+                  <strong>{product.name}</strong>
+                  <span>
+                    {product.category} {product.retail_price && `• $${product.retail_price}`}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeSection === "rules" && (
+          <section className="brandGrid">
+            <div className="panel brandCard">
+              <p className="miniKicker">BRAND BRAIN</p>
+              <h2>Hard rules</h2>
+              <ul>
+                <li>Never mention fulfillment vendors, supplier setup, internal APIs, or production workflow.</li>
+                <li>Do not make fake claims about material, shipping speed, discounts, guarantees, or origin.</li>
+                <li>Keep it Pittsburgh / Western PA, black-and-gold, gritty, funny, and direct.</li>
+                <li>Avoid generic ecommerce phrases like “elevate your wardrobe” or “must-have.”</li>
+                <li>Generate options that still need your approval before posting.</li>
+              </ul>
+            </div>
+
+            <div className="panel brandCard">
+              <p className="miniKicker">NEXT PHASE</p>
+              <h2>What this does not do yet</h2>
+              <ul>
+                <li>No Facebook, Instagram, TikTok, or YouTube publishing yet.</li>
+                <li>Saved packs live in this browser, not on a database yet.</li>
+                <li>No image/video rendering yet; this plans scripts and overlay text.</li>
+                <li>No analytics tracking yet.</li>
+              </ul>
+            </div>
           </section>
         )}
       </main>
@@ -374,31 +1053,48 @@ export default function PromoGenerator() {
           min-height: 100vh;
           color: #fff;
           background:
-            radial-gradient(circle at top, rgba(255, 230, 0, 0.14), transparent 28%),
-            linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.98));
+            radial-gradient(circle at top left, rgba(255, 230, 0, 0.14), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(255, 230, 0, 0.08), transparent 26%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.99));
           padding: 34px 16px 70px;
         }
 
         .wrap {
-          max-width: 1180px;
+          max-width: 1260px;
           margin: 0 auto;
         }
 
         .hero {
-          margin-bottom: 22px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 300px;
+          gap: 18px;
+          align-items: end;
+          margin-bottom: 20px;
         }
 
-        .kicker {
+        .kicker,
+        .miniKicker {
           margin: 0 0 8px;
           color: #ffe600;
           font-size: 12px;
           font-weight: 900;
           letter-spacing: 2px;
+          text-transform: uppercase;
+        }
+
+        .miniKicker {
+          font-size: 11px;
+          letter-spacing: 1.4px;
         }
 
         h1 {
-          font-size: clamp(34px, 6vw, 72px);
-          line-height: 0.95;
+          font-size: clamp(38px, 7vw, 86px);
+          line-height: 0.92;
+          text-transform: uppercase;
+        }
+
+        h2,
+        h3 {
           text-transform: uppercase;
         }
 
@@ -409,12 +1105,117 @@ export default function PromoGenerator() {
           line-height: 1.6;
         }
 
+        .heroCard,
         .panel,
-        .resultBlock {
+        .resultBlock,
+        .statCard,
+        .savedCard,
+        .queueItem,
+        .selectedProduct,
+        .costCard,
+        .queueSetup,
+        .emptyPanel {
           background: rgba(13, 13, 13, 0.88);
           border: 1px solid rgba(255, 230, 0, 0.18);
           border-radius: 22px;
-          box-shadow: 0 22px 80px rgba(0, 0, 0, 0.45);
+          box-shadow: 0 22px 80px rgba(0, 0, 0, 0.42);
+        }
+
+        .heroCard {
+          padding: 18px;
+        }
+
+        .heroCard p {
+          margin: 0 0 8px;
+          color: #ffe600;
+          font-weight: 900;
+        }
+
+        .heroCard strong {
+          display: block;
+          line-height: 1.35;
+        }
+
+        .statsGrid {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .statCard {
+          padding: 16px;
+        }
+
+        .statCard span {
+          display: block;
+          color: #ffe600;
+          font-size: 28px;
+          font-weight: 900;
+        }
+
+        .statCard p {
+          margin: 4px 0 0;
+          color: #ccc;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .dashboardNav {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin: 0 0 18px;
+        }
+
+        button {
+          border: none;
+          border-radius: 14px;
+          padding: 12px 16px;
+          cursor: pointer;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+        }
+
+        .dashboardNav button,
+        .ghost,
+        .resultTop button,
+        .toolbarActions button,
+        .savedActions button,
+        .queueActions button,
+        .rowHead button {
+          color: #fff;
+          background: #1b1b1b;
+          border: 1px solid #333;
+        }
+
+        .dashboardNav button.active,
+        .primary {
+          color: #000;
+          background: #ffe600;
+          box-shadow: 0 12px 28px rgba(255, 230, 0, 0.16);
+        }
+
+        .freeBtn {
+          color: #ffe600;
+          background: rgba(255, 230, 0, 0.08);
+          border: 1px solid rgba(255, 230, 0, 0.42);
+        }
+
+        .danger {
+          color: #ff9a9a !important;
+        }
+
+        button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .dashboardGrid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 360px;
+          gap: 18px;
         }
 
         .controls {
@@ -424,13 +1225,22 @@ export default function PromoGenerator() {
           padding: 20px;
         }
 
+        .panelHead {
+          grid-column: 1 / -1;
+        }
+
+        .panelHead h2 {
+          font-size: 30px;
+        }
+
         .full {
           grid-column: 1 / -1;
         }
 
-        .field label {
+        .field label,
+        .queueSetup label {
           display: block;
-          margin-bottom: 8px;
+          margin: 0 0 8px;
           color: #ffe600;
           font-size: 12px;
           font-weight: 900;
@@ -451,7 +1261,7 @@ export default function PromoGenerator() {
         }
 
         textarea {
-          min-height: 110px;
+          min-height: 118px;
           resize: vertical;
         }
 
@@ -462,30 +1272,36 @@ export default function PromoGenerator() {
           box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.12);
         }
 
+        .sidePanel {
+          display: grid;
+          gap: 14px;
+          align-content: start;
+        }
+
+        .selectedProduct,
+        .costCard,
+        .queueSetup {
+          padding: 16px;
+        }
+
         .selectedProduct {
-          display: flex;
-          gap: 16px;
-          align-items: center;
-          padding: 14px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 18px;
+          display: grid;
+          gap: 14px;
         }
 
         .selectedProduct img {
-          width: 86px;
-          height: 86px;
-          object-fit: cover;
-          border-radius: 14px;
-          background: #111;
+          width: 100%;
+          max-height: 230px;
+          object-fit: contain;
+          border-radius: 16px;
+          background: #070707;
         }
 
         .selectedProduct h2 {
           font-size: 24px;
         }
 
-        .selectedProduct p {
-          margin: 8px 0 0;
+        .selectedProduct p:last-child {
           color: #bbb;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -493,37 +1309,21 @@ export default function PromoGenerator() {
           font-weight: 800;
         }
 
+        .costCard p,
+        .queueSetup p,
+        .muted {
+          color: #cfcfcf;
+          line-height: 1.55;
+        }
+
+        .queueSetup label {
+          margin-top: 12px;
+        }
+
         .actions {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
-        }
-
-        button {
-          border: none;
-          border-radius: 14px;
-          padding: 12px 16px;
-          cursor: pointer;
-          font-weight: 900;
-          letter-spacing: 0.5px;
-        }
-
-        button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .primary {
-          color: #000;
-          background: #ffe600;
-          box-shadow: 0 12px 28px rgba(255, 230, 0, 0.16);
-        }
-
-        .ghost,
-        .resultTop button {
-          color: #fff;
-          background: #1b1b1b;
-          border: 1px solid #333;
         }
 
         .error {
@@ -535,11 +1335,30 @@ export default function PromoGenerator() {
           font-weight: 800;
         }
 
+        .resultToolbar {
+          display: flex;
+          justify-content: space-between;
+          gap: 18px;
+          align-items: center;
+          margin-bottom: 16px;
+          padding: 18px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 22px;
+        }
+
+        .toolbarActions,
+        .savedActions,
+        .queueActions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
         .results {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
-          margin-top: 18px;
         }
 
         .resultBlock {
@@ -561,7 +1380,6 @@ export default function PromoGenerator() {
         .resultTop h3 {
           color: #ffe600;
           font-size: 18px;
-          text-transform: uppercase;
         }
 
         .resultBlock p,
@@ -602,19 +1420,186 @@ export default function PromoGenerator() {
           font-weight: 900;
         }
 
-        @media (max-width: 860px) {
-          .controls,
+        .emptyPanel {
+          padding: 24px;
+          text-align: center;
+        }
+
+        .libraryPanel {
+          padding: 20px;
+        }
+
+        .rowHead {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .searchInput {
+          max-width: 320px;
+        }
+
+        .savedGrid,
+        .productGrid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .savedCard {
+          padding: 16px;
+        }
+
+        .savedTop {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 72px;
+          gap: 10px;
+          align-items: start;
+        }
+
+        .savedTop img {
+          width: 72px;
+          height: 72px;
+          object-fit: contain;
+          background: #070707;
+          border-radius: 12px;
+        }
+
+        .savedCard h3 {
+          font-size: 18px;
+        }
+
+        .savedMeta {
+          color: #aaa;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .savedCaption {
+          color: #ddd;
+          line-height: 1.5;
+        }
+
+        .queueList {
+          display: grid;
+          gap: 12px;
+        }
+
+        .queueItem {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 12px;
+          padding: 16px;
+          align-items: center;
+        }
+
+        .queueItem h3 {
+          font-size: 18px;
+        }
+
+        .queueItem p {
+          color: #ddd;
+        }
+
+        .productTile {
+          text-align: left;
+          color: #fff;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 18px;
+          padding: 14px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .productTile.selected {
+          border-color: #ffe600;
+          box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.08);
+        }
+
+        .productTile img {
+          width: 100%;
+          height: 160px;
+          object-fit: contain;
+          background: #070707;
+          border-radius: 14px;
+        }
+
+        .productTile strong {
+          font-size: 15px;
+        }
+
+        .productTile span {
+          color: #aaa;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .brandGrid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .brandCard {
+          padding: 22px;
+        }
+
+        .brandCard ul {
+          margin: 16px 0 0;
+          padding-left: 22px;
+          color: #ddd;
+          line-height: 1.7;
+        }
+
+        @media (max-width: 980px) {
+          .hero,
+          .dashboardGrid,
+          .brandGrid {
+            grid-template-columns: 1fr;
+          }
+
+          .statsGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .savedGrid,
+          .productGrid,
           .results,
           .scriptGrid {
             grid-template-columns: 1fr;
           }
 
+          .queueItem,
+          .resultToolbar,
+          .rowHead {
+            grid-template-columns: 1fr;
+            display: grid;
+          }
+        }
+
+        @media (max-width: 620px) {
           .promoPage {
             padding-top: 22px;
           }
 
-          .actions button {
+          .controls {
+            grid-template-columns: 1fr;
+          }
+
+          .actions button,
+          .toolbarActions button,
+          .savedActions button,
+          .queueActions button {
             width: 100%;
+          }
+
+          .statsGrid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
