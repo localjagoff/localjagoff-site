@@ -190,6 +190,7 @@ export default async function handler(req, res) {
           "Create fresh social media promo copy for Local Jagoff products.",
           "Brand voice: Pittsburgh / Western PA, black-and-gold energy, funny, gritty, confident, sarcastic, direct, not corporate.",
           "Use 'jagoff' naturally as brand language, but do not use hateful slurs, protected-class insults, threats, sexual content, or anything that would make ads harder to approve.",
+          "Use emojis naturally but lightly when appropriate: Facebook 1-2 max, Instagram 2-4 max, TikTok 1-3 max, YouTube Shorts 0-2 max. Favor black/gold/energy emojis like 🖤 💛 ⚡ 👀 🔥. Clean Ad tone should use few or no emojis.",
           "Never mention Printful, fulfillment vendors, supplier setup, internal APIs, production workflow, or private business operations.",
           "Do not claim exact material, weight, shipping time, origin, discounts, or guarantees unless the user supplied it in notes or product data.",
           "Avoid generic ecommerce fluff like elevate your wardrobe, premium quality, must-have, unleash your style, shop now before it is gone.",
