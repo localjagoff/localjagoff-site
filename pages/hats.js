@@ -1,8 +1,15 @@
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 import ProductCard from "../components/ProductCard";
 import productImages from "../lib/productImages";
+
+const SITE_URL = "https://www.localjagoff.com";
+const PAGE_URL = `${SITE_URL}/hats`;
+const PAGE_TITLE = "Pittsburgh Jagoff Hats | Local Jagoff";
+const PAGE_DESCRIPTION =
+  "Shop Local Jagoff Pittsburgh hats, trucker caps, black and gold headwear, 412 gear, and Western PA jagoff streetwear.";
 
 export default function HatsPage() {
   const [products, setProducts] = useState([]);
@@ -27,22 +34,107 @@ export default function HatsPage() {
 
   const hats = products.filter((p) => p.category === "hats");
 
+  const collectionJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    url: PAGE_URL,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Local Jagoff",
+      url: SITE_URL,
+    },
+  };
+
   return (
     <div className="category-page">
+      <Head>
+        <title>{PAGE_TITLE}</title>
+        <meta name="description" content={PAGE_DESCRIPTION} key="description" />
+        <link rel="canonical" href={PAGE_URL} key="canonical" />
+
+        <meta property="og:title" content={PAGE_TITLE} key="og:title" />
+        <meta
+          property="og:description"
+          content={PAGE_DESCRIPTION}
+          key="og:description"
+        />
+        <meta property="og:url" content={PAGE_URL} key="og:url" />
+        <meta property="og:type" content="website" key="og:type" />
+        <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
+        <meta
+          property="og:image"
+          content={`${SITE_URL}/images/social-share.jpg`}
+          key="og:image"
+        />
+        <meta
+          property="og:image:secure_url"
+          content={`${SITE_URL}/images/social-share.jpg`}
+          key="og:image:secure_url"
+        />
+        <meta property="og:image:width" content="1200" key="og:image:width" />
+        <meta property="og:image:height" content="630" key="og:image:height" />
+        <meta
+          property="og:image:alt"
+          content="Local Jagoff Pittsburgh hats and gear"
+          key="og:image:alt"
+        />
+
+        <meta
+          name="twitter:card"
+          content="summary_large_image"
+          key="twitter:card"
+        />
+        <meta name="twitter:title" content={PAGE_TITLE} key="twitter:title" />
+        <meta
+          name="twitter:description"
+          content={PAGE_DESCRIPTION}
+          key="twitter:description"
+        />
+        <meta
+          name="twitter:image"
+          content={`${SITE_URL}/images/social-share.jpg`}
+          key="twitter:image"
+        />
+        <meta
+          name="twitter:image:alt"
+          content="Local Jagoff Pittsburgh hats and gear"
+          key="twitter:image:alt"
+        />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(collectionJsonLd).replace(/</g, "\\u003c"),
+          }}
+          key="hats-jsonld"
+        />
+      </Head>
+
       <Navbar />
 
-      <div className="category-wrap">
+      <main className="category-wrap">
         <Link href="/" className="back-link">
           ← Back
         </Link>
-        <h1>Hats</h1>
+
+        <section className="category-hero" aria-label="Pittsburgh jagoff hats">
+          <p className="section-kicker">PUT SOMETHIN ON YOUR HEAD</p>
+          <h1>Pittsburgh Jagoff Hats</h1>
+          <p>
+            Shop Local Jagoff hats and caps made for Pittsburgh attitude, black
+            and gold pride, 412 locals, and Western PA jagoffs who want the fit
+            to say something before they do.
+          </p>
+        </section>
 
         <div className="grid">
           {hats.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
-      </div>
+      </main>
 
       <style jsx>{`
         .category-page {
@@ -61,8 +153,38 @@ export default function HatsPage() {
           color: #ccc;
         }
 
+        .category-hero {
+          max-width: 880px;
+          margin: 0 0 30px;
+          padding: 22px;
+          border: 1px solid #242424;
+          border-radius: 20px;
+          background:
+            linear-gradient(180deg, rgba(255, 230, 0, 0.055), rgba(255, 230, 0, 0) 40%),
+            rgba(17, 17, 17, 0.72);
+        }
+
+        .section-kicker {
+          margin: 0 0 6px;
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 1.4px;
+        }
+
         h1 {
-          margin: 0 0 20px;
+          margin: 0 0 10px;
+          font-size: 36px;
+          line-height: 1.08;
+          letter-spacing: 0.4px;
+        }
+
+        .category-hero p {
+          max-width: 760px;
+          margin: 0;
+          color: #d8d8d8;
+          font-size: 15px;
+          line-height: 1.6;
         }
 
         .grid {
@@ -74,6 +196,21 @@ export default function HatsPage() {
         @media (max-width: 768px) {
           .category-wrap {
             padding: 18px 14px 26px;
+          }
+
+          .category-hero {
+            margin-bottom: 24px;
+            padding: 18px;
+            border-radius: 18px;
+          }
+
+          h1 {
+            font-size: 28px;
+          }
+
+          .category-hero p {
+            font-size: 14px;
+            line-height: 1.55;
           }
 
           .grid {
