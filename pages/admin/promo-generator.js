@@ -1,1 +1,1 @@
-export { default } from "./promo-command-center";
+export { default } from "./promo-command-center-v2";
