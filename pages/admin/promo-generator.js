@@ -165,7 +165,7 @@ export default function PromoGenerator() {
     setPromo(null);
 
     if (!adminKey.trim()) {
-      setError("Enter the promo generator password first.");
+      setError("Enter the promo generation key first.");
       return;
     }
 
@@ -233,12 +233,13 @@ export default function PromoGenerator() {
 
         <section className="panel controls">
           <div className="field full">
-            <label>Promo generator password</label>
+            <label>Promo generation key</label>
             <input
               type="password"
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
-              placeholder="Set this as PROMO_ADMIN_KEY in Vercel"
+              placeholder="Enter your private generation key"
+              autoComplete="off"
             />
           </div>
 
