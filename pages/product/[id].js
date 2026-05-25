@@ -55,6 +55,31 @@ const productDescriptions = {
     "Basic? Yeah. Boring? Not even close.",
 };
 
+const productSeoDescriptions = {
+  428851698:
+    "Shop the Local Jagoff Keystone 412 Tee, a Pittsburgh jagoff shirt with black and gold attitude, Western PA pride, and clean keystone energy.",
+  428851608:
+    "Shop the Local Jagoff Steel City Front and Back Tee, a Pittsburgh jagoff shirt made for yinzer attitude, black and gold pride, and Western PA streetwear.",
+  428851513:
+    "Shop the Local Jagoff 412 Sideways Tee, a Pittsburgh jagoff shirt with 412 pride, yinzer humor, and black and gold local attitude.",
+  428550417:
+    "Shop the Certified Jagoff T-Shirt from Local Jagoff, a Pittsburgh attitude tee made for yinzers, Western PA locals, and jagoffs who get it.",
+  428821578:
+    "Shop the Pittsburgh Local Jagoff Keystone Hoodie, a black and gold hoodie built for Pittsburgh weather, Western PA pride, and yinzer attitude.",
+  428851907:
+    "Shop the Local Jagoff Trucker Cap, a Pittsburgh hat made for black and gold locals, Western PA jagoffs, and everyday yinzer attitude.",
+  428983169:
+    "Shop the Local Jagoff Keystone 412 Hoodie, a Pittsburgh hoodie with 412 pride, black and gold energy, and Western PA streetwear attitude.",
+  428982889:
+    "Shop the Local Jagoff Keystone Tee, a Pittsburgh jagoff shirt with clean keystone style, black and gold attitude, and Western PA pride.",
+  428980566:
+    "Shop the Local Jagoff Trucker Hat, a Pittsburgh cap made for black and gold pride, Western PA locals, and jagoff attitude.",
+  429208592:
+    "Shop the Local Jagoff Keystone Hoodie, a Pittsburgh hoodie made for black and gold streetwear, yinzer attitude, and Western PA pride.",
+  429536493:
+    "Shop the Local Jagoff 412 Tee, a Pittsburgh jagoff shirt built for 412 pride, black and gold attitude, and Western PA locals.",
+};
+
 const productFallbackNames = {
   428851698: "Local Jagoff Keystone 412 Tee",
   428851608: "Local Jagoff Steel City Front and Back Tee",
@@ -84,6 +109,29 @@ function absoluteImageUrl(path) {
   return `${SITE_URL}/${path}`;
 }
 
+function getProductSeoDescription(productId, productName, category) {
+  if (productSeoDescriptions[productId]) {
+    return productSeoDescriptions[productId];
+  }
+
+  const cleanName =
+    productName && productName !== "Local Jagoff" ? productName : "Local Jagoff gear";
+
+  if (category === "tees") {
+    return `Shop ${cleanName} from Local Jagoff, a Pittsburgh jagoff shirt made for yinzer attitude, black and gold pride, and Western PA locals.`;
+  }
+
+  if (category === "hoodies") {
+    return `Shop ${cleanName} from Local Jagoff, a Pittsburgh hoodie made for black and gold streetwear, yinzer attitude, and Western PA locals.`;
+  }
+
+  if (category === "hats") {
+    return `Shop ${cleanName} from Local Jagoff, Pittsburgh headwear made for black and gold pride, Western PA locals, and jagoff attitude.`;
+  }
+
+  return `Shop ${cleanName} from Local Jagoff, Pittsburgh clothing and gear made for yinzers, jagoffs, black and gold pride, and Western PA attitude.`;
+}
+
 export default function ProductPage({ initialProductId }) {
   const router = useRouter();
   const { id } = router.query;
@@ -110,8 +158,11 @@ export default function ProductPage({ initialProductId }) {
 
   const shareTitle =
     product?.name || productFallbackNames[productId] || "Local Jagoff";
-  const shareDescription =
-    productDescriptions[productId] || "Certified nonsense. Pittsburgh attitude.";
+  const shareDescription = getProductSeoDescription(
+    productId,
+    shareTitle,
+    product?.category
+  );
   const shareUrl = `${SITE_URL}/product/${productId}`;
   const productSignal = productSignals[productId];
 
@@ -185,6 +236,35 @@ export default function ProductPage({ initialProductId }) {
 
   const displayedPrice =
     selectedVariant?.price || product?.retail_price || "0.00";
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: shareTitle,
+    description: shareDescription,
+    image: [shareImage],
+    brand: {
+      "@type": "Brand",
+      name: "Local Jagoff",
+    },
+    url: shareUrl,
+    ...(product
+      ? {
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "USD",
+            price: String(displayedPrice),
+            availability: "https://schema.org/InStock",
+            itemCondition: "https://schema.org/NewCondition",
+            url: shareUrl,
+            seller: {
+              "@type": "Organization",
+              name: "Local Jagoff",
+            },
+          },
+        }
+      : {}),
+  };
 
   const variantLabel = selectedVariant
     ? getVariantLabel(product?.name, selectedVariant.name)
@@ -306,6 +386,8 @@ export default function ProductPage({ initialProductId }) {
         <Head>
           <title>{shareTitle} | Local Jagoff</title>
           <meta name="description" content={shareDescription} key="description" />
+          <link rel="canonical" href={shareUrl} key="canonical" />
+
           <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
           <meta
             property="og:description"
@@ -319,6 +401,8 @@ export default function ProductPage({ initialProductId }) {
           <meta property="og:image:alt" content={shareTitle} key="og:image:alt" />
           <meta property="og:url" content={shareUrl} key="og:url" />
           <meta property="og:type" content="product" key="og:type" />
+          <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
+
           <meta
             name="twitter:card"
             content="summary_large_image"
@@ -327,6 +411,15 @@ export default function ProductPage({ initialProductId }) {
           <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
           <meta name="twitter:description" content={shareDescription} key="twitter:description" />
           <meta name="twitter:image" content={shareImage} key="twitter:image" />
+          <meta name="twitter:image:alt" content={shareTitle} key="twitter:image:alt" />
+
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+            }}
+            key="product-jsonld"
+          />
         </Head>
 
         <Navbar />
@@ -380,6 +473,8 @@ export default function ProductPage({ initialProductId }) {
       <Head>
         <title>{shareTitle} | Local Jagoff</title>
         <meta name="description" content={shareDescription} key="description" />
+        <link rel="canonical" href={shareUrl} key="canonical" />
+
         <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
         <meta
           property="og:description"
@@ -390,8 +485,11 @@ export default function ProductPage({ initialProductId }) {
         <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
         <meta property="og:image:width" content="1200" key="og:image:width" />
         <meta property="og:image:height" content="1200" key="og:image:height" />
+        <meta property="og:image:alt" content={shareTitle} key="og:image:alt" />
         <meta property="og:url" content={shareUrl} key="og:url" />
         <meta property="og:type" content="product" key="og:type" />
+        <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
+
         <meta
           name="twitter:card"
           content="summary_large_image"
@@ -400,6 +498,15 @@ export default function ProductPage({ initialProductId }) {
         <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
         <meta name="twitter:description" content={shareDescription} key="twitter:description" />
         <meta name="twitter:image" content={shareImage} key="twitter:image" />
+        <meta name="twitter:image:alt" content={shareTitle} key="twitter:image:alt" />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+          }}
+          key="product-jsonld"
+        />
       </Head>
 
       <Navbar />
