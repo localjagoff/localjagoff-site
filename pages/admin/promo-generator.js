@@ -30,7 +30,7 @@ const FREE_HOOKS = [
   "Western PA attitude, cleaned up just enough for public viewing.",
   "Not tourist gear. Not fake tough. Just Local Jagoff.",
   "Put this one on before somebody asks a dumb question.",
-  "Local gear for local behavior.",
+  "Local gear for jagoff behavior.",
   "For the 412, 724, and every jagoff in between.",
   "A little Pittsburgh. A little problem. A lot of Local Jagoff.",
   "Black-and-gold attitude without looking like a stadium gift shop.",
