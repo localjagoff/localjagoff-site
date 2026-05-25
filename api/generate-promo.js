@@ -91,6 +91,16 @@ function trackedUrl(product, source, campaign) {
   return `${productUrl(product)}?${params.toString()}`;
 }
 
+function postingBundleGuidance() {
+  return [
+    "Posting bundles:",
+    "Facebook Bundle: Facebook Post plus Facebook tracked link.",
+    "Instagram Bundle: Instagram Caption plus Instagram tracked link.",
+    "Short Video Bundle: Short caption plus tracked link.",
+    "YouTube Shorts Bundle: Shorts title plus description plus tracked link.",
+  ].join("\n");
+}
+
 function postingQaChecklist(promptData) {
   const isHoliday = promptData.mode === "holiday" || promptData.goal === "holiday_promo";
   const is724 = /724/.test(`${promptData.product?.name || ""} ${promptData.product?.category || ""}`);
@@ -125,10 +135,11 @@ function appendCtaHelper(promo, promptData) {
       `Instagram tracked link: ${trackedUrl(product, "instagram", campaign)}`,
       `TikTok tracked link: ${trackedUrl(product, "tiktok", campaign)}`,
       `YouTube Shorts tracked link: ${trackedUrl(product, "youtube_shorts", campaign)}`,
+      postingBundleGuidance(),
     ].join("\n"),
     warnings: [
       ...(Array.isArray(promo?.warnings) ? promo.warnings : []),
-      "CTA helper includes direct product link and UTM tracked social links.",
+      "CTA helper includes direct product link, UTM tracked social links, and posting bundle guidance.",
       ...postingQaChecklist(promptData),
     ],
   };
