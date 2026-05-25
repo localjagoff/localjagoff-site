@@ -67,6 +67,54 @@ function stripJsonFence(text) {
     .trim();
 }
 
+function slugify(value) {
+  return cleanText(value, "promo")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "promo";
+}
+
+function productUrl(product) {
+  return product?.id
+    ? `https://www.localjagoff.com/product/${product.id}`
+    : "https://www.localjagoff.com";
+}
+
+function trackedUrl(product, source, campaign) {
+  const params = new URLSearchParams({
+    utm_source: source,
+    utm_medium: "social",
+    utm_campaign: slugify(campaign || "ai-promo"),
+    utm_content: slugify(product?.name || "local-jagoff-product"),
+  });
+
+  return `${productUrl(product)}?${params.toString()}`;
+}
+
+function appendCtaHelper(promo, promptData) {
+  const product = promptData.product;
+  const campaign = promptData.goal || promptData.mode || "ai-promo";
+  const existingCta = cleanText(promo?.cta, "Shop at localjagoff.com.");
+  const firstLine = existingCta.split("\n")[0].replace(/^Main CTA:\s*/i, "").trim() || "Shop at localjagoff.com.";
+
+  return {
+    ...promo,
+    cta: [
+      `Main CTA: ${firstLine}`,
+      `First comment: ${firstLine}${promptData.toneIntensity === "clean" ? "" : " 🖤💛"}`,
+      `Product link: ${productUrl(product)}`,
+      `Facebook tracked link: ${trackedUrl(product, "facebook", campaign)}`,
+      `Instagram tracked link: ${trackedUrl(product, "instagram", campaign)}`,
+      `TikTok tracked link: ${trackedUrl(product, "tiktok", campaign)}`,
+      `YouTube Shorts tracked link: ${trackedUrl(product, "youtube_shorts", campaign)}`,
+    ].join("\n"),
+    warnings: [
+      ...(Array.isArray(promo?.warnings) ? promo.warnings : []),
+      "CTA helper includes direct product link and UTM tracked social links.",
+    ],
+  };
+}
+
 const promoSchema = {
   type: "object",
   additionalProperties: false,
@@ -192,6 +240,7 @@ export default async function handler(req, res) {
           "Use 'jagoff' naturally as brand language, but do not use hateful slurs, protected-class insults, threats, sexual content, or anything that would make ads harder to approve.",
           "Use emojis naturally but lightly when appropriate: Facebook 1-2 max, Instagram 2-4 max, TikTok 1-3 max, YouTube Shorts 0-2 max. Favor black/gold/energy emojis like 🖤 💛 ⚡ 👀 🔥. Clean Ad tone should use few or no emojis.",
           "If the product name or category includes 724, keep the copy focused on 724 / Western PA and do not mention 412 unless the user specifically asks for both.",
+          "The CTA field should start with a short public CTA only. The server will append direct product links and UTM tracked social links automatically.",
           "Never mention Printful, fulfillment vendors, supplier setup, internal APIs, production workflow, or private business operations.",
           "Do not claim exact material, weight, shipping time, origin, discounts, or guarantees unless the user supplied it in notes or product data.",
           "Avoid generic ecommerce fluff like elevate your wardrobe, premium quality, must-have, unleash your style, shop now before it is gone.",
@@ -240,7 +289,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ promo });
+    return res.status(200).json({ promo: appendCtaHelper(promo, promptData) });
   } catch (err) {
     console.error("PROMO GENERATOR ERROR:", err);
     return res.status(500).json({
