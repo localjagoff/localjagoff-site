@@ -47,6 +47,17 @@ export default function Home() {
         </picture>
       </div>
 
+      <section className="seo-intro" aria-label="About Local Jagoff">
+        <p className="seo-kicker">PITTSBURGH CLOTHING WITH YINZER ATTITUDE</p>
+        <h1>Local Jagoff Pittsburgh Shirts, Hoodies & Gear</h1>
+        <p>
+          Local Jagoff is a Pittsburgh clothing brand built for jagoffs, yinzers,
+          and Western PA locals who rep black and gold attitude. Shop Pittsburgh
+          jagoff shirts, hoodies, hats, 412 gear, 724 gear, and everyday streetwear
+          made for the people who get it.
+        </p>
+      </section>
+
       {featured.length > 0 && (
         <section className="featured-wrap">
           <div className="section-head">
@@ -233,6 +244,39 @@ export default function Home() {
           filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.48));
         }
 
+        .seo-intro {
+          position: relative;
+          z-index: 1;
+          max-width: 980px;
+          margin: 24px auto 4px;
+          padding: 22px 20px 8px;
+          text-align: center;
+        }
+
+        .seo-kicker {
+          margin: 0 0 8px;
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 1.3px;
+        }
+
+        .seo-intro h1 {
+          margin: 0 0 10px;
+          color: #fff;
+          font-size: 34px;
+          line-height: 1.08;
+          font-weight: 950;
+        }
+
+        .seo-intro p {
+          max-width: 780px;
+          margin: 0 auto;
+          color: #d8d8d8;
+          font-size: 15px;
+          line-height: 1.65;
+        }
+
         .featured-wrap {
           padding: 38px 20px 12px;
           overflow: hidden;
@@ -386,6 +430,21 @@ export default function Home() {
             max-height: none;
             object-fit: contain;
             object-position: center top;
+          }
+
+          .seo-intro {
+            margin: 14px auto 0;
+            padding: 18px 14px 4px;
+            text-align: left;
+          }
+
+          .seo-intro h1 {
+            font-size: 26px;
+          }
+
+          .seo-intro p {
+            font-size: 14px;
+            line-height: 1.55;
           }
 
           .grid {
