@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
+import PromoAdminNav from "../../components/PromoAdminNav";
 
 const KEYS = {
   queue: "localJagoffPromoQueue",
@@ -94,6 +95,7 @@ export default function PromoHub() {
         <title>Local Jagoff Promo Hub</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
+      <PromoAdminNav />
 
       <main className="wrap">
         <header className="hero">
@@ -123,7 +125,7 @@ export default function PromoHub() {
         </section>
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:38px 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1160px;margin:0 auto}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:28px;box-shadow:0 22px 80px rgba(0,0,0,.45);margin-bottom:16px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}h1{font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}p{color:#d6d6d6;line-height:1.6}.hero p{max-width:760px}button,.card span{display:inline-flex;width:max-content;margin-top:10px;border:none;border-radius:14px;background:#ffe600;color:#000;padding:13px 16px;font-weight:900;text-decoration:none;cursor:pointer}.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}.stats div,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{display:block;color:#fff;text-decoration:none}.card h2{text-transform:uppercase;color:#ffe600}.card:hover{border-color:#ffe600;transform:translateY(-1px)}@media(max-width:800px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1160px;margin:0 auto;padding-top:38px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:28px;box-shadow:0 22px 80px rgba(0,0,0,.45);margin-bottom:16px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}h1{font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}p{color:#d6d6d6;line-height:1.6}.hero p{max-width:760px}button,.card span{display:inline-flex;width:max-content;margin-top:10px;border:none;border-radius:14px;background:#ffe600;color:#000;padding:13px 16px;font-weight:900;text-decoration:none;cursor:pointer}.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}.stats div,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{display:block;color:#fff;text-decoration:none}.card h2{text-transform:uppercase;color:#ffe600}.card:hover{border-color:#ffe600;transform:translateY(-1px)}@media(max-width:800px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}}`}</style>
     </div>
   );
 }
