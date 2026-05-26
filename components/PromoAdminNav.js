@@ -44,6 +44,7 @@ export default function PromoAdminNav() {
     ["/admin/promo-queue", "Queue"],
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-library", "Library"],
+    ["/admin/promo-health", "Health"],
     ["/admin/promo-backup", "Backup"],
   ];
 
