@@ -34,6 +34,10 @@ function cleanNumber(value) {
   return Number.isFinite(number) && number >= 0 ? number : 0;
 }
 
+function cleanKey(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function queuePlatform(item) {
   return item.scheduledPlatform || item.displayPlatform || item.platform || "facebook";
 }
@@ -188,6 +192,24 @@ function buildBankEntry(entry) {
   };
 }
 
+function winnerBankKey(entry) {
+  return [
+    cleanKey(entry.productId),
+    cleanKey(entry.productName),
+    cleanKey(entry.platform || "general"),
+    cleanKey(entry.copy || entry.text),
+  ].join("|");
+}
+
+function bankItemKey(item) {
+  return [
+    cleanKey(item.productId),
+    cleanKey(item.productName),
+    cleanKey(item.platform || "general"),
+    cleanKey(item.text),
+  ].join("|");
+}
+
 export default function PromoPerformance() {
   const [queue, setQueue] = useState([]);
   const [performance, setPerformance] = useState([]);
@@ -285,6 +307,13 @@ export default function PromoPerformance() {
     }
 
     const bank = readArray(BANK_KEY);
+    const existingKeys = new Set(bank.map(bankItemKey));
+    if (existingKeys.has(winnerBankKey(entry))) {
+      updateEntry(entry.id, "winner", true);
+      setMessage("Already saved in Product Bank. Marked as winner.");
+      return;
+    }
+
     writeArray(BANK_KEY, [buildBankEntry(entry), ...bank].slice(0, 800));
     updateEntry(entry.id, "winner", true);
     setMessage("Winner saved to Product Bank.");
