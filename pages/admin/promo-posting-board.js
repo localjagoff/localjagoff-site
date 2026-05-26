@@ -13,13 +13,15 @@ const PLATFORM_LABELS = {
   full_pack: "Full Pack",
 };
 
-const STATUS_OPTIONS = ["Draft", "Ready", "Posted"];
+const STATUS_OPTIONS = ["Needs Review", "Approved", "Ready", "Posted", "Rejected"];
+const POSTING_STATUSES = new Set(["Approved", "Ready", "Posted"]);
 const VIEW_OPTIONS = [
   ["today", "Today"],
   ["upcoming", "Upcoming"],
+  ["approved", "Approved"],
   ["ready", "Ready"],
-  ["draft", "Draft"],
   ["posted", "Posted"],
+  ["review", "Needs Review"],
   ["all", "All"],
 ];
 
@@ -77,14 +79,23 @@ function queuePlatform(item) {
   return item.scheduledPlatform || item.displayPlatform || item.platform || "facebook";
 }
 
+function queueStatus(item) {
+  return item.status || "Draft";
+}
+
 function productUrl(item) {
   return item.product?.id ? `/product/${item.product.id}` : "/";
+}
+
+function productName(item) {
+  return item.product?.name || item.productName || "Queued Promo";
 }
 
 function bundleText(item) {
   const platform = queuePlatform(item);
   const platformBundle = formatPlatformBundle(item.promo, platform);
   if (platformBundle) return platformBundle;
+  if (item.promo?.builder_final) return item.promo.builder_final;
 
   return [
     item.promo?.facebook_post,
@@ -101,8 +112,8 @@ function buildCsv(items) {
   const rows = items.map((item) => [
     item.scheduledDate || "",
     PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item),
-    item.status || "Draft",
-    item.product?.name || "",
+    queueStatus(item),
+    productName(item),
     item.source || "",
     bundleText(item),
   ]);
@@ -117,8 +128,8 @@ function buildPlanText(items, title = "Local Jagoff Posting Plan") {
     `Generated: ${new Date().toLocaleString()}`,
     "",
     ...items.map((item, index) => [
-      `${index + 1}. ${niceDate(item.scheduledDate)} • ${PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item)} • ${item.status || "Draft"}`,
-      item.product?.name || "Queued Promo",
+      `${index + 1}. ${niceDate(item.scheduledDate)} • ${PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item)} • ${queueStatus(item)}`,
+      productName(item),
       productUrl(item),
       "",
       bundleText(item),
@@ -127,15 +138,16 @@ function buildPlanText(items, title = "Local Jagoff Posting Plan") {
 }
 
 function matchView(item, view) {
-  const status = item.status || "Draft";
+  const status = queueStatus(item);
   const date = item.scheduledDate || "";
   const today = todayIso();
 
-  if (view === "today") return date === today;
-  if (view === "upcoming") return date >= today && status !== "Posted";
+  if (view === "today") return date === today && POSTING_STATUSES.has(status);
+  if (view === "upcoming") return date >= today && status !== "Posted" && POSTING_STATUSES.has(status);
+  if (view === "approved") return status === "Approved";
   if (view === "ready") return status === "Ready";
-  if (view === "draft") return status === "Draft";
   if (view === "posted") return status === "Posted";
+  if (view === "review") return status === "Needs Review";
   return true;
 }
 
@@ -156,12 +168,13 @@ export default function PromoPostingBoard() {
       .filter((item) => {
         if (!q) return true;
         return [
-          item.product?.name,
+          productName(item),
           item.source,
           item.mode,
-          item.status,
+          queueStatus(item),
           queuePlatform(item),
           item.promo?.brand_angle,
+          item.promo?.builder_final,
           item.promo?.facebook_post,
           item.promo?.instagram_caption,
           item.promo?.tiktok_caption,
@@ -175,15 +188,19 @@ export default function PromoPostingBoard() {
     [queue]
   );
 
+  const todayPostingItems = useMemo(() => todayItems.filter((item) => POSTING_STATUSES.has(queueStatus(item))), [todayItems]);
+
   const stats = useMemo(() => ({
-    today: todayItems.length,
-    todayReady: todayItems.filter((item) => item.status === "Ready").length,
-    todayDraft: todayItems.filter((item) => (item.status || "Draft") === "Draft").length,
-    todayPosted: todayItems.filter((item) => item.status === "Posted").length,
-    ready: queue.filter((item) => item.status === "Ready").length,
-    draft: queue.filter((item) => (item.status || "Draft") === "Draft").length,
-    posted: queue.filter((item) => item.status === "Posted").length,
-  }), [queue, todayItems]);
+    today: todayPostingItems.length,
+    todayApproved: todayItems.filter((item) => queueStatus(item) === "Approved").length,
+    todayReady: todayItems.filter((item) => queueStatus(item) === "Ready").length,
+    todayReview: todayItems.filter((item) => queueStatus(item) === "Needs Review").length,
+    todayPosted: todayItems.filter((item) => queueStatus(item) === "Posted").length,
+    approved: queue.filter((item) => queueStatus(item) === "Approved").length,
+    ready: queue.filter((item) => queueStatus(item) === "Ready").length,
+    review: queue.filter((item) => queueStatus(item) === "Needs Review").length,
+    posted: queue.filter((item) => queueStatus(item) === "Posted").length,
+  }), [queue, todayItems, todayPostingItems]);
 
   const saveQueue = (next) => {
     setQueue(next);
@@ -197,9 +214,16 @@ export default function PromoPostingBoard() {
 
   const markTodayReady = () => {
     const today = todayIso();
-    const next = queue.map((item) => item.scheduledDate === today && (item.status || "Draft") !== "Posted" ? { ...item, status: "Ready" } : item);
+    const next = queue.map((item) => item.scheduledDate === today && ["Approved", "Ready"].includes(queueStatus(item)) ? { ...item, status: "Ready" } : item);
     saveQueue(next);
-    setMessage("Today's unposted items marked Ready.");
+    setMessage("Today's approved items marked Ready.");
+  };
+
+  const approveTodayReview = () => {
+    const today = todayIso();
+    const next = queue.map((item) => item.scheduledDate === today && queueStatus(item) === "Needs Review" ? { ...item, status: "Approved" } : item);
+    saveQueue(next);
+    setMessage("Today's review items approved.");
   };
 
   const copyBundle = (item) => {
@@ -208,13 +232,13 @@ export default function PromoPostingBoard() {
   };
 
   const copyTodayPlan = () => {
-    copyText(buildPlanText(todayItems, "Local Jagoff Today's Posting Plan"));
-    setMessage("Copied today's posting plan.");
+    copyText(buildPlanText(todayPostingItems, "Local Jagoff Today's Posting Plan"));
+    setMessage("Copied today's approved/ready posting plan.");
   };
 
   const exportCsv = () => downloadFile("local-jagoff-posting-board.csv", buildCsv(filtered), "text/csv");
-  const exportTodayCsv = () => downloadFile("local-jagoff-todays-posting-plan.csv", buildCsv(todayItems), "text/csv");
-  const exportTodayText = () => downloadFile("local-jagoff-todays-posting-plan.txt", buildPlanText(todayItems, "Local Jagoff Today's Posting Plan"));
+  const exportTodayCsv = () => downloadFile("local-jagoff-todays-posting-plan.csv", buildCsv(todayPostingItems), "text/csv");
+  const exportTodayText = () => downloadFile("local-jagoff-todays-posting-plan.txt", buildPlanText(todayPostingItems, "Local Jagoff Today's Posting Plan"));
 
   const exportText = () => {
     const text = buildPlanText(filtered, "Local Jagoff Posting Board Export");
@@ -229,27 +253,29 @@ export default function PromoPostingBoard() {
         <header className="hero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
           <h1>Posting Board</h1>
-          <p>Use this screen when you are actually posting or scheduling manually. Copy clean platform bundles, open the product page, and mark drafts as Ready or Posted.</p>
+          <p>Use this screen when you are actually posting or scheduling manually. It focuses on Approved, Ready, and Posted items so drafts and rejected posts do not clutter the posting flow.</p>
         </header>
 
         <section className="todayPlan">
           <div>
             <p className="kicker">TODAY'S POSTING PLAN</p>
-            <h2>{stats.today} today • {stats.todayReady} ready • {stats.todayDraft} draft • {stats.todayPosted} posted</h2>
-            <p>Copy or export only today's scheduled items without changing your current filters.</p>
+            <h2>{stats.today} postable today • {stats.todayApproved} approved • {stats.todayReady} ready • {stats.todayReview} review • {stats.todayPosted} posted</h2>
+            <p>Copy or export only today's approved/ready/posting items without changing your current filters.</p>
           </div>
           <div className="todayActions">
             <button type="button" className="primary" onClick={copyTodayPlan}>Copy Today's Plan</button>
             <button type="button" onClick={exportTodayText}>Export Today TXT</button>
             <button type="button" onClick={exportTodayCsv}>Export Today CSV</button>
+            <button type="button" onClick={approveTodayReview}>Approve Today Review</button>
             <button type="button" onClick={markTodayReady}>Mark Today Ready</button>
           </div>
         </section>
 
         <section className="stats">
           <button type="button" onClick={() => setView("today")}><strong>{stats.today}</strong><span>Today</span></button>
+          <button type="button" onClick={() => setView("approved")}><strong>{stats.approved}</strong><span>Approved</span></button>
           <button type="button" onClick={() => setView("ready")}><strong>{stats.ready}</strong><span>Ready</span></button>
-          <button type="button" onClick={() => setView("draft")}><strong>{stats.draft}</strong><span>Draft</span></button>
+          <button type="button" onClick={() => setView("review")}><strong>{stats.review}</strong><span>Review</span></button>
           <button type="button" onClick={() => setView("posted")}><strong>{stats.posted}</strong><span>Posted</span></button>
         </section>
 
@@ -268,26 +294,27 @@ export default function PromoPostingBoard() {
           {filtered.map((item) => {
             const platform = queuePlatform(item);
             const text = bundleText(item);
-            return <article key={item.queueId || item.id} className="card">
+            const status = queueStatus(item);
+            return <article key={item.queueId || item.id} className={`card card${status.replace(/\s+/g, "")}`}>
               <div className="top">
                 <div>
                   <p className="mini">{niceDate(item.scheduledDate)} • {PLATFORM_LABELS[platform] || platform}</p>
-                  <h2>{item.product?.name || "Queued Promo"}</h2>
-                  <span className={`pill pill${(item.status || "Draft").replace(/\s+/g, "")}`}>{item.status || "Draft"}</span>
+                  <h2>{productName(item)}</h2>
+                  <span className={`pill pill${status.replace(/\s+/g, "")}`}>{status}</span>
                 </div>
-                {item.product?.thumbnail_url && <img src={item.product.thumbnail_url} alt={item.product?.name || "Product"} />}
+                {item.product?.thumbnail_url && <img src={item.product.thumbnail_url} alt={productName(item)} />}
               </div>
               <pre>{text}</pre>
               <div className="actions">
                 <button type="button" className="primary" onClick={() => copyBundle(item)}>Copy Post</button>
                 <a href={productUrl(item)} target="_blank" rel="noreferrer">Open Product</a>
-                {STATUS_OPTIONS.map((status) => <button key={status} type="button" className={(item.status || "Draft") === status ? "active" : ""} onClick={() => updateStatus(item.queueId, status)}>{status}</button>)}
+                {STATUS_OPTIONS.map((statusOption) => <button key={statusOption} type="button" className={status === statusOption ? "active" : ""} onClick={() => updateStatus(item.queueId, statusOption)}>{statusOption}</button>)}
               </div>
             </article>;
           })}
         </section>
       </main>
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.todayPlan,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero,.todayPlan{padding:22px;margin-bottom:14px}.todayPlan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border-color:rgba(255,230,0,.32)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.todayPlan h2{margin:0;text-transform:uppercase;color:#ffe600}.hero p,.todayPlan p{color:#ddd;line-height:1.55}.todayActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.todayPlan,.stats,.toolbar,.board{grid-template-columns:1fr}.todayActions{justify-content:stretch}.todayActions button,.actions button,.actions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.todayPlan,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero,.todayPlan{padding:22px;margin-bottom:14px}.todayPlan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border-color:rgba(255,230,0,.32)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.todayPlan h2{margin:0;text-transform:uppercase;color:#ffe600}.hero p,.todayPlan p{color:#ddd;line-height:1.55}.todayActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.cardNeedsReview{border-color:rgba(255,230,0,.34)}.cardApproved{border-color:rgba(154,255,183,.28)}.cardRejected{opacity:.72;border-color:rgba(255,95,95,.25)}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.pillNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.pillApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.todayPlan,.stats,.toolbar,.board{grid-template-columns:1fr}.todayActions{justify-content:stretch}.todayActions button,.actions button,.actions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
     </div>
   );
 }
