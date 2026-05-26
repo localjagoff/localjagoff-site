@@ -43,6 +43,8 @@ function queuePlatform(item) {
 }
 
 function bundleText(item) {
+  if (item.promo?.builder_final) return item.promo.builder_final;
+
   const platform = queuePlatform(item);
   const platformBundle = formatPlatformBundle(item.promo, platform);
   if (platformBundle) return platformBundle;
