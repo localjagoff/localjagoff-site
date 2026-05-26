@@ -48,7 +48,9 @@ function writeArray(key, value) {
 }
 
 function copyText(value) {
-  if (value && typeof navigator !== "undefined") navigator.clipboard.writeText(value);
+  if (!value || typeof navigator === "undefined") return false;
+  navigator.clipboard.writeText(value);
+  return true;
 }
 
 function downloadFile(filename, content, type = "text/plain") {
@@ -84,6 +86,10 @@ function cleanSnippet(value) {
 
 function productKey(product) {
   return String(product?.id || product?.name || "");
+}
+
+function isPerformanceWinner(entry) {
+  return String(entry?.source || "").toLowerCase().includes("performance winner");
 }
 
 function normalizeEntry(item) {
@@ -205,6 +211,7 @@ export default function PromoProductBank() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [winnerOnly, setWinnerOnly] = useState(false);
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState("");
 
@@ -244,6 +251,7 @@ export default function PromoProductBank() {
     return bank.filter((entry) => {
       const haystack = [entry.productName, entry.productCategory, entry.type, entry.platform, entry.status, entry.text, entry.tag, entry.source].join(" ").toLowerCase();
       const entryProductKey = String(entry.productId || entry.productName);
+      if (winnerOnly && !isPerformanceWinner(entry)) return false;
       if (productFilter !== "all" && entryProductKey !== String(productFilter)) return false;
       if (typeFilter !== "all" && entry.type !== typeFilter) return false;
       if (platformFilter !== "all" && entry.platform !== platformFilter) return false;
@@ -251,7 +259,7 @@ export default function PromoProductBank() {
       if (q && !haystack.includes(q)) return false;
       return true;
     });
-  }, [bank, search, productFilter, typeFilter, platformFilter, statusFilter]);
+  }, [bank, search, productFilter, typeFilter, platformFilter, statusFilter, winnerOnly]);
 
   const savedForSelectedProduct = useMemo(() => {
     if (!selectedProduct) return [];
@@ -262,6 +270,7 @@ export default function PromoProductBank() {
   const stats = useMemo(() => ({
     total: bank.length,
     approved: bank.filter((entry) => entry.status === "Approved").length,
+    winners: bank.filter(isPerformanceWinner).length,
     review: bank.filter((entry) => entry.status === "Needs Review").length,
     rejected: bank.filter((entry) => entry.status === "Rejected").length,
     products: new Set(bank.map((entry) => entry.productId || entry.productName)).size,
@@ -307,10 +316,12 @@ export default function PromoProductBank() {
 
   const removeEntry = (id) => {
     saveBank(bank.filter((entry) => entry.id !== id));
+    setMessage("Product Bank item removed.");
   };
 
   const updateStatus = (id, status) => {
     saveBank(bank.map((entry) => entry.id === id ? { ...entry, status } : entry));
+    setMessage("Product Bank item updated.");
   };
 
   const cleanupDuplicates = () => {
@@ -364,6 +375,17 @@ export default function PromoProductBank() {
     }
   };
 
+  const copyEntry = (entry) => {
+    const ok = copyText(entry.text);
+    setMessage(ok ? "Copied Product Bank text." : "No text to copy.");
+  };
+
+  const showWinners = () => {
+    setWinnerOnly(true);
+    setStatusFilter("Approved");
+    setMessage("Showing approved Performance Winner entries.");
+  };
+
   return (
     <div className="page">
       <Head>
@@ -380,13 +402,14 @@ export default function PromoProductBank() {
         </header>
 
         <section className="stats">
-          <div><strong>{stats.total}</strong><span>Total</span></div>
-          <div><strong>{stats.approved}</strong><span>Approved</span></div>
-          <div><strong>{stats.review}</strong><span>Review</span></div>
-          <div><strong>{stats.rejected}</strong><span>Rejected</span></div>
+          <button type="button" onClick={() => setWinnerOnly(false)}><strong>{stats.total}</strong><span>Total</span></button>
+          <button type="button" onClick={() => setStatusFilter("Approved")}><strong>{stats.approved}</strong><span>Approved</span></button>
+          <button type="button" onClick={showWinners}><strong>{stats.winners}</strong><span>Winners</span></button>
+          <button type="button" onClick={() => setStatusFilter("Needs Review")}><strong>{stats.review}</strong><span>Review</span></button>
+          <button type="button" onClick={() => setStatusFilter("Rejected")}><strong>{stats.rejected}</strong><span>Rejected</span></button>
           <div><strong>{stats.products}</strong><span>Products</span></div>
-          <div><strong>{stats.captions}</strong><span>Captions</span></div>
-          <div><strong>{stats.hooks}</strong><span>Hooks</span></div>
+          <button type="button" onClick={() => setTypeFilter("caption")}><strong>{stats.captions}</strong><span>Captions</span></button>
+          <button type="button" onClick={() => setTypeFilter("hook")}><strong>{stats.hooks}</strong><span>Hooks</span></button>
         </section>
 
         <section className="layout">
@@ -411,16 +434,16 @@ export default function PromoProductBank() {
         </section>
 
         <section className="panel bankPanel">
-          <div className="bankHead"><div><p className="mini">BANK</p><h2>Reusable copy database</h2></div><div className="actions"><button type="button" onClick={exportFilteredJson}>Export Filtered JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div></div>
+          <div className="bankHead"><div><p className="mini">BANK</p><h2>Reusable copy database</h2>{winnerOnly && <p className="winnerNotice">Showing Performance Winner entries only.</p>}</div><div className="actions"><button type="button" onClick={() => setWinnerOnly(!winnerOnly)}>{winnerOnly ? "Show All" : "Show Winners"}</button><button type="button" onClick={exportFilteredJson}>Export Filtered JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div></div>
           <div className="filters"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bank..." /><select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}><option value="all">All Products</option>{productOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">All Types</option>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">All Statuses</option>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
           {filteredBank.length === 0 && <div className="empty">No bank entries match this view.</div>}
           <div className="bankGrid">
-            {filteredBank.map((entry) => <article key={entry.id} className="entry"><div className="entryTop"><div><p className="mini">{labelFromOptions(TYPE_OPTIONS, entry.type)} • {labelFromOptions(PLATFORM_OPTIONS, entry.platform)}</p><h3>{entry.productName}</h3></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div><div className="entryControls"><span className={`status status${entry.status.replace(/\s+/g, "")}`}>{entry.status}</span><select value={entry.status} onChange={(e) => updateStatus(entry.id, e.target.value)}>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>{entry.tag && <p className="tag">{entry.tag}</p>}<pre>{entry.text}</pre><div className="entryActions"><button type="button" onClick={() => copyText(entry.text)}>Copy</button><button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}
+            {filteredBank.map((entry) => <article key={entry.id} className={`entry ${isPerformanceWinner(entry) ? "winnerEntry" : ""}`}><div className="entryTop"><div><p className="mini">{labelFromOptions(TYPE_OPTIONS, entry.type)} • {labelFromOptions(PLATFORM_OPTIONS, entry.platform)}</p><h3>{entry.productName}</h3></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div><div className="entryControls"><span className={`status status${entry.status.replace(/\s+/g, "")}`}>{entry.status}</span>{isPerformanceWinner(entry) && <span className="winnerBadge">Winner</span>}<select value={entry.status} onChange={(e) => updateStatus(entry.id, e.target.value)}>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>{entry.tag && <p className="tag">{entry.tag}</p>}<pre>{entry.text}</pre><div className="entryActions"><button type="button" onClick={() => copyEntry(entry)}>Copy</button><button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}
           </div>
         </section>
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:120px}.importPanel textarea{min-height:130px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions,.entryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.message{color:#ffe600;font-weight:900}.savedBlock{margin-top:14px}.savedList{display:grid;gap:10px;max-height:330px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag,.status{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.statusApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.statusNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.28);color:#ffe600}.statusRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.entryControls select{max-width:180px}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:1050px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.stats button,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats button{text-align:left;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:120px}.importPanel textarea{min-height:130px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions,.entryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.message{color:#ffe600;font-weight:900}.winnerNotice{margin:4px 0 0;color:#ffe600;font-weight:900}.savedBlock{margin-top:14px}.savedList{display:grid;gap:10px;max-height:330px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entry.winnerEntry{border-color:rgba(255,230,0,.38);background:linear-gradient(135deg,rgba(255,230,0,.08),rgba(13,13,13,.92))}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag,.status,.winnerBadge{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.winnerBadge{background:#ffe600;color:#000;border-color:#ffe600}.statusApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.statusNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.28);color:#ffe600}.statusRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.entryControls select{max-width:180px}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:1050px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
     </div>
   );
 }
