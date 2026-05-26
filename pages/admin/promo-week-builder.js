@@ -6,6 +6,7 @@ import { makeFreePromoPack, normalizePromoProduct } from "../../lib/promoTemplat
 
 const QUEUE_KEY = "localJagoffPromoQueue";
 const SAVED_KEY = "localJagoffSavedPromoPacks";
+const BANK_KEY = "localJagoffProductPromoBank";
 
 const PLATFORM_OPTIONS = [
   ["facebook", "Facebook"],
@@ -68,11 +69,30 @@ function productMatches(product, query) {
   return [product.name, product.category, product.id].join(" ").toLowerCase().includes(q);
 }
 
+function bankMatchesProduct(entry, product) {
+  return String(entry.productId || "") === String(product.id || "") || String(entry.productName || "") === String(product.name || "");
+}
+
+function getBankHints(product, platform, bank) {
+  return bank
+    .filter((entry) => bankMatchesProduct(entry, product))
+    .filter((entry) => entry.platform === platform || entry.platform === "general")
+    .slice(0, 5);
+}
+
+function formatBankHints(hints) {
+  if (!hints.length) return "";
+  return [
+    "Approved Product Bank lines to consider:",
+    ...hints.map((entry) => `- ${entry.type || "note"} / ${entry.platform || "general"}: ${entry.text}`),
+  ].join("\n");
+}
+
 function campaignItemToQueueItem(item) {
   return {
     id: `pack-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     queueId: `queue-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    source: "Weekly Builder",
+    source: item.bankHints?.length ? "Weekly Builder + Product Bank" : "Weekly Builder",
     createdAt: new Date().toISOString(),
     queuedAt: new Date().toISOString(),
     mode: item.mode,
@@ -86,12 +106,15 @@ function campaignItemToQueueItem(item) {
     notes: item.notes,
     product: item.product,
     promo: item.promo,
+    bankHints: item.bankHints || [],
   };
 }
 
 export default function PromoWeekBuilder() {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [productBank, setProductBank] = useState([]);
+  const [useProductBank, setUseProductBank] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [search, setSearch] = useState("");
   const [startDate, setStartDate] = useState(todayIso());
@@ -104,6 +127,8 @@ export default function PromoWeekBuilder() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    setProductBank(readArray(BANK_KEY));
+
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => {
@@ -124,6 +149,8 @@ export default function PromoWeekBuilder() {
     () => products.filter((product) => productMatches(product, search)),
     [products, search]
   );
+
+  const productBankCount = useMemo(() => productBank.length, [productBank]);
 
   const toggleProduct = (id) => {
     const key = String(id);
@@ -148,6 +175,7 @@ export default function PromoWeekBuilder() {
 
   const buildPreview = () => {
     setMessage("");
+    setProductBank(readArray(BANK_KEY));
 
     if (selectedProducts.length === 0) {
       setPreviewItems([]);
@@ -161,17 +189,24 @@ export default function PromoWeekBuilder() {
       return;
     }
 
+    const liveBank = readArray(BANK_KEY);
     const totalDays = Math.max(1, Math.min(Number(days) || 7, 31));
     const nextItems = Array.from({ length: totalDays }).map((_, index) => {
       const product = selectedProducts[index % selectedProducts.length];
       const platform = platforms[index % platforms.length];
       const date = addDays(startDate, index);
+      const bankHints = useProductBank ? getBankHints(product, platform, liveBank) : [];
+      const bankHintText = formatBankHints(bankHints);
       const promo = makeFreePromoPack(product, {
         mode,
         platform,
         goal: "weekly_campaign",
         toneIntensity,
-        notes: `${notes}\nWeekly campaign day ${index + 1}. Platform: ${platformLabel(platform)}.`,
+        notes: [
+          notes,
+          `Weekly campaign day ${index + 1}. Platform: ${platformLabel(platform)}.`,
+          bankHintText,
+        ].filter(Boolean).join("\n"),
       });
 
       return {
@@ -180,13 +215,14 @@ export default function PromoWeekBuilder() {
         platform,
         mode,
         toneIntensity,
-        notes,
+        notes: [notes, bankHintText].filter(Boolean).join("\n"),
         promo,
+        bankHints,
       };
     });
 
     setPreviewItems(nextItems);
-    setMessage(`${nextItems.length} draft promos built. Review, then add to queue.`);
+    setMessage(`${nextItems.length} draft promos built${useProductBank ? " with Product Bank hints where available" : ""}. Review, then add to queue.`);
   };
 
   const addPreviewToQueue = () => {
@@ -211,7 +247,7 @@ export default function PromoWeekBuilder() {
     const newSaved = previewItems.map((item) => ({
       ...campaignItemToQueueItem(item),
       queueId: undefined,
-      source: "Weekly Builder Save",
+      source: item.bankHints?.length ? "Weekly Builder Save + Product Bank" : "Weekly Builder Save",
     }));
     writeArray(SAVED_KEY, [...newSaved, ...existingSaved].slice(0, 200));
     setMessage(`${newSaved.length} promos saved to the library.`);
@@ -230,7 +266,7 @@ export default function PromoWeekBuilder() {
           <div>
             <p className="kicker">PRIVATE ADMIN TOOL</p>
             <h1>Week Builder</h1>
-            <p>Build a full run of free promo drafts in one shot, then push them into Queue, Calendar, and Library.</p>
+            <p>Build a full run of free promo drafts in one shot, then push them into Queue, Calendar, and Library. Optional Product Bank hints help reuse approved winners.</p>
           </div>
         </header>
 
@@ -242,6 +278,7 @@ export default function PromoWeekBuilder() {
             <label>Mode<select value={mode} onChange={(e) => setMode(e.target.value)}>{MODE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label>Tone<select value={toneIntensity} onChange={(e) => setToneIntensity(e.target.value)}>{TONE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <div className="full"><p className="mini">Platform rotation</p><div className="checks">{PLATFORM_OPTIONS.map(([value, label]) => <button key={value} type="button" className={platforms.includes(value) ? "active" : ""} onClick={() => togglePlatform(value)}>{label}</button>)}</div></div>
+            <div className="full bankToggle"><button type="button" className={useProductBank ? "active" : ""} onClick={() => setUseProductBank(!useProductBank)}>{useProductBank ? "Using Product Bank" : "Product Bank Off"}</button><span>{productBankCount} approved bank item{productBankCount === 1 ? "" : "s"} available</span><a href="/admin/promo-product-bank">Open Product Bank</a></div>
             <label className="full">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Example: more 724, less salesy, hoodie-weather push..." /></label>
             <div className="actions full"><button type="button" className="primary" onClick={buildPreview}>Build Preview</button><button type="button" onClick={addPreviewToQueue}>Add Preview to Queue</button><button type="button" onClick={addPreviewToSaved}>Save Preview to Library</button></div>
             {message && <p className="message full">{message}</p>}
@@ -264,13 +301,13 @@ export default function PromoWeekBuilder() {
           <div className="previewGrid">
             {previewItems.map((item, index) => {
               const bundle = formatPlatformBundle(item.promo, item.platform);
-              return <article key={`${item.date}-${item.product.id}-${item.platform}-${index}`} className="previewCard"><p className="mini">{item.date} • {platformLabel(item.platform)}</p><h3>{item.product.name}</h3><p>{item.promo.brand_angle}</p><details><summary>Preview bundle</summary><pre>{bundle}</pre></details><button type="button" onClick={() => copyText(bundle)}>Copy Bundle</button></article>;
+              return <article key={`${item.date}-${item.product.id}-${item.platform}-${index}`} className="previewCard"><p className="mini">{item.date} • {platformLabel(item.platform)}</p><h3>{item.product.name}</h3><p>{item.promo.brand_angle}</p>{item.bankHints?.length > 0 && <details><summary>Product Bank hints used</summary><ul>{item.bankHints.map((hint) => <li key={hint.id}>{hint.type}: {hint.text}</li>)}</ul></details>}<details><summary>Preview bundle</summary><pre>{bundle}</pre></details><button type="button" onClick={() => copyText(bundle)}>Copy Bundle</button></article>;
             })}
           </div>
         </section>
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1280px;margin:0 auto;padding-top:34px}.hero{margin-bottom:16px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{max-width:820px;color:#ddd;line-height:1.55}.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px}.panel,.preview,.empty,.previewCard{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px}.panelHead,.full{grid-column:1/-1}.panelHead h2,.previewHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:110px}.checks,.actions,.productActions{display:flex;flex-wrap:wrap;gap:8px}button,.previewHead a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.checks button.active,.previewCard button{background:#ffe600;color:#000;border-color:#ffe600}.message{color:#ffe600;font-weight:900}.productsPanel{padding:18px}.productActions{margin:10px 0}.productList{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:4px}.productList button{text-align:left;display:grid;gap:4px}.productList button.selected{border-color:#ffe600;background:rgba(255,230,0,.1)}.productList span{font-weight:900}.productList small{color:#aaa;text-transform:uppercase}.muted{color:#ccc}.preview{padding:18px;margin-top:16px}.previewHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.previewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.previewCard{padding:14px}.previewCard h3{text-transform:uppercase}.previewCard p{color:#ddd;line-height:1.5}details{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;margin:12px 0}summary{cursor:pointer;color:#ffe600;font-weight:900;text-transform:uppercase;font-size:12px}pre{white-space:pre-wrap;color:#f2f2f2}.empty{padding:18px;text-align:center;color:#ddd}@media(max-width:980px){.layout{grid-template-columns:1fr}.previewGrid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.controls,.previewGrid{grid-template-columns:1fr}.actions button,.checks button,.productActions button,.previewHead a,.previewCard button{width:100%;text-align:center}.previewHead{display:grid}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1280px;margin:0 auto;padding-top:34px}.hero{margin-bottom:16px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{max-width:820px;color:#ddd;line-height:1.55}.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px}.panel,.preview,.empty,.previewCard{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px}.panelHead,.full{grid-column:1/-1}.panelHead h2,.previewHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:110px}.checks,.actions,.productActions,.bankToggle{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.bankToggle{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.bankToggle span{color:#ccc;font-size:12px;font-weight:900;text-transform:uppercase}.bankToggle a{color:#ffe600;font-weight:900;text-decoration:none}button,.previewHead a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.checks button.active,.bankToggle button.active,.previewCard button{background:#ffe600;color:#000;border-color:#ffe600}.message{color:#ffe600;font-weight:900}.productsPanel{padding:18px}.productActions{margin:10px 0}.productList{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:4px}.productList button{text-align:left;display:grid;gap:4px}.productList button.selected{border-color:#ffe600;background:rgba(255,230,0,.1)}.productList span{font-weight:900}.productList small{color:#aaa;text-transform:uppercase}.muted{color:#ccc}.preview{padding:18px;margin-top:16px}.previewHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.previewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.previewCard{padding:14px}.previewCard h3{text-transform:uppercase}.previewCard p{color:#ddd;line-height:1.5}details{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;margin:12px 0}summary{cursor:pointer;color:#ffe600;font-weight:900;text-transform:uppercase;font-size:12px}pre{white-space:pre-wrap;color:#f2f2f2}.previewCard ul{color:#ddd;line-height:1.5;padding-left:22px}.empty{padding:18px;text-align:center;color:#ddd}@media(max-width:980px){.layout{grid-template-columns:1fr}.previewGrid{grid-template-columns:1fr 1fr}}@media(max-width:650px){.controls,.previewGrid{grid-template-columns:1fr}.actions button,.checks button,.productActions button,.previewHead a,.previewCard button,.bankToggle button,.bankToggle a{width:100%;text-align:center}.previewHead{display:grid}}`}</style>
     </div>
   );
 }
