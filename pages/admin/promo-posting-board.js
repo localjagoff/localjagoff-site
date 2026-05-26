@@ -109,6 +109,23 @@ function buildCsv(items) {
   return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
 }
 
+function buildPlanText(items, title = "Local Jagoff Posting Plan") {
+  if (!items.length) return `${title}\n\nNo posting items.`;
+
+  return [
+    title,
+    `Generated: ${new Date().toLocaleString()}`,
+    "",
+    ...items.map((item, index) => [
+      `${index + 1}. ${niceDate(item.scheduledDate)} • ${PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item)} • ${item.status || "Draft"}`,
+      item.product?.name || "Queued Promo",
+      productUrl(item),
+      "",
+      bundleText(item),
+    ].join("\n")),
+  ].join("\n\n--------------------\n\n");
+}
+
 function matchView(item, view) {
   const status = item.status || "Draft";
   const date = item.scheduledDate || "";
@@ -153,12 +170,20 @@ export default function PromoPostingBoard() {
       .sort((a, b) => String(a.scheduledDate || "9999").localeCompare(String(b.scheduledDate || "9999")));
   }, [queue, view, platformFilter, search]);
 
+  const todayItems = useMemo(
+    () => queue.filter((item) => item.scheduledDate === todayIso()).sort((a, b) => queuePlatform(a).localeCompare(queuePlatform(b))),
+    [queue]
+  );
+
   const stats = useMemo(() => ({
-    today: queue.filter((item) => item.scheduledDate === todayIso()).length,
+    today: todayItems.length,
+    todayReady: todayItems.filter((item) => item.status === "Ready").length,
+    todayDraft: todayItems.filter((item) => (item.status || "Draft") === "Draft").length,
+    todayPosted: todayItems.filter((item) => item.status === "Posted").length,
     ready: queue.filter((item) => item.status === "Ready").length,
     draft: queue.filter((item) => (item.status || "Draft") === "Draft").length,
     posted: queue.filter((item) => item.status === "Posted").length,
-  }), [queue]);
+  }), [queue, todayItems]);
 
   const saveQueue = (next) => {
     setQueue(next);
@@ -170,19 +195,29 @@ export default function PromoPostingBoard() {
     setMessage(`Marked ${status}.`);
   };
 
+  const markTodayReady = () => {
+    const today = todayIso();
+    const next = queue.map((item) => item.scheduledDate === today && (item.status || "Draft") !== "Posted" ? { ...item, status: "Ready" } : item);
+    saveQueue(next);
+    setMessage("Today's unposted items marked Ready.");
+  };
+
   const copyBundle = (item) => {
     copyText(bundleText(item));
     setMessage("Copied posting bundle.");
   };
 
+  const copyTodayPlan = () => {
+    copyText(buildPlanText(todayItems, "Local Jagoff Today's Posting Plan"));
+    setMessage("Copied today's posting plan.");
+  };
+
   const exportCsv = () => downloadFile("local-jagoff-posting-board.csv", buildCsv(filtered), "text/csv");
+  const exportTodayCsv = () => downloadFile("local-jagoff-todays-posting-plan.csv", buildCsv(todayItems), "text/csv");
+  const exportTodayText = () => downloadFile("local-jagoff-todays-posting-plan.txt", buildPlanText(todayItems, "Local Jagoff Today's Posting Plan"));
 
   const exportText = () => {
-    const text = filtered.map((item) => [
-      `${niceDate(item.scheduledDate)} • ${PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item)} • ${item.status || "Draft"}`,
-      item.product?.name || "Queued Promo",
-      bundleText(item),
-    ].join("\n")).join("\n\n====================\n\n");
+    const text = buildPlanText(filtered, "Local Jagoff Posting Board Export");
     downloadFile("local-jagoff-posting-board.txt", text || "No posting items.");
   };
 
@@ -196,6 +231,20 @@ export default function PromoPostingBoard() {
           <h1>Posting Board</h1>
           <p>Use this screen when you are actually posting or scheduling manually. Copy clean platform bundles, open the product page, and mark drafts as Ready or Posted.</p>
         </header>
+
+        <section className="todayPlan">
+          <div>
+            <p className="kicker">TODAY'S POSTING PLAN</p>
+            <h2>{stats.today} today • {stats.todayReady} ready • {stats.todayDraft} draft • {stats.todayPosted} posted</h2>
+            <p>Copy or export only today's scheduled items without changing your current filters.</p>
+          </div>
+          <div className="todayActions">
+            <button type="button" className="primary" onClick={copyTodayPlan}>Copy Today's Plan</button>
+            <button type="button" onClick={exportTodayText}>Export Today TXT</button>
+            <button type="button" onClick={exportTodayCsv}>Export Today CSV</button>
+            <button type="button" onClick={markTodayReady}>Mark Today Ready</button>
+          </div>
+        </section>
 
         <section className="stats">
           <button type="button" onClick={() => setView("today")}><strong>{stats.today}</strong><span>Today</span></button>
@@ -238,7 +287,7 @@ export default function PromoPostingBoard() {
           })}
         </section>
       </main>
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{padding:22px;margin-bottom:14px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.stats,.toolbar,.board{grid-template-columns:1fr}.actions button,.actions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.todayPlan,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero,.todayPlan{padding:22px;margin-bottom:14px}.todayPlan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border-color:rgba(255,230,0,.32)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.todayPlan h2{margin:0;text-transform:uppercase;color:#ffe600}.hero p,.todayPlan p{color:#ddd;line-height:1.55}.todayActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.todayPlan,.stats,.toolbar,.board{grid-template-columns:1fr}.todayActions{justify-content:stretch}.todayActions button,.actions button,.actions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
     </div>
   );
 }
