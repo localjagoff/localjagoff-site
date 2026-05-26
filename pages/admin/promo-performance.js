@@ -1,0 +1,317 @@
+import Head from "next/head";
+import { useEffect, useMemo, useState } from "react";
+import PromoAdminNav from "../../components/PromoAdminNav";
+import { formatPlatformBundle } from "../../lib/promoBundleFormatter";
+
+const QUEUE_KEY = "localJagoffPromoQueue";
+const PERF_KEY = "localJagoffPromoPerformance";
+const BANK_KEY = "localJagoffProductPromoBank";
+
+const PLATFORM_LABELS = {
+  facebook: "Facebook",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  youtube_shorts: "YouTube Shorts",
+  full_pack: "Full Pack",
+};
+
+function readArray(key) {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeArray(key, value) {
+  if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : []));
+}
+
+function cleanNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : 0;
+}
+
+function queuePlatform(item) {
+  return item.scheduledPlatform || item.displayPlatform || item.platform || "facebook";
+}
+
+function bundleText(item) {
+  const platform = queuePlatform(item);
+  const platformBundle = formatPlatformBundle(item.promo, platform);
+  if (platformBundle) return platformBundle;
+
+  return [
+    item.promo?.facebook_post,
+    item.promo?.instagram_caption,
+    item.promo?.tiktok_caption,
+    item.promo?.youtube_shorts_title,
+    item.promo?.youtube_shorts_description,
+    item.promo?.cta,
+  ].filter(Boolean).join("\n\n");
+}
+
+function niceDate(value) {
+  if (!value) return "No date";
+  try {
+    return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function downloadFile(filename, content, type = "text/plain") {
+  if (typeof document === "undefined") return;
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyText(value) {
+  if (value && typeof navigator !== "undefined") navigator.clipboard.writeText(value);
+}
+
+function score(entry) {
+  return cleanNumber(entry.views) + cleanNumber(entry.likes) * 3 + cleanNumber(entry.comments) * 5 + cleanNumber(entry.shares) * 8 + cleanNumber(entry.clicks) * 10 + cleanNumber(entry.sales) * 25;
+}
+
+function makePerformanceEntry(item) {
+  return {
+    id: `perf-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    queueId: item.queueId || item.id || "",
+    createdAt: new Date().toISOString(),
+    postedDate: item.scheduledDate || new Date().toISOString().slice(0, 10),
+    platform: queuePlatform(item),
+    productId: String(item.product?.id || ""),
+    productName: item.product?.name || "Queued Promo",
+    productImage: item.product?.thumbnail_url || item.product?.image || "",
+    source: item.source || "Posted Queue Item",
+    copy: bundleText(item),
+    postUrl: "",
+    views: 0,
+    likes: 0,
+    comments: 0,
+    shares: 0,
+    clicks: 0,
+    sales: 0,
+    notes: "",
+    winner: false,
+  };
+}
+
+function buildCsv(items) {
+  const headers = [
+    "posted_date",
+    "platform",
+    "product",
+    "views",
+    "likes",
+    "comments",
+    "shares",
+    "clicks",
+    "sales",
+    "score",
+    "winner",
+    "post_url",
+    "notes",
+    "copy",
+  ];
+
+  const rows = items.map((item) => [
+    item.postedDate,
+    PLATFORM_LABELS[item.platform] || item.platform,
+    item.productName,
+    item.views,
+    item.likes,
+    item.comments,
+    item.shares,
+    item.clicks,
+    item.sales,
+    score(item),
+    item.winner ? "Yes" : "No",
+    item.postUrl,
+    item.notes,
+    item.copy,
+  ]);
+
+  return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+}
+
+function buildBankEntry(entry) {
+  return {
+    id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    createdAt: new Date().toISOString(),
+    productId: String(entry.productId || ""),
+    productName: entry.productName || "Unknown product",
+    productImage: entry.productImage || "",
+    productCategory: "gear",
+    type: "caption",
+    platform: entry.platform || "general",
+    text: entry.copy || "",
+    source: "Performance Winner",
+    tag: `Winner score: ${score(entry)}`,
+    status: "Approved",
+  };
+}
+
+export default function PromoPerformance() {
+  const [queue, setQueue] = useState([]);
+  const [performance, setPerformance] = useState([]);
+  const [platformFilter, setPlatformFilter] = useState("all");
+  const [winnerOnly, setWinnerOnly] = useState(false);
+  const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setQueue(readArray(QUEUE_KEY));
+    setPerformance(readArray(PERF_KEY));
+  }, []);
+
+  const postedQueueItems = useMemo(() => queue.filter((item) => item.status === "Posted"), [queue]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return performance
+      .filter((item) => platformFilter === "all" || item.platform === platformFilter)
+      .filter((item) => !winnerOnly || item.winner)
+      .filter((item) => {
+        if (!q) return true;
+        return [item.productName, item.platform, item.notes, item.copy, item.postUrl].join(" ").toLowerCase().includes(q);
+      })
+      .sort((a, b) => score(b) - score(a));
+  }, [performance, platformFilter, winnerOnly, search]);
+
+  const stats = useMemo(() => ({
+    tracked: performance.length,
+    winners: performance.filter((item) => item.winner).length,
+    postedQueue: postedQueueItems.length,
+    totalViews: performance.reduce((sum, item) => sum + cleanNumber(item.views), 0),
+    totalClicks: performance.reduce((sum, item) => sum + cleanNumber(item.clicks), 0),
+    totalSales: performance.reduce((sum, item) => sum + cleanNumber(item.sales), 0),
+  }), [performance, postedQueueItems]);
+
+  const savePerformance = (next) => {
+    setPerformance(next);
+    writeArray(PERF_KEY, next);
+  };
+
+  const syncPosted = () => {
+    const existingIds = new Set(performance.map((item) => item.queueId).filter(Boolean));
+    const additions = postedQueueItems
+      .filter((item) => !existingIds.has(item.queueId || item.id))
+      .map(makePerformanceEntry);
+
+    if (additions.length === 0) {
+      setMessage("No new posted queue items to sync.");
+      return;
+    }
+
+    savePerformance([...additions, ...performance].slice(0, 500));
+    setMessage(`${additions.length} posted item${additions.length === 1 ? "" : "s"} added to Performance.`);
+  };
+
+  const updateEntry = (id, field, value) => {
+    savePerformance(performance.map((item) => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  const updateNumber = (id, field, value) => updateEntry(id, field, cleanNumber(value));
+
+  const removeEntry = (id) => {
+    savePerformance(performance.filter((item) => item.id !== id));
+    setMessage("Performance entry removed.");
+  };
+
+  const exportCsv = () => downloadFile("local-jagoff-promo-performance.csv", buildCsv(filtered), "text/csv");
+  const exportJson = () => downloadFile("local-jagoff-promo-performance.json", JSON.stringify({ exportedAt: new Date().toISOString(), performance }, null, 2), "application/json");
+
+  const saveWinnerToBank = (entry) => {
+    if (!entry.copy) {
+      setMessage("No copy found to save to Product Bank.");
+      return;
+    }
+
+    const bank = readArray(BANK_KEY);
+    writeArray(BANK_KEY, [buildBankEntry(entry), ...bank].slice(0, 800));
+    updateEntry(entry.id, "winner", true);
+    setMessage("Winner saved to Product Bank.");
+  };
+
+  return (
+    <div className="page">
+      <Head><title>Local Jagoff Promo Performance</title><meta name="robots" content="noindex,nofollow" /></Head>
+      <PromoAdminNav />
+      <main className="wrap">
+        <header className="hero">
+          <p className="kicker">PRIVATE ADMIN TOOL</p>
+          <h1>Performance</h1>
+          <p>Track what actually works after posts go live. Enter metrics manually, mark winners, and save winning copy back to the Product Bank.</p>
+        </header>
+
+        <section className="stats">
+          <div><strong>{stats.tracked}</strong><span>Tracked</span></div>
+          <div><strong>{stats.postedQueue}</strong><span>Posted Queue</span></div>
+          <div><strong>{stats.winners}</strong><span>Winners</span></div>
+          <div><strong>{stats.totalViews}</strong><span>Views</span></div>
+          <div><strong>{stats.totalClicks}</strong><span>Clicks</span></div>
+          <div><strong>{stats.totalSales}</strong><span>Sales</span></div>
+        </section>
+
+        <section className="toolbar">
+          <button type="button" className="primary" onClick={syncPosted}>Sync Posted Items</button>
+          <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{Object.entries(PLATFORM_LABELS).filter(([value]) => value !== "full_pack").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search performance..." />
+          <label className="check"><input type="checkbox" checked={winnerOnly} onChange={(e) => setWinnerOnly(e.target.checked)} /> Winners only</label>
+          <button type="button" onClick={exportCsv}>Export CSV</button>
+          <button type="button" onClick={exportJson}>Export JSON</button>
+        </section>
+
+        {message && <section className="message">{message}</section>}
+        {filtered.length === 0 && <section className="empty">No performance entries yet. Mark queue items Posted, then click Sync Posted Items.</section>}
+
+        <section className="grid">
+          {filtered.map((entry) => <article key={entry.id} className="card">
+            <div className="top">
+              <div><p className="mini">{niceDate(entry.postedDate)} • {PLATFORM_LABELS[entry.platform] || entry.platform}</p><h2>{entry.productName}</h2><span className={`score ${entry.winner ? "winner" : ""}`}>Score {score(entry)}</span></div>
+              {entry.productImage && <img src={entry.productImage} alt={entry.productName} />}
+            </div>
+
+            <div className="metrics">
+              <label>Views<input type="number" min="0" value={entry.views || 0} onChange={(e) => updateNumber(entry.id, "views", e.target.value)} /></label>
+              <label>Likes<input type="number" min="0" value={entry.likes || 0} onChange={(e) => updateNumber(entry.id, "likes", e.target.value)} /></label>
+              <label>Comments<input type="number" min="0" value={entry.comments || 0} onChange={(e) => updateNumber(entry.id, "comments", e.target.value)} /></label>
+              <label>Shares<input type="number" min="0" value={entry.shares || 0} onChange={(e) => updateNumber(entry.id, "shares", e.target.value)} /></label>
+              <label>Clicks<input type="number" min="0" value={entry.clicks || 0} onChange={(e) => updateNumber(entry.id, "clicks", e.target.value)} /></label>
+              <label>Sales<input type="number" min="0" value={entry.sales || 0} onChange={(e) => updateNumber(entry.id, "sales", e.target.value)} /></label>
+            </div>
+
+            <label>Post URL<input value={entry.postUrl || ""} onChange={(e) => updateEntry(entry.id, "postUrl", e.target.value)} placeholder="Paste live post URL..." /></label>
+            <label>Notes<textarea value={entry.notes || ""} onChange={(e) => updateEntry(entry.id, "notes", e.target.value)} placeholder="What worked? What flopped?" /></label>
+            <details><summary>Post copy</summary><pre>{entry.copy}</pre></details>
+
+            <div className="actions">
+              <button type="button" className="primary" onClick={() => copyText(entry.copy)}>Copy</button>
+              <button type="button" className={entry.winner ? "active" : ""} onClick={() => updateEntry(entry.id, "winner", !entry.winner)}>{entry.winner ? "Winner" : "Mark Winner"}</button>
+              <button type="button" onClick={() => saveWinnerToBank(entry)}>Save Winner to Bank</button>
+              <button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button>
+            </div>
+          </article>)}
+        </section>
+      </main>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero,.stats div,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{padding:22px;margin-bottom:14px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div{padding:16px}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{color:#ccc;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:auto 1fr 2fr auto auto auto;gap:10px;padding:14px;margin-bottom:14px;align-items:center}input,select,textarea{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.check{display:flex;gap:8px;align-items:center;color:#fff}.check input{width:auto}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.danger{color:#ff9a9a!important}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.score{display:inline-flex;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.score.winner{background:#ffe600;color:#000;border-color:#ffe600}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}textarea{min-height:90px;margin-top:8px}details{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;margin:12px 0}summary{cursor:pointer;color:#ffe600;font-weight:900;text-transform:uppercase}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:1000px){.stats,.toolbar,.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.actions button,.toolbar button{width:100%}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}@media(max-width:560px){.metrics{grid-template-columns:1fr}}`}</style>
+    </div>
+  );
+}
