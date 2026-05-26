@@ -17,6 +17,24 @@ function safeEqual(a, b) {
   return mismatch === 0;
 }
 
+function adminUsername() {
+  return (
+    process.env.PROMO_ADMIN_USERNAME ||
+    process.env.PROMO_ADMIN_USER ||
+    process.env.ADMIN_USERNAME ||
+    process.env.ADMIN_USER ||
+    ""
+  );
+}
+
+function adminPassword() {
+  return (
+    process.env.PROMO_ADMIN_PASSWORD ||
+    process.env.ADMIN_PASSWORD ||
+    ""
+  );
+}
+
 function unauthorized() {
   return new NextResponse("Admin login required.", {
     status: 401,
@@ -28,8 +46,8 @@ function unauthorized() {
 }
 
 export function middleware(request) {
-  const username = process.env.PROMO_ADMIN_USERNAME;
-  const password = process.env.PROMO_ADMIN_PASSWORD;
+  const username = adminUsername();
+  const password = adminPassword();
 
   if (!username || !password) {
     return new NextResponse(
@@ -72,5 +90,20 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/admin/promo-generator", "/admin/promo-generator/:path*"],
+  matcher: [
+    "/admin/promo-hub",
+    "/admin/promo-hub/:path*",
+    "/admin/promo-generator",
+    "/admin/promo-generator/:path*",
+    "/admin/promo-week-builder",
+    "/admin/promo-week-builder/:path*",
+    "/admin/promo-queue",
+    "/admin/promo-queue/:path*",
+    "/admin/promo-calendar",
+    "/admin/promo-calendar/:path*",
+    "/admin/promo-library",
+    "/admin/promo-library/:path*",
+    "/admin/promo-backup",
+    "/admin/promo-backup/:path*",
+  ],
 };
