@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import PromoCommandCenterV9 from "./promo-command-center-v9";
 
 const BANK_KEY = "localJagoffProductPromoBank";
+let cachedProducts = [];
 
 function readBank() {
   try {
@@ -16,12 +17,56 @@ function writeBank(items) {
   window.localStorage.setItem(BANK_KEY, JSON.stringify(Array.isArray(items) ? items : []));
 }
 
+function clean(value) {
+  return String(value || "").trim();
+}
+
+function normalizeName(value) {
+  return clean(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+async function hydrateProducts() {
+  if (cachedProducts.length > 0) return cachedProducts;
+
+  try {
+    const res = await fetch("/api/get-products");
+    const data = await res.json();
+    cachedProducts = Array.isArray(data) ? data : [];
+  } catch {
+    cachedProducts = [];
+  }
+
+  return cachedProducts;
+}
+
 function getCurrentProductName() {
   return (
     document.querySelector(".resultToolbar h2")?.textContent?.trim() ||
     document.querySelector(".selectedProduct h2")?.textContent?.trim() ||
     "Current Promo Product"
   );
+}
+
+function findProductByName(productName) {
+  const target = normalizeName(productName);
+  if (!target) return null;
+
+  return cachedProducts.find((product) => normalizeName(product.name) === target)
+    || cachedProducts.find((product) => normalizeName(product.name).includes(target))
+    || cachedProducts.find((product) => target.includes(normalizeName(product.name)))
+    || null;
+}
+
+function getCurrentProduct() {
+  const productName = getCurrentProductName();
+  const matchedProduct = findProductByName(productName);
+
+  return {
+    id: matchedProduct?.id ? String(matchedProduct.id) : "",
+    name: matchedProduct?.name || productName,
+    image: matchedProduct?.thumbnail_url || matchedProduct?.image || "",
+    category: matchedProduct?.category || "gear",
+  };
 }
 
 function classifyResultBlock(title = "") {
@@ -92,27 +137,27 @@ function saveBlockToBank(block, button) {
   }
 
   const { type, platform } = classifyResultBlock(title);
-  const productName = getCurrentProductName();
+  const product = getCurrentProduct();
 
   const entry = {
     id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     createdAt: new Date().toISOString(),
-    productId: "",
-    productName,
-    productImage: "",
-    productCategory: "gear",
+    productId: product.id,
+    productName: product.name,
+    productImage: product.image,
+    productCategory: product.category,
     type,
     platform,
     text,
-    source: "Generator Result",
+    source: product.id ? "Generator Result" : "Generator Result - Product Match Needed",
     tag: title,
-    status: "Approved",
+    status: product.id ? "Approved" : "Needs Review",
   };
 
-  const nextBank = [entry, ...readBank()].slice(0, 500);
+  const nextBank = [entry, ...readBank()].slice(0, 800);
   writeBank(nextBank);
 
-  button.textContent = "Saved";
+  button.textContent = product.id ? "Saved" : "Saved - Review";
   button.classList.add("bankSaved");
   window.setTimeout(() => {
     button.textContent = "Save to Bank";
@@ -170,6 +215,7 @@ function injectStyles() {
 
 export default function PromoCommandCenterV10() {
   useEffect(() => {
+    hydrateProducts();
     injectStyles();
     attachBankButtons();
 
