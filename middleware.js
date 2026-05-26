@@ -87,6 +87,8 @@ export const config = {
     "/admin/promo-insights/:path*",
     "/admin/promo-campaign-presets",
     "/admin/promo-campaign-presets/:path*",
+    "/admin/promo-launch-checklist",
+    "/admin/promo-launch-checklist/:path*",
     "/admin/promo-queue",
     "/admin/promo-queue/:path*",
     "/admin/promo-calendar",
