@@ -53,8 +53,8 @@ export default function PromoAdminNav() {
     ["/admin/promo-insights", "Insights"],
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-library", "Library"],
-    ["/admin/promo-product-bank", "Product Bank"],
-    ["/admin/promo-bank-repair", "Bank Repair"],
+    ["/admin/promo-product-bank", "Promo Parts"],
+    ["/admin/promo-bank-repair", "Parts Repair"],
     ["/admin/promo-health", "Health"],
     ["/admin/promo-backup", "Backup"],
   ];
