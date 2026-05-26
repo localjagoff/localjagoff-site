@@ -79,6 +79,8 @@ export const config = {
     "/admin/promo-generator/:path*",
     "/admin/promo-week-builder",
     "/admin/promo-week-builder/:path*",
+    "/admin/promo-posting-board",
+    "/admin/promo-posting-board/:path*",
     "/admin/promo-queue",
     "/admin/promo-queue/:path*",
     "/admin/promo-calendar",
