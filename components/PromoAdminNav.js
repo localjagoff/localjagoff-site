@@ -47,6 +47,7 @@ export default function PromoAdminNav() {
 
   const moreLinks = [
     ["/admin/promo-performance", "Performance"],
+    ["/admin/promo-insights", "Insights"],
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-library", "Library"],
     ["/admin/promo-product-bank", "Product Bank"],
