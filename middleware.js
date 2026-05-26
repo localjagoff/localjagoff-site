@@ -85,6 +85,8 @@ export const config = {
     "/admin/promo-calendar/:path*",
     "/admin/promo-library",
     "/admin/promo-library/:path*",
+    "/admin/promo-product-bank",
+    "/admin/promo-product-bank/:path*",
     "/admin/promo-health",
     "/admin/promo-health/:path*",
     "/admin/promo-backup",
