@@ -69,12 +69,20 @@ function productMatches(product, query) {
   return [product.name, product.category, product.id].join(" ").toLowerCase().includes(q);
 }
 
+function isApprovedBankEntry(entry) {
+  return !entry.status || entry.status === "Approved";
+}
+
 function bankMatchesProduct(entry, product) {
   return String(entry.productId || "") === String(product.id || "") || String(entry.productName || "") === String(product.name || "");
 }
 
+function getApprovedBank(bank) {
+  return bank.filter(isApprovedBankEntry);
+}
+
 function getBankHints(product, platform, bank) {
-  return bank
+  return getApprovedBank(bank)
     .filter((entry) => bankMatchesProduct(entry, product))
     .filter((entry) => entry.platform === platform || entry.platform === "general")
     .slice(0, 5);
@@ -150,7 +158,8 @@ export default function PromoWeekBuilder() {
     [products, search]
   );
 
-  const productBankCount = useMemo(() => productBank.length, [productBank]);
+  const approvedProductBankCount = useMemo(() => getApprovedBank(productBank).length, [productBank]);
+  const totalProductBankCount = useMemo(() => productBank.length, [productBank]);
 
   const toggleProduct = (id) => {
     const key = String(id);
@@ -175,7 +184,8 @@ export default function PromoWeekBuilder() {
 
   const buildPreview = () => {
     setMessage("");
-    setProductBank(readArray(BANK_KEY));
+    const latestBank = readArray(BANK_KEY);
+    setProductBank(latestBank);
 
     if (selectedProducts.length === 0) {
       setPreviewItems([]);
@@ -189,13 +199,12 @@ export default function PromoWeekBuilder() {
       return;
     }
 
-    const liveBank = readArray(BANK_KEY);
     const totalDays = Math.max(1, Math.min(Number(days) || 7, 31));
     const nextItems = Array.from({ length: totalDays }).map((_, index) => {
       const product = selectedProducts[index % selectedProducts.length];
       const platform = platforms[index % platforms.length];
       const date = addDays(startDate, index);
-      const bankHints = useProductBank ? getBankHints(product, platform, liveBank) : [];
+      const bankHints = useProductBank ? getBankHints(product, platform, latestBank) : [];
       const bankHintText = formatBankHints(bankHints);
       const promo = makeFreePromoPack(product, {
         mode,
@@ -222,7 +231,7 @@ export default function PromoWeekBuilder() {
     });
 
     setPreviewItems(nextItems);
-    setMessage(`${nextItems.length} draft promos built${useProductBank ? " with Product Bank hints where available" : ""}. Review, then add to queue.`);
+    setMessage(`${nextItems.length} draft promos built${useProductBank ? " with approved Product Bank hints where available" : ""}. Review, then add to queue.`);
   };
 
   const addPreviewToQueue = () => {
@@ -266,7 +275,7 @@ export default function PromoWeekBuilder() {
           <div>
             <p className="kicker">PRIVATE ADMIN TOOL</p>
             <h1>Week Builder</h1>
-            <p>Build a full run of free promo drafts in one shot, then push them into Queue, Calendar, and Library. Optional Product Bank hints help reuse approved winners.</p>
+            <p>Build a full run of free promo drafts in one shot, then push them into Queue, Calendar, and Library. Optional Product Bank hints only use approved winners.</p>
           </div>
         </header>
 
@@ -278,7 +287,7 @@ export default function PromoWeekBuilder() {
             <label>Mode<select value={mode} onChange={(e) => setMode(e.target.value)}>{MODE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label>Tone<select value={toneIntensity} onChange={(e) => setToneIntensity(e.target.value)}>{TONE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <div className="full"><p className="mini">Platform rotation</p><div className="checks">{PLATFORM_OPTIONS.map(([value, label]) => <button key={value} type="button" className={platforms.includes(value) ? "active" : ""} onClick={() => togglePlatform(value)}>{label}</button>)}</div></div>
-            <div className="full bankToggle"><button type="button" className={useProductBank ? "active" : ""} onClick={() => setUseProductBank(!useProductBank)}>{useProductBank ? "Using Product Bank" : "Product Bank Off"}</button><span>{productBankCount} approved bank item{productBankCount === 1 ? "" : "s"} available</span><a href="/admin/promo-product-bank">Open Product Bank</a></div>
+            <div className="full bankToggle"><button type="button" className={useProductBank ? "active" : ""} onClick={() => setUseProductBank(!useProductBank)}>{useProductBank ? "Using Approved Product Bank" : "Product Bank Off"}</button><span>{approvedProductBankCount} approved / {totalProductBankCount} total bank item{totalProductBankCount === 1 ? "" : "s"}</span><a href="/admin/promo-product-bank">Open Product Bank</a></div>
             <label className="full">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Example: more 724, less salesy, hoodie-weather push..." /></label>
             <div className="actions full"><button type="button" className="primary" onClick={buildPreview}>Build Preview</button><button type="button" onClick={addPreviewToQueue}>Add Preview to Queue</button><button type="button" onClick={addPreviewToSaved}>Save Preview to Library</button></div>
             {message && <p className="message full">{message}</p>}
@@ -301,7 +310,7 @@ export default function PromoWeekBuilder() {
           <div className="previewGrid">
             {previewItems.map((item, index) => {
               const bundle = formatPlatformBundle(item.promo, item.platform);
-              return <article key={`${item.date}-${item.product.id}-${item.platform}-${index}`} className="previewCard"><p className="mini">{item.date} • {platformLabel(item.platform)}</p><h3>{item.product.name}</h3><p>{item.promo.brand_angle}</p>{item.bankHints?.length > 0 && <details><summary>Product Bank hints used</summary><ul>{item.bankHints.map((hint) => <li key={hint.id}>{hint.type}: {hint.text}</li>)}</ul></details>}<details><summary>Preview bundle</summary><pre>{bundle}</pre></details><button type="button" onClick={() => copyText(bundle)}>Copy Bundle</button></article>;
+              return <article key={`${item.date}-${item.product.id}-${item.platform}-${index}`} className="previewCard"><p className="mini">{item.date} • {platformLabel(item.platform)}</p><h3>{item.product.name}</h3><p>{item.promo.brand_angle}</p>{item.bankHints?.length > 0 && <details><summary>Approved Product Bank hints used</summary><ul>{item.bankHints.map((hint) => <li key={hint.id}>{hint.type}: {hint.text}</li>)}</ul></details>}<details><summary>Preview bundle</summary><pre>{bundle}</pre></details><button type="button" onClick={() => copyText(bundle)}>Copy Bundle</button></article>;
             })}
           </div>
         </section>
