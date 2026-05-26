@@ -79,6 +79,8 @@ function queueStatus(item) {
 }
 
 function queueItemBundle(item) {
+  if (item?.promo?.builder_final) return item.promo.builder_final;
+
   const platform = queueItemPlatform(item);
   if (["facebook", "instagram", "tiktok", "youtube_shorts"].includes(platform)) {
     return formatPlatformBundle(item.promo, platform);
@@ -162,6 +164,7 @@ export default function PromoQueueManager() {
         item.mode,
         item.scheduledDate,
         item.promo?.brand_angle,
+        item.promo?.builder_final,
         item.promo?.facebook_post,
         item.promo?.instagram_caption,
         item.promo?.tiktok_caption,
@@ -312,7 +315,7 @@ export default function PromoQueueManager() {
                   {item.product?.thumbnail_url && <img src={item.product.thumbnail_url} alt={queueItemProductName(item)} />}
                 </div>
 
-                <p className="angle">{item.promo?.brand_angle || item.promo?.facebook_post || "No preview available."}</p>
+                <p className="angle">{item.promo?.brand_angle || item.promo?.builder_final || item.promo?.facebook_post || "No preview available."}</p>
 
                 <div className="editGrid">
                   <label>Date<input type="date" value={item.scheduledDate || ""} onChange={(e) => updateItem(item.queueId, { scheduledDate: e.target.value })} /></label>
