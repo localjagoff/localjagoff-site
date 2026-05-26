@@ -92,6 +92,10 @@ function productName(item) {
   return item.product?.name || item.productName || "Queued Promo";
 }
 
+function destinationName(item) {
+  return item.destinationLabel || item.destination || "No destination saved";
+}
+
 function publicProductUrl(item) {
   return item.product?.id ? `https://www.localjagoff.com/product/${item.product.id}` : "https://www.localjagoff.com";
 }
@@ -146,10 +150,11 @@ function platformOpenUrl(platform) {
 }
 
 function buildCsv(items) {
-  const headers = ["date", "platform", "status", "product", "source", "post_url", "copy"];
+  const headers = ["date", "platform", "destination", "status", "product", "source", "post_url", "copy"];
   const rows = items.map((item) => [
     item.scheduledDate || "",
     PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item),
+    destinationName(item),
     queueStatus(item),
     productName(item),
     item.source || "",
@@ -168,6 +173,7 @@ function buildPlanText(items, title = "Local Jagoff Posting Plan") {
     "",
     ...items.map((item, index) => [
       `${index + 1}. ${niceDate(item.scheduledDate)} • ${PLATFORM_LABELS[queuePlatform(item)] || queuePlatform(item)} • ${queueStatus(item)}`,
+      `Destination: ${destinationName(item)}`,
       productName(item),
       productUrl(item),
       item.platformPostUrl ? `Live Post: ${item.platformPostUrl}` : "Live Post: not added yet",
@@ -214,6 +220,8 @@ export default function PromoPostingBoard() {
         if (!q) return true;
         return [
           productName(item),
+          destinationName(item),
+          item.destination,
           item.source,
           item.mode,
           queueStatus(item),
@@ -320,7 +328,7 @@ export default function PromoPostingBoard() {
         <header className="hero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
           <h1>Posting Board</h1>
-          <p>Use this screen when you are actually posting or scheduling manually. Facebook and Instagram now have assisted posting actions and live post URL storage for future Meta metrics.</p>
+          <p>Use this screen when you are actually posting or scheduling manually. Each item now keeps its destination account separated for tracking.</p>
         </header>
 
         <section className="todayPlan">
@@ -349,7 +357,7 @@ export default function PromoPostingBoard() {
         <section className="toolbar">
           <select value={view} onChange={(e) => setView(e.target.value)}>{VIEW_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
           <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{Object.entries(PLATFORM_LABELS).filter(([value]) => value !== "full_pack").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search posting board..." />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search board, destination, URL..." />
           <button type="button" onClick={exportCsv}>Export CSV</button>
           <button type="button" onClick={exportText}>Export TXT</button>
         </section>
@@ -371,12 +379,13 @@ export default function PromoPostingBoard() {
                   <p className="mini">{niceDate(item.scheduledDate)} • {PLATFORM_LABELS[platform] || platform}</p>
                   <h2>{productName(item)}</h2>
                   <span className={`pill pill${status.replace(/\s+/g, "")}`}>{status}</span>
+                  <span className="destinationPill">{destinationName(item)}</span>
                 </div>
                 {item.product?.thumbnail_url && <img src={item.product.thumbnail_url} alt={productName(item)} />}
               </div>
 
               {assisted && <div className="assistBox">
-                <p className="mini">ASSISTED {PLATFORM_LABELS[platform]} POSTING</p>
+                <p className="mini">ASSISTED {PLATFORM_LABELS[platform]} POSTING • {destinationName(item)}</p>
                 <div className="assistActions">
                   <button type="button" className="primary" onClick={() => copyPart(item, "caption")}>Copy Caption</button>
                   <button type="button" onClick={() => copyPart(item, "hashtags")}>Copy Hashtags</button>
@@ -407,7 +416,7 @@ export default function PromoPostingBoard() {
           })}
         </section>
       </main>
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.todayPlan,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero,.todayPlan{padding:22px;margin-bottom:14px}.todayPlan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border-color:rgba(255,230,0,.32)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.todayPlan h2{margin:0;text-transform:uppercase;color:#ffe600}.hero p,.todayPlan p{color:#ddd;line-height:1.55}.todayActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a,.assistActions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.cardNeedsReview{border-color:rgba(255,230,0,.34)}.cardApproved{border-color:rgba(154,255,183,.28)}.cardRejected{opacity:.72;border-color:rgba(255,95,95,.25)}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333}.pillNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.pillApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.assistBox{margin:14px 0;padding:12px;border:1px solid rgba(255,230,0,.24);border-radius:18px;background:#050505}.assistActions{display:flex;flex-wrap:wrap;gap:8px}.urlActions{margin-top:8px}.liveUrlLabel{display:block;margin-top:12px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.liveUrlLabel input{margin-top:8px}.assistPreview{margin-top:12px;border-top:1px solid #242424;padding-top:12px}.assistPreview strong{display:block;color:#ffe600;font-size:12px;text-transform:uppercase;letter-spacing:1px}.assistPreview p{white-space:pre-wrap;color:#eee;line-height:1.45;margin:6px 0 12px}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.todayPlan,.stats,.toolbar,.board{grid-template-columns:1fr}.todayActions{justify-content:stretch}.todayActions button,.actions button,.actions a,.assistActions button,.assistActions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero,.todayPlan,.stats button,.toolbar,.message,.empty,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero,.todayPlan{padding:22px;margin-bottom:14px}.todayPlan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;border-color:rgba(255,230,0,.32)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.todayPlan h2{margin:0;text-transform:uppercase;color:#ffe600}.hero p,.todayPlan p{color:#ddd;line-height:1.55}.todayActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats button{text-align:left;color:#fff;padding:16px;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:32px}.stats span{color:#ccc;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:1px}.toolbar{display:grid;grid-template-columns:1fr 1fr 2fr auto auto;gap:10px;padding:14px;margin-bottom:14px}input,select{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button,.actions a,.assistActions a{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333;text-decoration:none}.primary,.active{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.cardNeedsReview{border-color:rgba(255,230,0,.34)}.cardApproved{border-color:rgba(154,255,183,.28)}.cardRejected{opacity:.72;border-color:rgba(255,95,95,.25)}.top{display:grid;grid-template-columns:minmax(0,1fr) 88px;gap:12px}.top h2{text-transform:uppercase}.top img{width:88px;height:88px;object-fit:contain;background:#070707;border-radius:14px}.pill,.destinationPill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333;margin:4px 6px 0 0}.destinationPill{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.pillNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.pillApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillReady{background:#ffe600;color:#000;border-color:#ffe600}.pillPosted{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.pillRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.assistBox{margin:14px 0;padding:12px;border:1px solid rgba(255,230,0,.24);border-radius:18px;background:#050505}.assistActions{display:flex;flex-wrap:wrap;gap:8px}.urlActions{margin-top:8px}.liveUrlLabel{display:block;margin-top:12px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.liveUrlLabel input{margin-top:8px}.assistPreview{margin-top:12px;border-top:1px solid #242424;padding-top:12px}.assistPreview strong{display:block;color:#ffe600;font-size:12px;text-transform:uppercase;letter-spacing:1px}.assistPreview p{white-space:pre-wrap;color:#eee;line-height:1.45;margin:6px 0 12px}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:330px;overflow:auto}.actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:900px){.todayPlan,.stats,.toolbar,.board{grid-template-columns:1fr}.todayActions{justify-content:stretch}.todayActions button,.actions button,.actions a,.assistActions button,.assistActions a,.toolbar button{width:100%;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}}`}</style>
     </div>
   );
 }
