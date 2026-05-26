@@ -304,7 +304,7 @@ export default function PromoPerformance() {
 
   const saveWinnerToBank = (entry) => {
     if (!entry.copy) {
-      setMessage("No copy found to save to Product Bank.");
+      setMessage("No copy found to save as a promo part.");
       return;
     }
 
@@ -312,13 +312,13 @@ export default function PromoPerformance() {
     const existingKeys = new Set(bank.map(bankItemKey));
     if (existingKeys.has(winnerBankKey(entry))) {
       updateEntry(entry.id, "winner", true);
-      setMessage("Already saved in Product Bank. Marked as winner.");
+      setMessage("Already saved as a promo part. Marked as winner.");
       return;
     }
 
     writeArray(BANK_KEY, [buildBankEntry(entry), ...bank].slice(0, 800));
     updateEntry(entry.id, "winner", true);
-    setMessage("Winner saved to Product Bank.");
+    setMessage("Winner saved as a promo part.");
   };
 
   return (
@@ -329,7 +329,7 @@ export default function PromoPerformance() {
         <header className="hero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
           <h1>Performance</h1>
-          <p>Track what actually works after posts go live. Enter metrics manually, mark winners, and save winning copy back to the Product Bank.</p>
+          <p>Track what actually works after posts go live. Enter metrics manually, mark winners, and save winning copy back as reusable promo parts.</p>
         </header>
 
         <section className="stats">
@@ -379,7 +379,7 @@ export default function PromoPerformance() {
             <div className="actions">
               <button type="button" className="primary" onClick={() => setMessage(copyText(entry.copy) ? "Copied post copy." : "No copy found.")}>Copy</button>
               <button type="button" className={entry.winner ? "active" : ""} onClick={() => updateEntry(entry.id, "winner", !entry.winner)}>{entry.winner ? "Winner" : "Mark Winner"}</button>
-              <button type="button" onClick={() => saveWinnerToBank(entry)}>Save Winner to Bank</button>
+              <button type="button" onClick={() => saveWinnerToBank(entry)}>Save Winner as Part</button>
               <button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button>
             </div>
           </article>)}
