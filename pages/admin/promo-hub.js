@@ -39,6 +39,15 @@ function downloadJson(filename, data) {
   URL.revokeObjectURL(url);
 }
 
+function platformLabel(value) {
+  const labels = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", youtube_shorts: "YouTube Shorts", full_pack: "Full Pack" };
+  return labels[value] || value || "Platform";
+}
+
+function productName(item) {
+  return item?.product?.name || item?.productName || "Promo item";
+}
+
 export default function PromoHub() {
   const [queue, setQueue] = useState([]);
   const [saved, setSaved] = useState([]);
@@ -63,22 +72,32 @@ export default function PromoHub() {
   const checklistComplete = Object.values(launchChecklist).filter(Boolean).length;
   const checklistIsToday = launchChecklistDate === todayIso();
 
-  const stats = useMemo(() => {
+  const todayItems = useMemo(() => {
     const today = todayIso();
-    return {
-      checklist: `${checklistComplete}/${CHECKLIST_TOTAL}`,
-      today: queue.filter((item) => item.scheduledDate === today).length,
-      ready: queue.filter((item) => item.status === "Ready").length,
-      queued: queue.length,
-      posted: queue.filter((item) => item.status === "Posted").length,
-      performance: performance.length,
-      winners: performance.filter((item) => item.winner).length,
-      presets: campaignPresets.length,
-      productBank: productBank.length,
-      saved: saved.length,
-      memory: phrases.length,
-    };
-  }, [queue, saved, phrases, productBank, performance, campaignPresets, checklistComplete]);
+    return queue.filter((item) => item.scheduledDate === today);
+  }, [queue]);
+
+  const todaySnapshot = useMemo(() => ({
+    total: todayItems.length,
+    ready: todayItems.filter((item) => item.status === "Ready").length,
+    draft: todayItems.filter((item) => (item.status || "Draft") === "Draft").length,
+    posted: todayItems.filter((item) => item.status === "Posted").length,
+    next: todayItems.slice(0, 5),
+  }), [todayItems]);
+
+  const stats = useMemo(() => ({
+    checklist: `${checklistComplete}/${CHECKLIST_TOTAL}`,
+    today: todaySnapshot.total,
+    ready: queue.filter((item) => item.status === "Ready").length,
+    queued: queue.length,
+    posted: queue.filter((item) => item.status === "Posted").length,
+    performance: performance.length,
+    winners: performance.filter((item) => item.winner).length,
+    presets: campaignPresets.length,
+    productBank: productBank.length,
+    saved: saved.length,
+    memory: phrases.length,
+  }), [queue, saved, phrases, productBank, performance, campaignPresets, checklistComplete, todaySnapshot.total]);
 
   const backupAll = () => downloadJson("local-jagoff-promo-backup.json", {
     exportedAt: new Date().toISOString(),
@@ -109,5 +128,5 @@ export default function PromoHub() {
     ["Backup / Restore", "/admin/promo-backup", "Export or restore browser-stored promo data.", "Open Backup"],
   ];
 
-  return <div className="page"><Head><title>Local Jagoff Promo Hub</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">LOCAL JAGOFF ADMIN</p><h1>Promo Hub</h1><p>One landing page for the Local Jagoff promo workflow: checklist, presets, create, queue, post manually, track performance, product bank, export, and restore.</p><div className={`checklistBanner ${checklistIsToday ? "today" : "stale"}`}><div><p className="kicker">DAILY CHECKLIST</p><strong>{checklistComplete}/{CHECKLIST_TOTAL} complete</strong><span>{launchChecklistDate ? `Saved date: ${launchChecklistDate}` : "No checklist date saved yet"}{checklistIsToday ? " • today" : " • needs today reset"}</span></div><a href="/admin/promo-launch-checklist">Open Checklist</a></div><div className="heroActions"><a href="/admin/promo-launch-checklist">Open Checklist</a><a href="/admin/promo-posting-board">Open Posting Board</a><a href="/admin/promo-performance">Open Performance</a><a href="/admin/promo-insights">Open Insights</a><button type="button" onClick={backupAll}>Download Full Backup</button></div></header><section className="stats">{Object.entries(stats).map(([key,value])=><div key={key}><strong>{value}</strong><span>{key}</span></div>)}</section><section className="flow"><p className="kicker">DAILY FLOW</p><strong>Launch Checklist → Campaign Presets → Week Builder → Queue → Posting Board → Mark Posted → Performance → Insights → Save Winners to Product Bank</strong><p>No auto-posting yet. The checklist keeps the workflow tight so the system actually gets used the same way every campaign.</p></section><section className="cards">{cards.map(([title,href,text,cta,featured])=><a key={href} className={`card ${featured?"featured":""}`} href={href}><h2>{title}</h2><p>{text}</p><span>{cta}</span></a>)}</section></main><style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1160px;margin:0 auto;padding-top:38px}.hero,.flow{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:28px;box-shadow:0 22px 80px rgba(0,0,0,.45);margin-bottom:16px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}h1{font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}p{color:#d6d6d6;line-height:1.6}.checklistBanner{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:18px 0;padding:16px;border-radius:20px;background:#050505;border:1px solid rgba(255,230,0,.28)}.checklistBanner.today{border-color:rgba(80,255,140,.42)}.checklistBanner.stale{border-color:rgba(255,230,0,.5)}.checklistBanner strong{display:block;color:#ffe600;font-size:28px;text-transform:uppercase}.checklistBanner span{display:block;color:#ddd;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.checklistBanner a{display:inline-flex;border-radius:14px;background:#ffe600;color:#000;padding:12px 14px;font-weight:900;text-decoration:none;white-space:nowrap}.heroActions{display:flex;gap:10px;flex-wrap:wrap}.heroActions a,button,.card span{display:inline-flex;width:max-content;margin-top:10px;border:none;border-radius:14px;background:#ffe600;color:#000;padding:13px 16px;font-weight:900;text-decoration:none;cursor:pointer}.stats{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:12px;margin-bottom:16px}.stats div,.card{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:28px;overflow-wrap:anywhere}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.flow strong{display:block;color:#ffe600;font-size:20px;line-height:1.35}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{display:block;color:#fff;text-decoration:none}.card.featured{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.12),rgba(13,13,13,.92))}.card h2{text-transform:uppercase;color:#ffe600}.card:hover{border-color:#ffe600;transform:translateY(-1px)}@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:800px){.cards{grid-template-columns:1fr}.checklistBanner{display:grid}.checklistBanner a,.heroActions a,.heroActions button{width:100%;text-align:center;justify-content:center}}`}</style></div>;
+  return <div className="page"><Head><title>Local Jagoff Promo Hub</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">LOCAL JAGOFF ADMIN</p><h1>Promo Hub</h1><p>One landing page for the Local Jagoff promo workflow: checklist, presets, create, queue, post manually, track performance, product bank, export, and restore.</p><div className={`checklistBanner ${checklistIsToday ? "today" : "stale"}`}><div><p className="kicker">DAILY CHECKLIST</p><strong>{checklistComplete}/{CHECKLIST_TOTAL} complete</strong><span>{launchChecklistDate ? `Saved date: ${launchChecklistDate}` : "No checklist date saved yet"}{checklistIsToday ? " • today" : " • needs today reset"}</span></div><a href="/admin/promo-launch-checklist">Open Checklist</a></div><div className="heroActions"><a href="/admin/promo-launch-checklist">Open Checklist</a><a href="/admin/promo-posting-board">Open Posting Board</a><a href="/admin/promo-performance">Open Performance</a><a href="/admin/promo-insights">Open Insights</a><button type="button" onClick={backupAll}>Download Full Backup</button></div></header><section className="stats">{Object.entries(stats).map(([key,value])=><div key={key}><strong>{value}</strong><span>{key}</span></div>)}</section><section className="todayPanel"><div className="todayHead"><div><p className="kicker">TODAY SNAPSHOT</p><h2>{todayIso()}</h2><p>{todaySnapshot.total} scheduled today • {todaySnapshot.ready} ready • {todaySnapshot.draft} draft • {todaySnapshot.posted} posted</p></div><div className="todayActions"><a href="/admin/promo-posting-board">Open Posting Board</a><a href="/admin/promo-queue">Open Queue</a></div></div>{todaySnapshot.next.length === 0 ? <div className="emptyToday">No promos scheduled for today yet.</div> : <div className="todayList">{todaySnapshot.next.map((item, index) => <article key={item.queueId || item.id || index}><strong>{productName(item)}</strong><span>{platformLabel(item.scheduledPlatform || item.displayPlatform || item.platform)} • {item.status || "Draft"}</span></article>)}</div>}</section><section className="flow"><p className="kicker">DAILY FLOW</p><strong>Launch Checklist → Campaign Presets → Week Builder → Queue → Posting Board → Mark Posted → Performance → Insights → Save Winners to Product Bank</strong><p>No auto-posting yet. The checklist keeps the workflow tight so the system actually gets used the same way every campaign.</p></section><section className="cards">{cards.map(([title,href,text,cta,featured])=><a key={href} className={`card ${featured?"featured":""}`} href={href}><h2>{title}</h2><p>{text}</p><span>{cta}</span></a>)}</section></main><style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1160px;margin:0 auto;padding-top:38px}.hero,.flow,.todayPanel{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:28px;box-shadow:0 22px 80px rgba(0,0,0,.45);margin-bottom:16px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}h1{font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}p{color:#d6d6d6;line-height:1.6}.checklistBanner{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:18px 0;padding:16px;border-radius:20px;background:#050505;border:1px solid rgba(255,230,0,.28)}.checklistBanner.today{border-color:rgba(80,255,140,.42)}.checklistBanner.stale{border-color:rgba(255,230,0,.5)}.checklistBanner strong{display:block;color:#ffe600;font-size:28px;text-transform:uppercase}.checklistBanner span{display:block;color:#ddd;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.checklistBanner a,.todayActions a{display:inline-flex;border-radius:14px;background:#ffe600;color:#000;padding:12px 14px;font-weight:900;text-decoration:none;white-space:nowrap}.heroActions{display:flex;gap:10px;flex-wrap:wrap}.heroActions a,button,.card span{display:inline-flex;width:max-content;margin-top:10px;border:none;border-radius:14px;background:#ffe600;color:#000;padding:13px 16px;font-weight:900;text-decoration:none;cursor:pointer}.stats{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:12px;margin-bottom:16px}.stats div,.card,.todayList article,.emptyToday{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:28px;overflow-wrap:anywhere}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.todayHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.todayHead h2{margin:0;color:#ffe600;font-size:34px;text-transform:uppercase}.todayActions{display:flex;gap:10px;flex-wrap:wrap}.todayList{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}.todayList strong,.todayList span{display:block}.todayList strong{color:#fff;text-transform:uppercase;font-size:14px}.todayList span{margin-top:8px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.emptyToday{margin-top:14px;color:#ddd;text-align:center}.flow strong{display:block;color:#ffe600;font-size:20px;line-height:1.35}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{display:block;color:#fff;text-decoration:none}.card.featured{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.12),rgba(13,13,13,.92))}.card h2{text-transform:uppercase;color:#ffe600}.card:hover{border-color:#ffe600;transform:translateY(-1px)}@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.todayList{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:800px){.cards,.todayList{grid-template-columns:1fr}.checklistBanner,.todayHead{display:grid}.checklistBanner a,.todayActions a,.heroActions a,.heroActions button{width:100%;text-align:center;justify-content:center}}`}</style></div>;
 }
