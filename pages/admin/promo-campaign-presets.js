@@ -303,7 +303,7 @@ export default function PromoCampaignPresets() {
 
   const importJson = (value) => {
     try {
-      const parsed = JSON.parse(value || "{});
+      const parsed = JSON.parse(value || "{}");
       const source = Array.isArray(parsed) ? parsed : parsed.campaignPresets || parsed.presets || [];
       if (!Array.isArray(source) || source.length === 0) {
         setMessage("No campaign presets found in that JSON.");
