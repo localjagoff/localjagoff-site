@@ -46,6 +46,7 @@ export default function PromoAdminNav() {
   ];
 
   const moreLinks = [
+    ["/admin/promo-launch-checklist", "Checklist"],
     ["/admin/promo-campaign-presets", "Presets"],
     ["/admin/promo-performance", "Performance"],
     ["/admin/promo-insights", "Insights"],
