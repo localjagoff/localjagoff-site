@@ -8,6 +8,7 @@ const PHRASES_KEY = "localJagoffRecentPromoPhrases";
 const BANK_KEY = "localJagoffProductPromoBank";
 const PERF_KEY = "localJagoffPromoPerformance";
 const PRESETS_KEY = "localJagoffCampaignPresets";
+const CHECKLIST_KEY = "localJagoffPromoLaunchChecklist";
 
 const VALID_PLATFORMS = new Set(["facebook", "instagram", "tiktok", "youtube_shorts", "full_pack", "general"]);
 const VALID_CAMPAIGN_PLATFORMS = new Set(["facebook", "instagram", "tiktok", "youtube_shorts"]);
@@ -15,6 +16,7 @@ const VALID_STATUSES = new Set(["Draft", "Ready", "Posted"]);
 const VALID_BANK_TYPES = new Set(["caption", "hook", "cta", "overlay", "note"]);
 const VALID_PRESET_MODES = new Set(["product_drop", "sale", "holiday", "short_video", "funny_pittsburgh", "clean_ad"]);
 const VALID_PRESET_TONES = new Set(["balanced", "more_jagoff", "savage_but_safe", "clean"]);
+const VALID_CHECKLIST_STEPS = new Set(["pick-preset", "build-week", "review-queue", "post-today", "mark-posted", "track-performance", "review-insights", "save-winners", "backup", "health-check"]);
 const PERF_METRICS = ["views", "likes", "comments", "shares", "clicks", "sales"];
 
 function readArray(key) {
@@ -30,6 +32,22 @@ function readArray(key) {
 function writeArray(key, value) {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : []));
+  }
+}
+
+function readObject(key) {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeObject(key, value) {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(key, JSON.stringify(value && typeof value === "object" && !Array.isArray(value) ? value : {}));
   }
 }
 
@@ -181,6 +199,13 @@ function normalizeCampaignPreset(item) {
   };
 }
 
+function normalizeChecklist(checklist) {
+  return Object.entries(checklist || {}).reduce((next, [key, value]) => {
+    if (VALID_CHECKLIST_STEPS.has(key)) next[key] = Boolean(value);
+    return next;
+  }, {});
+}
+
 function dedupeById(items, keyName) {
   const seen = new Set();
   return items.filter((item) => {
@@ -239,9 +264,7 @@ function countDuplicateIds(items, keyName) {
 function queueIssues(queue) {
   const issues = [];
   const duplicateQueueIds = countDuplicateIds(queue, "queueId");
-
   if (duplicateQueueIds > 0) issues.push(`${duplicateQueueIds} duplicate queue item(s).`);
-
   queue.forEach((item, index) => {
     const label = item.product?.name || `Queue item ${index + 1}`;
     if (!item.queueId) issues.push(`${label}: missing queueId.`);
@@ -251,16 +274,13 @@ function queueIssues(queue) {
     if (!item.product?.name) issues.push(`${label}: missing product name.`);
     if (!item.promo) issues.push(`${label}: missing promo data.`);
   });
-
   return issues;
 }
 
 function savedIssues(saved) {
   const issues = [];
   const duplicateIds = countDuplicateIds(saved, "id");
-
   if (duplicateIds > 0) issues.push(`${duplicateIds} duplicate saved pack(s).`);
-
   saved.forEach((item, index) => {
     const label = item.product?.name || `Saved pack ${index + 1}`;
     if (!item.id) issues.push(`${label}: missing id.`);
@@ -268,7 +288,6 @@ function savedIssues(saved) {
     if (!item.product?.name) issues.push(`${label}: missing product name.`);
     if (!item.promo) issues.push(`${label}: missing promo data.`);
   });
-
   return issues;
 }
 
@@ -277,25 +296,19 @@ function bankIssues(bank) {
   const duplicateIds = countDuplicateIds(bank, "id");
   const contentKeys = new Set();
   let duplicateContent = 0;
-
   if (duplicateIds > 0) issues.push(`${duplicateIds} duplicate Product Bank id(s).`);
-
   bank.forEach((item, index) => {
     const label = item.productName || `Product Bank item ${index + 1}`;
     const contentKey = [item.productId, item.productName, item.type, item.platform, item.text].join("|").toLowerCase();
-
     if (contentKeys.has(contentKey)) duplicateContent += 1;
     contentKeys.add(contentKey);
-
     if (!item.id) issues.push(`${label}: missing id.`);
     if (!item.productName) issues.push(`${label}: missing product name.`);
     if (!VALID_BANK_TYPES.has(item.type || "")) issues.push(`${label}: missing/invalid type.`);
     if (!VALID_PLATFORMS.has(item.platform || "")) issues.push(`${label}: missing/invalid platform.`);
     if (!cleanText(item.text)) issues.push(`${label}: missing saved text.`);
   });
-
   if (duplicateContent > 0) issues.push(`${duplicateContent} duplicate Product Bank text item(s).`);
-
   return issues;
 }
 
@@ -303,10 +316,8 @@ function performanceIssues(performance) {
   const issues = [];
   const duplicateIds = countDuplicateIds(performance, "id");
   const duplicateQueueIds = countDuplicateIds(performance, "queueId");
-
   if (duplicateIds > 0) issues.push(`${duplicateIds} duplicate Performance id(s).`);
   if (duplicateQueueIds > 0) issues.push(`${duplicateQueueIds} duplicate Performance queue reference(s).`);
-
   performance.forEach((item, index) => {
     const label = item.productName || `Performance item ${index + 1}`;
     if (!item.id) issues.push(`${label}: missing id.`);
@@ -314,13 +325,11 @@ function performanceIssues(performance) {
     if (!VALID_PLATFORMS.has(item.platform || "")) issues.push(`${label}: missing/invalid platform.`);
     if (!item.productName) issues.push(`${label}: missing product name.`);
     if (!cleanText(item.copy)) issues.push(`${label}: missing post copy.`);
-
     PERF_METRICS.forEach((metric) => {
       const value = Number(item[metric]);
       if (!Number.isFinite(value) || value < 0) issues.push(`${label}: invalid ${metric}.`);
     });
   });
-
   return issues;
 }
 
@@ -329,15 +338,12 @@ function campaignPresetIssues(presets) {
   const duplicateIds = countDuplicateIds(presets, "id");
   const nameKeys = new Set();
   let duplicateNames = 0;
-
   if (duplicateIds > 0) issues.push(`${duplicateIds} duplicate Campaign Preset id(s).`);
-
   presets.forEach((item, index) => {
     const label = item.name || `Campaign Preset ${index + 1}`;
     const nameKey = cleanText(item.name).toLowerCase();
     if (nameKey && nameKeys.has(nameKey)) duplicateNames += 1;
     if (nameKey) nameKeys.add(nameKey);
-
     if (!item.id) issues.push(`${label}: missing id.`);
     if (!cleanText(item.name)) issues.push(`${label}: missing name.`);
     if (!VALID_PRESET_MODES.has(item.mode || "")) issues.push(`${label}: missing/invalid mode.`);
@@ -347,9 +353,16 @@ function campaignPresetIssues(presets) {
     if (!Number.isFinite(Number(item.days)) || Number(item.days) < 1 || Number(item.days) > 31) issues.push(`${label}: invalid day count.`);
     if (!cleanText(item.notes)) issues.push(`${label}: missing strategy notes.`);
   });
-
   if (duplicateNames > 0) issues.push(`${duplicateNames} duplicate Campaign Preset name(s).`);
+  return issues;
+}
 
+function checklistIssues(checklist) {
+  const issues = [];
+  Object.entries(checklist || {}).forEach(([key, value]) => {
+    if (!VALID_CHECKLIST_STEPS.has(key)) issues.push(`Launch Checklist: unknown step ${key}.`);
+    if (typeof value !== "boolean") issues.push(`Launch Checklist: ${key} should be true or false.`);
+  });
   return issues;
 }
 
@@ -360,6 +373,7 @@ export default function PromoHealth() {
   const [productBank, setProductBank] = useState([]);
   const [performance, setPerformance] = useState([]);
   const [campaignPresets, setCampaignPresets] = useState([]);
+  const [launchChecklist, setLaunchChecklist] = useState({});
   const [message, setMessage] = useState("");
 
   const refresh = () => {
@@ -369,6 +383,7 @@ export default function PromoHealth() {
     setProductBank(readArray(BANK_KEY));
     setPerformance(readArray(PERF_KEY));
     setCampaignPresets(readArray(PRESETS_KEY));
+    setLaunchChecklist(readObject(CHECKLIST_KEY));
   };
 
   useEffect(() => refresh(), []);
@@ -378,7 +393,8 @@ export default function PromoHealth() {
   const bankProblems = useMemo(() => bankIssues(productBank), [productBank]);
   const performanceProblems = useMemo(() => performanceIssues(performance), [performance]);
   const presetProblems = useMemo(() => campaignPresetIssues(campaignPresets), [campaignPresets]);
-  const totalProblems = queueProblems.length + savedProblems.length + bankProblems.length + performanceProblems.length + presetProblems.length;
+  const checklistProblems = useMemo(() => checklistIssues(launchChecklist), [launchChecklist]);
+  const totalProblems = queueProblems.length + savedProblems.length + bankProblems.length + performanceProblems.length + presetProblems.length + checklistProblems.length;
 
   const stats = useMemo(() => ({
     queued: queue.length,
@@ -386,12 +402,13 @@ export default function PromoHealth() {
     productBank: productBank.length,
     performance: performance.length,
     presets: campaignPresets.length,
+    checklist: Object.values(launchChecklist).filter(Boolean).length,
     winners: performance.filter((item) => item.winner).length,
     phrases: phrases.length,
     draft: queue.filter((item) => (item.status || "Draft") === "Draft").length,
     ready: queue.filter((item) => item.status === "Ready").length,
     posted: queue.filter((item) => item.status === "Posted").length,
-  }), [queue, saved, phrases, productBank, performance, campaignPresets]);
+  }), [queue, saved, phrases, productBank, performance, campaignPresets, launchChecklist]);
 
   const repairQueue = () => {
     const repaired = dedupeById(queue.map(normalizeQueueItem), "queueId");
@@ -428,6 +445,12 @@ export default function PromoHealth() {
     setMessage("Campaign Presets repaired and saved in this browser.");
   };
 
+  const repairLaunchChecklist = () => {
+    writeObject(CHECKLIST_KEY, normalizeChecklist(launchChecklist));
+    refresh();
+    setMessage("Launch Checklist repaired and saved in this browser.");
+  };
+
   const trimMemory = () => {
     const repaired = phrases.filter(Boolean).map((item) => String(item).slice(0, 180)).slice(0, 60);
     writeArray(PHRASES_KEY, repaired);
@@ -443,11 +466,13 @@ export default function PromoHealth() {
     bankProblems,
     performanceProblems,
     presetProblems,
+    checklistProblems,
     queue,
     saved,
     productBank,
     performance,
     campaignPresets,
+    launchChecklist,
     phrases,
   });
 
@@ -463,7 +488,7 @@ export default function PromoHealth() {
         <header className="hero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
           <h1>Promo Health</h1>
-          <p>Check the browser-stored promo queue, saved library, Product Bank, Performance, Campaign Presets, and no-repeat memory. Repair old or malformed promo data before it causes weird copy/export behavior.</p>
+          <p>Check the browser-stored promo queue, saved library, Product Bank, Performance, Campaign Presets, Launch Checklist, and no-repeat memory.</p>
         </header>
 
         <section className="stats">
@@ -472,6 +497,7 @@ export default function PromoHealth() {
           <div><strong>{stats.productBank}</strong><span>Product Bank</span></div>
           <div><strong>{stats.performance}</strong><span>Performance</span></div>
           <div><strong>{stats.presets}</strong><span>Presets</span></div>
+          <div><strong>{stats.checklist}</strong><span>Checklist</span></div>
           <div><strong>{stats.winners}</strong><span>Winners</span></div>
           <div><strong>{stats.phrases}</strong><span>Memory</span></div>
           <div><strong>{stats.draft}</strong><span>Draft</span></div>
@@ -481,57 +507,24 @@ export default function PromoHealth() {
 
         <section className={`statusPanel ${totalProblems === 0 ? "good" : "warn"}`}>
           <h2>{totalProblems === 0 ? "System looks clean" : `${totalProblems} issue${totalProblems === 1 ? "" : "s"} found`}</h2>
-          <p>{totalProblems === 0 ? "Queue, saved library, Product Bank, Performance, Campaign Presets, and memory data look usable." : "Use the repair buttons below to clean up old browser-stored promo data."}</p>
+          <p>{totalProblems === 0 ? "Queue, saved library, Product Bank, Performance, Campaign Presets, Launch Checklist, and memory data look usable." : "Use the repair buttons below to clean up old browser-stored promo data."}</p>
         </section>
 
         <section className="grid">
-          <article className="panel">
-            <h2>Queue Check</h2>
-            {queueProblems.length === 0 ? <p className="muted">No queue issues found.</p> : <ul>{queueProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}
-            <button type="button" onClick={repairQueue}>Repair Queue</button>
-          </article>
-
-          <article className="panel">
-            <h2>Saved Library Check</h2>
-            {savedProblems.length === 0 ? <p className="muted">No saved library issues found.</p> : <ul>{savedProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}
-            <button type="button" onClick={repairSaved}>Repair Saved Library</button>
-          </article>
-
-          <article className="panel">
-            <h2>Product Bank Check</h2>
-            {bankProblems.length === 0 ? <p className="muted">No Product Bank issues found.</p> : <ul>{bankProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}
-            <button type="button" onClick={repairProductBank}>Repair Product Bank</button>
-          </article>
-
-          <article className="panel">
-            <h2>Performance Check</h2>
-            {performanceProblems.length === 0 ? <p className="muted">No Performance issues found.</p> : <ul>{performanceProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}
-            <button type="button" onClick={repairPerformance}>Repair Performance</button>
-          </article>
-
-          <article className="panel">
-            <h2>Campaign Presets Check</h2>
-            {presetProblems.length === 0 ? <p className="muted">No Campaign Presets issues found.</p> : <ul>{presetProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}
-            <button type="button" onClick={repairCampaignPresets}>Repair Campaign Presets</button>
-          </article>
-
-          <article className="panel">
-            <h2>No-Repeat Memory</h2>
-            <p className="muted">Keeps recent phrases so the generator can avoid repeating itself. This can be cleaned safely.</p>
-            <button type="button" onClick={trimMemory}>Clean Memory</button>
-          </article>
-
-          <article className="panel">
-            <h2>Health Report</h2>
-            <p className="muted">Exports a JSON report with current counts, issues, queue, saved library, Product Bank, Performance, Campaign Presets, and memory.</p>
-            <button type="button" onClick={exportReport}>Export Health Report</button>
-          </article>
+          <article className="panel"><h2>Queue Check</h2>{queueProblems.length === 0 ? <p className="muted">No queue issues found.</p> : <ul>{queueProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairQueue}>Repair Queue</button></article>
+          <article className="panel"><h2>Saved Library Check</h2>{savedProblems.length === 0 ? <p className="muted">No saved library issues found.</p> : <ul>{savedProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairSaved}>Repair Saved Library</button></article>
+          <article className="panel"><h2>Product Bank Check</h2>{bankProblems.length === 0 ? <p className="muted">No Product Bank issues found.</p> : <ul>{bankProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairProductBank}>Repair Product Bank</button></article>
+          <article className="panel"><h2>Performance Check</h2>{performanceProblems.length === 0 ? <p className="muted">No Performance issues found.</p> : <ul>{performanceProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairPerformance}>Repair Performance</button></article>
+          <article className="panel"><h2>Campaign Presets Check</h2>{presetProblems.length === 0 ? <p className="muted">No Campaign Presets issues found.</p> : <ul>{presetProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairCampaignPresets}>Repair Campaign Presets</button></article>
+          <article className="panel"><h2>Launch Checklist Check</h2>{checklistProblems.length === 0 ? <p className="muted">No Launch Checklist issues found.</p> : <ul>{checklistProblems.slice(0, 30).map((issue) => <li key={issue}>{issue}</li>)}</ul>}<button type="button" onClick={repairLaunchChecklist}>Repair Launch Checklist</button></article>
+          <article className="panel"><h2>No-Repeat Memory</h2><p className="muted">Keeps recent phrases so the generator can avoid repeating itself. This can be cleaned safely.</p><button type="button" onClick={trimMemory}>Clean Memory</button></article>
+          <article className="panel"><h2>Health Report</h2><p className="muted">Exports a JSON report with current counts, issues, queue, saved library, Product Bank, Performance, Campaign Presets, Launch Checklist, and memory.</p><button type="button" onClick={exportReport}>Export Health Report</button></article>
         </section>
 
         {message && <section className="message">{message}</section>}
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.statusPanel p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.statusPanel,.panel,.message{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.statusPanel{margin-bottom:14px}.statusPanel h2,.panel h2{text-transform:uppercase;color:#ffe600}.statusPanel.good{border-color:rgba(80,255,140,.35)}.statusPanel.warn{border-color:rgba(255,230,0,.4)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel ul{color:#eee;line-height:1.6;padding-left:22px;max-height:310px;overflow:auto}.panel li{margin-bottom:6px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.message{margin-top:14px;color:#ffe600;font-weight:900}@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:850px){.stats,.grid{grid-template-columns:1fr}button{width:100%}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1180px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.statusPanel p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.statusPanel,.panel,.message{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.statusPanel{margin-bottom:14px}.statusPanel h2,.panel h2{text-transform:uppercase;color:#ffe600}.statusPanel.good{border-color:rgba(80,255,140,.35)}.statusPanel.warn{border-color:rgba(255,230,0,.4)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel ul{color:#eee;line-height:1.6;padding-left:22px;max-height:310px;overflow:auto}.panel li{margin-bottom:6px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.message{margin-top:14px;color:#ffe600;font-weight:900}@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:850px){.stats,.grid{grid-template-columns:1fr}button{width:100%}}`}</style>
     </div>
   );
 }
