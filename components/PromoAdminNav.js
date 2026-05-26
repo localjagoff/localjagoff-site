@@ -40,6 +40,7 @@ export default function PromoAdminNav() {
   const links = [
     ["/admin/promo-hub", "Hub"],
     ["/admin/promo-generator", "Generator"],
+    ["/admin/promo-week-builder", "Week Builder"],
     ["/admin/promo-queue", "Queue"],
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-library", "Library"],
