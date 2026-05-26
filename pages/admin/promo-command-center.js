@@ -6,6 +6,19 @@ const QUEUE_STORAGE_KEY = "localJagoffPromoQueue";
 const BANK_KEY = "localJagoffProductPromoBank";
 const PRESETS_KEY = "localJagoffCampaignPresets";
 const PLATFORM_VALUES = new Set(["facebook", "instagram", "tiktok", "youtube_shorts"]);
+const PLATFORM_LABEL_TO_VALUE = {
+  "full pack": "full_pack",
+  facebook: "facebook",
+  instagram: "instagram",
+  tiktok: "tiktok",
+  "youtube shorts": "youtube_shorts",
+};
+const CTA_LINK_LABELS = {
+  facebook: ["Facebook link:", "Facebook tracked link:"],
+  instagram: ["Instagram link:", "Instagram tracked link:"],
+  tiktok: ["TikTok link:", "TikTok tracked link:"],
+  youtube_shorts: ["YouTube Shorts link:", "YouTube Shorts tracked link:"],
+};
 let cachedProducts = [];
 
 const DEFAULT_GENERATOR_PRESETS = [
@@ -305,6 +318,109 @@ function getCurrentProduct() {
   };
 }
 
+function getCurrentDisplayPlatform() {
+  if (typeof document === "undefined") return "full_pack";
+
+  const activeButton = document.querySelector(".platformSwitch button.active");
+  const activeLabel = normalizeName(activeButton?.textContent || "");
+  if (PLATFORM_LABEL_TO_VALUE[activeLabel]) return PLATFORM_LABEL_TO_VALUE[activeLabel];
+
+  const toolbarText = normalizeName(document.querySelector(".resultToolbar .miniKicker")?.textContent || "");
+  const matchedLabel = Object.keys(PLATFORM_LABEL_TO_VALUE).find((label) => toolbarText.includes(label));
+  return matchedLabel ? PLATFORM_LABEL_TO_VALUE[matchedLabel] : "full_pack";
+}
+
+function normalizeCtaLabels(value) {
+  return String(value || "")
+    .replace(/Facebook tracked link:/gi, "Facebook link:")
+    .replace(/Instagram tracked link:/gi, "Instagram link:")
+    .replace(/TikTok tracked link:/gi, "TikTok link:")
+    .replace(/YouTube Shorts tracked link:/gi, "YouTube Shorts link:");
+}
+
+function findCtaLine(lines, labels) {
+  return lines.find((line) => labels.some((label) => line.trim().toLowerCase().startsWith(label.toLowerCase()))) || "";
+}
+
+function stripCtaLabel(line) {
+  return String(line || "").replace(/^[^:]+:\s*/i, "").trim();
+}
+
+function platformCtaHelper(value, platform) {
+  const cleaned = normalizeCtaLabels(value);
+  const lines = cleaned.split("\n").map((line) => line.trim()).filter(Boolean);
+
+  if (platform === "full_pack") return cleaned;
+
+  const linkLine = findCtaLine(lines, CTA_LINK_LABELS[platform] || []);
+  const fallbackLine = findCtaLine(lines, ["Product link:", "Site link:"]);
+  const mainCta = findCtaLine(lines, ["Main CTA:"]);
+  const firstComment = findCtaLine(lines, ["First comment:"]);
+  const link = stripCtaLabel(linkLine || fallbackLine);
+
+  return [
+    mainCta,
+    firstComment,
+    link ? `Link:\n${link}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function filterCopiedPromoText(value) {
+  const text = String(value || "");
+  if (!text) return value;
+
+  const platform = getCurrentDisplayPlatform();
+  const cleaned = normalizeCtaLabels(text);
+
+  if (platform === "full_pack") return cleaned;
+
+  const marker = "CTA / Link Helper:";
+  const markerIndex = cleaned.indexOf(marker);
+
+  if (markerIndex >= 0) {
+    const separator = "\n\n---\n\n";
+    const before = cleaned.slice(0, markerIndex + marker.length);
+    const rest = cleaned.slice(markerIndex + marker.length);
+    const nextSeparatorIndex = rest.indexOf(separator);
+    const ctaBlock = nextSeparatorIndex >= 0 ? rest.slice(0, nextSeparatorIndex) : rest;
+    const after = nextSeparatorIndex >= 0 ? rest.slice(nextSeparatorIndex) : "";
+    return `${before}\n${platformCtaHelper(ctaBlock, platform)}${after}`;
+  }
+
+  const hasAnyPlatformLink = Object.values(CTA_LINK_LABELS).flat().some((label) => cleaned.toLowerCase().includes(label.toLowerCase()));
+  return hasAnyPlatformLink ? platformCtaHelper(cleaned, platform) : cleaned;
+}
+
+function patchClipboardForCtaHelper() {
+  if (typeof navigator === "undefined" || !navigator?.clipboard?.writeText) return;
+  if (navigator.clipboard.__localJagoffCtaFilterPatched) return;
+
+  const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
+
+  navigator.clipboard.writeText = (value) => originalWriteText(filterCopiedPromoText(value));
+  navigator.clipboard.__localJagoffCtaFilterPatched = true;
+}
+
+function filterVisibleCtaHelpers() {
+  if (typeof document === "undefined") return;
+
+  const platform = getCurrentDisplayPlatform();
+
+  document.querySelectorAll(".resultBlock").forEach((block) => {
+    const title = block.querySelector("h3")?.textContent?.trim().toLowerCase() || "";
+    if (!title.includes("cta / link helper")) return;
+
+    const contentNode = block.querySelector("pre") || block.querySelector("p");
+    if (!contentNode) return;
+
+    if (!contentNode.dataset.originalCtaHelper) {
+      contentNode.dataset.originalCtaHelper = contentNode.textContent || "";
+    }
+
+    contentNode.textContent = platformCtaHelper(contentNode.dataset.originalCtaHelper, platform);
+  });
+}
+
 function normalizeQueuePlatformCopy() {
   if (typeof window === "undefined") return;
 
@@ -573,18 +689,21 @@ export default function PromoCommandCenter() {
     normalizeQueuePlatformCopy();
     hydrateProducts();
     injectStyles();
+    patchClipboardForCtaHelper();
     attachPresetHelper();
+    filterVisibleCtaHelpers();
     attachBankButtons();
     relabelLoadButtons();
     setReady(true);
 
     const observer = new MutationObserver(() => {
       attachPresetHelper();
+      filterVisibleCtaHelpers();
       attachBankButtons();
       relabelLoadButtons();
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     return () => observer.disconnect();
   }, []);
