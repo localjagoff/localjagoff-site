@@ -41,6 +41,7 @@ export default function PromoAdminNav() {
     ["/admin/promo-hub", "Hub"],
     ["/admin/promo-generator", "Generator"],
     ["/admin/promo-week-builder", "Week Builder"],
+    ["/admin/promo-posting-board", "Posting Board"],
     ["/admin/promo-queue", "Queue"],
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-library", "Library"],
