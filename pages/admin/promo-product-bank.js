@@ -21,6 +21,16 @@ const PLATFORM_OPTIONS = [
   ["youtube_shorts", "YouTube Shorts"],
 ];
 
+const STATUS_OPTIONS = [
+  ["Approved", "Approved"],
+  ["Needs Review", "Needs Review"],
+  ["Rejected", "Rejected"],
+];
+
+const VALID_TYPES = new Set(TYPE_OPTIONS.map(([value]) => value));
+const VALID_PLATFORMS = new Set(PLATFORM_OPTIONS.map(([value]) => value));
+const VALID_STATUSES = new Set(STATUS_OPTIONS.map(([value]) => value));
+
 function readArray(key) {
   if (typeof window === "undefined") return [];
   try {
@@ -41,15 +51,23 @@ function copyText(value) {
   if (value && typeof navigator !== "undefined") navigator.clipboard.writeText(value);
 }
 
-function downloadJson(filename, data) {
+function downloadFile(filename, content, type = "text/plain") {
   if (typeof document === "undefined") return;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function downloadJson(filename, data) {
+  downloadFile(filename, JSON.stringify(data, null, 2), "application/json");
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
 function labelFromOptions(options, value) {
@@ -68,8 +86,76 @@ function productKey(product) {
   return String(product?.id || product?.name || "");
 }
 
-function buildBankEntry({ product, type, platform, text, source = "Manual", tag = "" }) {
+function normalizeEntry(item) {
+  const text = cleanSnippet(item?.text);
+
   return {
+    id: item?.id || nowId("bank"),
+    createdAt: item?.createdAt || new Date().toISOString(),
+    productId: String(item?.productId || item?.product?.id || ""),
+    productName: item?.productName || item?.product?.name || "Unknown product",
+    productImage: item?.productImage || item?.product?.thumbnail_url || item?.product?.image || "",
+    productCategory: item?.productCategory || item?.product?.category || "gear",
+    type: VALID_TYPES.has(item?.type) ? item.type : "note",
+    platform: VALID_PLATFORMS.has(item?.platform) ? item.platform : "general",
+    text,
+    source: item?.source || "Imported",
+    tag: cleanSnippet(item?.tag),
+    status: VALID_STATUSES.has(item?.status) ? item.status : "Approved",
+  };
+}
+
+function dedupeEntries(entries) {
+  const seen = new Set();
+  return entries.filter((entry) => {
+    const key = [entry.productId, entry.productName, entry.type, entry.platform, entry.text].join("|").toLowerCase();
+    if (!entry.text || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function parseBankImport(value) {
+  const parsed = typeof value === "string" ? JSON.parse(value || "[]") : value;
+  const source = Array.isArray(parsed)
+    ? parsed
+    : parsed?.productBank || parsed?.bank || parsed?.items || [];
+
+  return Array.isArray(source) ? source.map(normalizeEntry).filter((entry) => entry.text) : [];
+}
+
+function buildCsv(entries) {
+  const headers = [
+    "product_id",
+    "product_name",
+    "product_category",
+    "type",
+    "platform",
+    "status",
+    "tag",
+    "source",
+    "created_at",
+    "text",
+  ];
+
+  const rows = entries.map((entry) => [
+    entry.productId,
+    entry.productName,
+    entry.productCategory,
+    labelFromOptions(TYPE_OPTIONS, entry.type),
+    labelFromOptions(PLATFORM_OPTIONS, entry.platform),
+    entry.status,
+    entry.tag,
+    entry.source,
+    entry.createdAt,
+    entry.text,
+  ]);
+
+  return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+}
+
+function buildBankEntry({ product, type, platform, text, source = "Manual", tag = "" }) {
+  return normalizeEntry({
     id: nowId("bank"),
     createdAt: new Date().toISOString(),
     productId: String(product?.id || ""),
@@ -82,7 +168,7 @@ function buildBankEntry({ product, type, platform, text, source = "Manual", tag 
     source,
     tag: cleanSnippet(tag),
     status: "Approved",
-  };
+  });
 }
 
 function extractSavedPackEntries(item) {
@@ -118,10 +204,12 @@ export default function PromoProductBank() {
   const [productFilter, setProductFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [importText, setImportText] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setBank(readArray(BANK_KEY));
+    setBank(readArray(BANK_KEY).map(normalizeEntry));
     setSavedPacks(readArray(SAVED_KEY));
 
     fetch("/api/get-products")
@@ -144,7 +232,8 @@ export default function PromoProductBank() {
     const map = new Map();
     products.forEach((product) => map.set(String(product.id), product.name));
     bank.forEach((entry) => {
-      if (entry.productId && !map.has(String(entry.productId))) map.set(String(entry.productId), entry.productName);
+      const key = String(entry.productId || entry.productName);
+      if (key && !map.has(key)) map.set(key, entry.productName);
     });
     return Array.from(map.entries()).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
   }, [products, bank]);
@@ -153,14 +242,16 @@ export default function PromoProductBank() {
     const q = search.trim().toLowerCase();
 
     return bank.filter((entry) => {
-      const haystack = [entry.productName, entry.productCategory, entry.type, entry.platform, entry.text, entry.tag, entry.source].join(" ").toLowerCase();
-      if (productFilter !== "all" && String(entry.productId) !== String(productFilter)) return false;
+      const haystack = [entry.productName, entry.productCategory, entry.type, entry.platform, entry.status, entry.text, entry.tag, entry.source].join(" ").toLowerCase();
+      const entryProductKey = String(entry.productId || entry.productName);
+      if (productFilter !== "all" && entryProductKey !== String(productFilter)) return false;
       if (typeFilter !== "all" && entry.type !== typeFilter) return false;
       if (platformFilter !== "all" && entry.platform !== platformFilter) return false;
+      if (statusFilter !== "all" && entry.status !== statusFilter) return false;
       if (q && !haystack.includes(q)) return false;
       return true;
     });
-  }, [bank, search, productFilter, typeFilter, platformFilter]);
+  }, [bank, search, productFilter, typeFilter, platformFilter, statusFilter]);
 
   const savedForSelectedProduct = useMemo(() => {
     if (!selectedProduct) return [];
@@ -168,9 +259,20 @@ export default function PromoProductBank() {
     return savedPacks.filter((item) => productKey(item.product) === selectedKey);
   }, [savedPacks, selectedProduct]);
 
+  const stats = useMemo(() => ({
+    total: bank.length,
+    approved: bank.filter((entry) => entry.status === "Approved").length,
+    review: bank.filter((entry) => entry.status === "Needs Review").length,
+    rejected: bank.filter((entry) => entry.status === "Rejected").length,
+    products: new Set(bank.map((entry) => entry.productId || entry.productName)).size,
+    captions: bank.filter((entry) => entry.type === "caption").length,
+    hooks: bank.filter((entry) => entry.type === "hook").length,
+  }), [bank]);
+
   const saveBank = (next) => {
-    setBank(next);
-    writeArray(BANK_KEY, next);
+    const clean = next.map(normalizeEntry).filter((entry) => entry.text).slice(0, 800);
+    setBank(clean);
+    writeArray(BANK_KEY, clean);
   };
 
   const addManualEntry = () => {
@@ -187,9 +289,9 @@ export default function PromoProductBank() {
     }
 
     const entry = buildBankEntry({ product: selectedProduct, type, platform, text, tag });
-    saveBank([entry, ...bank].slice(0, 500));
+    saveBank([entry, ...bank]);
     setText("");
-    setMessage("Approved promo text saved to the product bank.");
+    setMessage("Approved promo text saved to the Product Bank.");
   };
 
   const importSavedPack = (item) => {
@@ -199,18 +301,68 @@ export default function PromoProductBank() {
       return;
     }
 
-    saveBank([...entries, ...bank].slice(0, 500));
-    setMessage(`${entries.length} item${entries.length === 1 ? "" : "s"} imported into the product bank.`);
+    saveBank([...entries, ...bank]);
+    setMessage(`${entries.length} item${entries.length === 1 ? "" : "s"} imported into the Product Bank.`);
   };
 
   const removeEntry = (id) => {
     saveBank(bank.filter((entry) => entry.id !== id));
   };
 
-  const exportBank = () => downloadJson("local-jagoff-product-promo-bank.json", {
+  const updateStatus = (id, status) => {
+    saveBank(bank.map((entry) => entry.id === id ? { ...entry, status } : entry));
+  };
+
+  const cleanupDuplicates = () => {
+    const clean = dedupeEntries(bank.map(normalizeEntry));
+    saveBank(clean);
+    setMessage(`Duplicate cleanup complete. ${clean.length} Product Bank item${clean.length === 1 ? "" : "s"} remain.`);
+  };
+
+  const clearRejected = () => {
+    const clean = bank.filter((entry) => entry.status !== "Rejected");
+    saveBank(clean);
+    setMessage("Rejected Product Bank items cleared.");
+  };
+
+  const exportJson = () => downloadJson("local-jagoff-product-promo-bank.json", {
     exportedAt: new Date().toISOString(),
-    bank,
+    productBank: bank,
   });
+
+  const exportFilteredJson = () => downloadJson("local-jagoff-product-promo-bank-filtered.json", {
+    exportedAt: new Date().toISOString(),
+    productBank: filteredBank,
+  });
+
+  const exportCsv = () => downloadFile("local-jagoff-product-promo-bank.csv", buildCsv(filteredBank), "text/csv");
+
+  const restoreFromText = (value) => {
+    try {
+      const incoming = parseBankImport(value);
+      if (incoming.length === 0) {
+        setMessage("No valid Product Bank entries found in that import.");
+        return;
+      }
+      saveBank(dedupeEntries([...incoming, ...bank]));
+      setMessage(`${incoming.length} Product Bank item${incoming.length === 1 ? "" : "s"} imported.`);
+    } catch {
+      setMessage("Could not read that Product Bank JSON.");
+    }
+  };
+
+  const handleFileImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const value = await file.text();
+      setImportText(value);
+      restoreFromText(value);
+    } catch {
+      setMessage("Could not import that file.");
+    }
+  };
 
   return (
     <div className="page">
@@ -228,10 +380,13 @@ export default function PromoProductBank() {
         </header>
 
         <section className="stats">
-          <div><strong>{bank.length}</strong><span>Total Saved</span></div>
-          <div><strong>{new Set(bank.map((entry) => entry.productId || entry.productName)).size}</strong><span>Products</span></div>
-          <div><strong>{bank.filter((entry) => entry.type === "caption").length}</strong><span>Captions</span></div>
-          <div><strong>{bank.filter((entry) => entry.type === "hook").length}</strong><span>Hooks</span></div>
+          <div><strong>{stats.total}</strong><span>Total</span></div>
+          <div><strong>{stats.approved}</strong><span>Approved</span></div>
+          <div><strong>{stats.review}</strong><span>Review</span></div>
+          <div><strong>{stats.rejected}</strong><span>Rejected</span></div>
+          <div><strong>{stats.products}</strong><span>Products</span></div>
+          <div><strong>{stats.captions}</strong><span>Captions</span></div>
+          <div><strong>{stats.hooks}</strong><span>Hooks</span></div>
         </section>
 
         <section className="layout">
@@ -242,30 +397,30 @@ export default function PromoProductBank() {
             <label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value)}>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label className="full">Tag / note<input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Example: hoodie weather, best hook, 724 clean, ad safe..." /></label>
             <label className="full">Approved text<textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the caption, hook, CTA, overlay, or note you want to save..." /></label>
-            <div className="actions full"><button type="button" className="primary" onClick={addManualEntry}>Save to Product Bank</button><button type="button" onClick={exportBank}>Export Bank</button></div>
+            <div className="actions full"><button type="button" className="primary" onClick={addManualEntry}>Save to Product Bank</button><button type="button" onClick={exportJson}>Export Full JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div>
             {message && <p className="message full">{message}</p>}
           </div>
 
           <aside className="panel importPanel">
-            <div className="panelHead"><p className="mini">IMPORT</p><h2>Saved packs for product</h2></div>
-            {savedForSelectedProduct.length === 0 && <p className="muted">No saved packs found for the selected product yet.</p>}
-            <div className="savedList">
-              {savedForSelectedProduct.map((item) => <article key={item.id} className="savedItem"><strong>{item.source || "Saved Pack"}</strong><p>{item.promo?.brand_angle || item.promo?.facebook_post || "Saved promo pack"}</p><button type="button" onClick={() => importSavedPack(item)}>Import Text</button></article>)}
-            </div>
+            <div className="panelHead"><p className="mini">IMPORT</p><h2>Saved packs / backup</h2></div>
+            <label>Import Product Bank JSON<input className="fileInput" type="file" accept="application/json,.json" onChange={handleFileImport} /></label>
+            <label>Paste Product Bank JSON<textarea value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste productBank / bank JSON here..." /></label>
+            <div className="actions"><button type="button" onClick={() => restoreFromText(importText)}>Import Pasted JSON</button><button type="button" onClick={cleanupDuplicates}>Clean Duplicates</button><button type="button" className="danger" onClick={clearRejected}>Clear Rejected</button></div>
+            <div className="savedBlock"><p className="mini">Saved packs for selected product</p>{savedForSelectedProduct.length === 0 && <p className="muted">No saved packs found for the selected product yet.</p>}<div className="savedList">{savedForSelectedProduct.map((item) => <article key={item.id} className="savedItem"><strong>{item.source || "Saved Pack"}</strong><p>{item.promo?.brand_angle || item.promo?.facebook_post || "Saved promo pack"}</p><button type="button" onClick={() => importSavedPack(item)}>Import Text</button></article>)}</div></div>
           </aside>
         </section>
 
         <section className="panel bankPanel">
-          <div className="bankHead"><div><p className="mini">BANK</p><h2>Approved reusable copy</h2></div><button type="button" onClick={exportBank}>Export JSON</button></div>
-          <div className="filters"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bank..." /><select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}><option value="all">All Products</option>{productOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">All Types</option>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+          <div className="bankHead"><div><p className="mini">BANK</p><h2>Reusable copy database</h2></div><div className="actions"><button type="button" onClick={exportFilteredJson}>Export Filtered JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div></div>
+          <div className="filters"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bank..." /><select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}><option value="all">All Products</option>{productOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">All Types</option>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">All Statuses</option>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
           {filteredBank.length === 0 && <div className="empty">No bank entries match this view.</div>}
           <div className="bankGrid">
-            {filteredBank.map((entry) => <article key={entry.id} className="entry"><div className="entryTop"><div><p className="mini">{labelFromOptions(TYPE_OPTIONS, entry.type)} • {labelFromOptions(PLATFORM_OPTIONS, entry.platform)}</p><h3>{entry.productName}</h3></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div>{entry.tag && <p className="tag">{entry.tag}</p>}<pre>{entry.text}</pre><div className="entryActions"><button type="button" onClick={() => copyText(entry.text)}>Copy</button><button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}
+            {filteredBank.map((entry) => <article key={entry.id} className="entry"><div className="entryTop"><div><p className="mini">{labelFromOptions(TYPE_OPTIONS, entry.type)} • {labelFromOptions(PLATFORM_OPTIONS, entry.platform)}</p><h3>{entry.productName}</h3></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div><div className="entryControls"><span className={`status status${entry.status.replace(/\s+/g, "")}`}>{entry.status}</span><select value={entry.status} onChange={(e) => updateStatus(entry.id, e.target.value)}>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>{entry.tag && <p className="tag">{entry.tag}</p>}<pre>{entry.text}</pre><div className="entryActions"><button type="button" onClick={() => copyText(entry.text)}>Copy</button><button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}
           </div>
         </section>
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:140px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.bankHead button,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions{display:flex;gap:8px;flex-wrap:wrap}.message{color:#ffe600;font-weight:900}.savedList{display:grid;gap:10px;max-height:470px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:950px){.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:120px}.importPanel textarea{min-height:130px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions,.entryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.message{color:#ffe600;font-weight:900}.savedBlock{margin-top:14px}.savedList{display:grid;gap:10px;max-height:330px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag,.status{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.statusApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.statusNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.28);color:#ffe600}.statusRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.entryControls select{max-width:180px}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:1050px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
     </div>
   );
 }
