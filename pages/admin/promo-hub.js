@@ -91,6 +91,13 @@ export default function PromoHub() {
       featured: true,
     },
     {
+      title: "Promo Insights",
+      href: "/admin/promo-insights",
+      text: "See best platforms, products, sources, winner rate, and top scoring copy.",
+      cta: "Open Insights",
+      featured: true,
+    },
+    {
       title: "Promo Generator",
       href: "/admin/promo-generator",
       text: "Create AI or free promo packs, holiday campaigns, captions, scripts, links, and bundles.",
@@ -162,6 +169,7 @@ export default function PromoHub() {
           <div className="heroActions">
             <a href="/admin/promo-posting-board">Open Posting Board</a>
             <a href="/admin/promo-performance">Open Performance</a>
+            <a href="/admin/promo-insights">Open Insights</a>
             <button type="button" onClick={backupAll}>Download Full Backup</button>
           </div>
         </header>
@@ -180,8 +188,8 @@ export default function PromoHub() {
 
         <section className="flow">
           <p className="kicker">DAILY FLOW</p>
-          <strong>Week Builder → Queue → Posting Board → Mark Posted → Performance → Save Winners to Product Bank</strong>
-          <p>No auto-posting yet. The Posting Board is the fast manual approval/posting screen, and Performance tracks what actually worked.</p>
+          <strong>Week Builder → Queue → Posting Board → Mark Posted → Performance → Insights → Save Winners to Product Bank</strong>
+          <p>No auto-posting yet. The Posting Board is the fast manual approval/posting screen, Performance tracks what worked, and Insights shows what to repeat.</p>
         </section>
 
         <section className="cards">
