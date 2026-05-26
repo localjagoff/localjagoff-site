@@ -107,7 +107,7 @@ function makeScripts(product) {
   ];
 }
 
-function defaultSelection(options) {
+function defaultSelection() {
   return { hook: 0, caption: 0, cta: 0, hashtags: 0, overlay: 0, script: 0 };
 }
 
@@ -147,6 +147,7 @@ export default function PromoBuilder() {
   const [scheduledDate, setScheduledDate] = useState(todayIso());
   const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState(defaultSelection());
+  const [finalEdit, setFinalEdit] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -158,14 +159,24 @@ export default function PromoBuilder() {
   }, []);
 
   const product = useMemo(() => products.find((item) => String(item.id) === String(productId)) || products[0] || null, [products, productId]);
-  const finalPost = useMemo(() => options && product ? buildFinal({ product, platform, options, selected }) : "", [product, platform, options, selected]);
+  const generatedFinal = useMemo(() => options && product ? buildFinal({ product, platform, options, selected }) : "", [product, platform, options, selected]);
+  const finalPost = finalEdit || generatedFinal;
+
+  useEffect(() => {
+    setFinalEdit(generatedFinal);
+  }, [generatedFinal]);
 
   const generateOptions = () => {
     if (!product) { setMessage("Pick a product first."); return; }
     const nextOptions = buildOptions(product, platform);
     setOptions(nextOptions);
-    setSelected(defaultSelection(nextOptions));
-    setMessage("Options generated. Pick the parts you want.");
+    setSelected(defaultSelection());
+    setMessage("Options generated. Pick the parts you want, then edit the final if needed.");
+  };
+
+  const resetFinal = () => {
+    setFinalEdit(generatedFinal);
+    setMessage("Final post reset to the generated version.");
   };
 
   const saveToQueue = () => {
@@ -173,7 +184,7 @@ export default function PromoBuilder() {
     const queue = readArray(QUEUE_KEY);
     const item = { id: `builder-${Date.now()}`, queueId: `queue-${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt: new Date().toISOString(), queuedAt: new Date().toISOString(), source: "Promo Builder", mode: "builder", platform, displayPlatform: platform, scheduledPlatform: platform, scheduledDate, status: "Needs Review", product, promo: { brand_angle: "Built from selected Promo Builder parts.", builder_final: finalPost, facebook_post: platform === "facebook" ? finalPost : "", instagram_caption: platform === "instagram" ? finalPost : "", tiktok_caption: platform === "tiktok" ? finalPost : "", youtube_shorts_description: platform === "youtube_shorts" ? finalPost : "", cta: finalPost } };
     writeArray(QUEUE_KEY, [item, ...queue].slice(0, 500));
-    setMessage("Final post saved to Queue as Needs Review.");
+    setMessage("Edited final post saved to Queue as Needs Review.");
   };
 
   const saveSelectedToBank = () => {
@@ -192,5 +203,5 @@ export default function PromoBuilder() {
 
   const choiceBlock = (title, keyName, items, render = (item) => item) => items?.length ? <section className="choiceBlock"><h2>{title}</h2>{items.map((item, index) => <label key={`${keyName}-${index}`} className={`choice ${selected[keyName] === index ? "chosen" : ""}`}><input type="radio" name={keyName} checked={selected[keyName] === index} onChange={() => setSelected({ ...selected, [keyName]: index })} /><span>{render(item)}</span></label>)}</section> : null;
 
-  return <div className="page"><Head><title>Local Jagoff Promo Builder</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">PRIVATE ADMIN TOOL</p><h1>Promo Builder</h1><p>Generate several free options, pick the parts you like, then build one clean final post for the selected platform.</p></header><section className="controls"><label>Product<select value={productId} onChange={(e)=>setProductId(e.target.value)}>{products.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Platform<select value={platform} onChange={(e)=>setPlatform(e.target.value)}>{PLATFORMS.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label>Schedule Date<input type="date" value={scheduledDate} onChange={(e)=>setScheduledDate(e.target.value)} /></label><button type="button" onClick={generateOptions}>Generate Options</button></section>{message && <section className="message">{message}</section>}{options && <section className="builderGrid"><div>{choiceBlock("Choose Hook", "hook", options.hooks)}{choiceBlock("Choose Caption", "caption", options.captions)}{choiceBlock("Choose CTA", "cta", options.ctas)}{choiceBlock("Choose Hashtags", "hashtags", options.hashtags, (item)=>item.join(" "))}{choiceBlock("Choose Overlay", "overlay", options.overlays)}{choiceBlock("Choose Script", "script", options.scripts)}</div><aside className="finalPanel"><p className="kicker">FINAL BUILD</p><h2>{platformLabel(platform)} Final Post</h2><pre>{finalPost}</pre><div className="actions"><button type="button" onClick={()=>setMessage(copyText(finalPost) ? "Copied final post." : "Nothing to copy.")}>Copy Final</button><button type="button" onClick={saveToQueue}>Save to Queue</button><button type="button" onClick={saveSelectedToBank}>Save Parts to Bank</button></div></aside></section>}</main><style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.15),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero,.controls,.message,.choiceBlock,.finalPanel{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{padding:26px;margin-bottom:14px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.controls{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;padding:16px;margin-bottom:14px}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}select,input{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.message{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.builderGrid{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:14px;align-items:start}.choiceBlock{padding:16px;margin-bottom:14px}.choiceBlock h2,.finalPanel h2{text-transform:uppercase;color:#ffe600}.choice{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px;margin:8px 0;border:1px solid #2a2a2a;border-radius:14px;background:#050505;color:#f2f2f2;line-height:1.45;text-transform:none;letter-spacing:0;font-size:14px}.choice.chosen{border-color:#ffe600;background:rgba(255,230,0,.08)}.choice input{width:auto;margin:3px 0 0}.finalPanel{position:sticky;top:76px;padding:16px}.finalPanel pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:14px;max-height:60vh;overflow:auto}.actions{display:grid;gap:10px}@media(max-width:1000px){.controls,.builderGrid{grid-template-columns:1fr}.finalPanel{position:static}}`}</style></div>;
+  return <div className="page"><Head><title>Local Jagoff Promo Builder</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">PRIVATE ADMIN TOOL</p><h1>Promo Builder</h1><p>Generate several free options, pick the parts you like, edit the final wording, then save one clean post for review.</p></header><section className="controls"><label>Product<select value={productId} onChange={(e)=>setProductId(e.target.value)}>{products.map((item)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Platform<select value={platform} onChange={(e)=>setPlatform(e.target.value)}>{PLATFORMS.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label>Schedule Date<input type="date" value={scheduledDate} onChange={(e)=>setScheduledDate(e.target.value)} /></label><button type="button" onClick={generateOptions}>Generate Options</button></section>{message && <section className="message">{message}</section>}{options && <section className="builderGrid"><div>{choiceBlock("Choose Hook", "hook", options.hooks)}{choiceBlock("Choose Caption", "caption", options.captions)}{choiceBlock("Choose CTA", "cta", options.ctas)}{choiceBlock("Choose Hashtags", "hashtags", options.hashtags, (item)=>item.join(" "))}{choiceBlock("Choose Overlay", "overlay", options.overlays)}{choiceBlock("Choose Script", "script", options.scripts)}</div><aside className="finalPanel"><p className="kicker">FINAL BUILD</p><h2>{platformLabel(platform)} Final Post</h2><label className="finalLabel">Edit final before saving<textarea value={finalEdit} onChange={(e)=>setFinalEdit(e.target.value)} /></label><div className="actions"><button type="button" onClick={()=>setMessage(copyText(finalPost) ? "Copied edited final post." : "Nothing to copy.")}>Copy Final</button><button type="button" onClick={saveToQueue}>Save to Queue</button><button type="button" onClick={saveSelectedToBank}>Save Parts to Bank</button><button type="button" className="secondary" onClick={resetFinal}>Reset Final</button></div></aside></section>}</main><style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.15),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero,.controls,.message,.choiceBlock,.finalPanel{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{padding:26px;margin-bottom:14px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.controls{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;padding:16px;margin-bottom:14px}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}select,input,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:420px;resize:vertical;line-height:1.55}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.secondary{background:#1b1b1b;color:#fff;border:1px solid #333}.message{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.builderGrid{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:14px;align-items:start}.choiceBlock{padding:16px;margin-bottom:14px}.choiceBlock h2,.finalPanel h2{text-transform:uppercase;color:#ffe600}.choice{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px;margin:8px 0;border:1px solid #2a2a2a;border-radius:14px;background:#050505;color:#f2f2f2;line-height:1.45;text-transform:none;letter-spacing:0;font-size:14px}.choice.chosen{border-color:#ffe600;background:rgba(255,230,0,.08)}.choice input{width:auto;margin:3px 0 0}.finalPanel{position:sticky;top:76px;padding:16px}.finalLabel{color:#ffe600}.actions{display:grid;gap:10px}@media(max-width:1000px){.controls,.builderGrid{grid-template-columns:1fr}.finalPanel{position:static}textarea{min-height:360px}}`}</style></div>;
 }
