@@ -180,7 +180,7 @@ export default function WhatsAJagoff() {
           <div className="exampleList">
             <p>“Quit blocking the passing lane, jagoff.”</p>
             <p>“This jagoff said he was leaving five minutes ago.”</p>
-            <p>“Only a jagoff forgets the ranch for the fries.”</p>
+            <p>“Yeah, he’s a jagoff — but he’s our jagoff.”</p>
             <p>“I love the guy, but he is a jagoff.”</p>
           </div>
         </section>
