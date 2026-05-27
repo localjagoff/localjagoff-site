@@ -48,7 +48,7 @@ function writeArray(key, value) {
 }
 
 function copyText(value) {
-  if (!value || typeof navigator === "undefined") return false;
+  if (!value || typeof navigator === "undefined" || !navigator?.clipboard?.writeText) return false;
   navigator.clipboard.writeText(value);
   return true;
 }
@@ -121,11 +121,11 @@ function dedupeEntries(entries) {
   });
 }
 
-function parseBankImport(value) {
+function parsePartsImport(value) {
   const parsed = typeof value === "string" ? JSON.parse(value || "[]") : value;
   const source = Array.isArray(parsed)
     ? parsed
-    : parsed?.productBank || parsed?.bank || parsed?.items || [];
+    : parsed?.productBank || parsed?.promoParts || parsed?.bank || parsed?.items || [];
 
   return Array.isArray(source) ? source.map(normalizeEntry).filter((entry) => entry.text) : [];
 }
@@ -160,7 +160,7 @@ function buildCsv(entries) {
   return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
 }
 
-function buildBankEntry({ product, type, platform, text, source = "Manual", tag = "" }) {
+function buildPartsEntry({ product, type, platform, text, source = "Manual", tag = "" }) {
   return normalizeEntry({
     id: nowId("bank"),
     createdAt: new Date().toISOString(),
@@ -182,15 +182,17 @@ function extractSavedPackEntries(item) {
   const promo = item.promo || {};
   const entries = [];
 
-  if (promo.facebook_post) entries.push(buildBankEntry({ product, type: "caption", platform: "facebook", text: promo.facebook_post, source: "Saved Pack Import" }));
-  if (promo.instagram_caption) entries.push(buildBankEntry({ product, type: "caption", platform: "instagram", text: promo.instagram_caption, source: "Saved Pack Import" }));
-  if (promo.tiktok_caption) entries.push(buildBankEntry({ product, type: "caption", platform: "tiktok", text: promo.tiktok_caption, source: "Saved Pack Import" }));
-  if (promo.youtube_shorts_title) entries.push(buildBankEntry({ product, type: "hook", platform: "youtube_shorts", text: promo.youtube_shorts_title, source: "Saved Pack Import" }));
+  if (promo.facebook_post) entries.push(buildPartsEntry({ product, type: "caption", platform: "facebook", text: promo.facebook_post, source: "Saved Pack Import" }));
+  if (promo.instagram_caption) entries.push(buildPartsEntry({ product, type: "caption", platform: "instagram", text: promo.instagram_caption, source: "Saved Pack Import" }));
+  if (promo.tiktok_caption) entries.push(buildPartsEntry({ product, type: "caption", platform: "tiktok", text: promo.tiktok_caption, source: "Saved Pack Import" }));
+  if (promo.youtube_shorts_title) entries.push(buildPartsEntry({ product, type: "hook", platform: "youtube_shorts", text: promo.youtube_shorts_title, source: "Saved Pack Import" }));
+
   if (Array.isArray(promo.video_hooks)) {
-    promo.video_hooks.forEach((hook) => entries.push(buildBankEntry({ product, type: "hook", platform: "general", text: hook, source: "Saved Pack Import" })));
+    promo.video_hooks.forEach((hook) => entries.push(buildPartsEntry({ product, type: "hook", platform: "general", text: hook, source: "Saved Pack Import" })));
   }
+
   if (Array.isArray(promo.image_overlay_text)) {
-    promo.image_overlay_text.forEach((overlay) => entries.push(buildBankEntry({ product, type: "overlay", platform: "general", text: overlay, source: "Saved Pack Import" })));
+    promo.image_overlay_text.forEach((overlay) => entries.push(buildPartsEntry({ product, type: "overlay", platform: "general", text: overlay, source: "Saved Pack Import" })));
   }
 
   return entries.filter((entry) => entry.text);
@@ -293,14 +295,14 @@ export default function PromoProductBank() {
     }
 
     if (!cleanSnippet(text)) {
-      setMessage("Add text before saving to the bank.");
+      setMessage("Add text before saving to Promo Parts.");
       return;
     }
 
-    const entry = buildBankEntry({ product: selectedProduct, type, platform, text, tag });
+    const entry = buildPartsEntry({ product: selectedProduct, type, platform, text, tag });
     saveBank([entry, ...bank]);
     setText("");
-    setMessage("Approved promo text saved to the Product Bank.");
+    setMessage("Approved promo text saved to Promo Parts.");
   };
 
   const importSavedPack = (item) => {
@@ -311,54 +313,56 @@ export default function PromoProductBank() {
     }
 
     saveBank([...entries, ...bank]);
-    setMessage(`${entries.length} item${entries.length === 1 ? "" : "s"} imported into the Product Bank.`);
+    setMessage(`${entries.length} item${entries.length === 1 ? "" : "s"} imported into Promo Parts.`);
   };
 
   const removeEntry = (id) => {
     saveBank(bank.filter((entry) => entry.id !== id));
-    setMessage("Product Bank item removed.");
+    setMessage("Promo Parts item removed.");
   };
 
   const updateStatus = (id, status) => {
     saveBank(bank.map((entry) => entry.id === id ? { ...entry, status } : entry));
-    setMessage("Product Bank item updated.");
+    setMessage("Promo Parts item updated.");
   };
 
   const cleanupDuplicates = () => {
     const clean = dedupeEntries(bank.map(normalizeEntry));
     saveBank(clean);
-    setMessage(`Duplicate cleanup complete. ${clean.length} Product Bank item${clean.length === 1 ? "" : "s"} remain.`);
+    setMessage(`Duplicate cleanup complete. ${clean.length} Promo Parts item${clean.length === 1 ? "" : "s"} remain.`);
   };
 
   const clearRejected = () => {
     const clean = bank.filter((entry) => entry.status !== "Rejected");
     saveBank(clean);
-    setMessage("Rejected Product Bank items cleared.");
+    setMessage("Rejected Promo Parts items cleared.");
   };
 
-  const exportJson = () => downloadJson("local-jagoff-product-promo-bank.json", {
+  const exportJson = () => downloadJson("local-jagoff-promo-parts.json", {
     exportedAt: new Date().toISOString(),
     productBank: bank,
+    promoParts: bank,
   });
 
-  const exportFilteredJson = () => downloadJson("local-jagoff-product-promo-bank-filtered.json", {
+  const exportFilteredJson = () => downloadJson("local-jagoff-promo-parts-filtered.json", {
     exportedAt: new Date().toISOString(),
     productBank: filteredBank,
+    promoParts: filteredBank,
   });
 
-  const exportCsv = () => downloadFile("local-jagoff-product-promo-bank.csv", buildCsv(filteredBank), "text/csv");
+  const exportCsv = () => downloadFile("local-jagoff-promo-parts.csv", buildCsv(filteredBank), "text/csv");
 
   const restoreFromText = (value) => {
     try {
-      const incoming = parseBankImport(value);
+      const incoming = parsePartsImport(value);
       if (incoming.length === 0) {
-        setMessage("No valid Product Bank entries found in that import.");
+        setMessage("No valid Promo Parts entries found in that import.");
         return;
       }
       saveBank(dedupeEntries([...incoming, ...bank]));
-      setMessage(`${incoming.length} Product Bank item${incoming.length === 1 ? "" : "s"} imported.`);
+      setMessage(`${incoming.length} Promo Parts item${incoming.length === 1 ? "" : "s"} imported.`);
     } catch {
-      setMessage("Could not read that Product Bank JSON.");
+      setMessage("Could not read that Promo Parts JSON.");
     }
   };
 
@@ -377,7 +381,7 @@ export default function PromoProductBank() {
 
   const copyEntry = (entry) => {
     const ok = copyText(entry.text);
-    setMessage(ok ? "Copied Product Bank text." : "No text to copy.");
+    setMessage(ok ? "Copied Promo Parts text." : "No text to copy.");
   };
 
   const showWinners = () => {
@@ -389,7 +393,7 @@ export default function PromoProductBank() {
   return (
     <div className="page">
       <Head>
-        <title>Local Jagoff Product Promo Bank</title>
+        <title>Local Jagoff Promo Parts</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
       <PromoAdminNav />
@@ -397,7 +401,7 @@ export default function PromoProductBank() {
       <main className="wrap">
         <header className="hero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
-          <h1>Product Bank</h1>
+          <h1>Promo Parts</h1>
           <p>Save approved captions, hooks, CTAs, overlays, and notes by product so the best lines do not get buried in old generated packs.</p>
         </header>
 
@@ -420,30 +424,30 @@ export default function PromoProductBank() {
             <label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value)}>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label className="full">Tag / note<input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Example: hoodie weather, best hook, 724 clean, ad safe..." /></label>
             <label className="full">Approved text<textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the caption, hook, CTA, overlay, or note you want to save..." /></label>
-            <div className="actions full"><button type="button" className="primary" onClick={addManualEntry}>Save to Product Bank</button><button type="button" onClick={exportJson}>Export Full JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div>
+            <div className="actions full"><button type="button" className="primary" onClick={addManualEntry}>Save to Promo Parts</button><button type="button" onClick={exportJson}>Export Full JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div>
             {message && <p className="message full">{message}</p>}
           </div>
 
           <aside className="panel importPanel">
             <div className="panelHead"><p className="mini">IMPORT</p><h2>Saved packs / backup</h2></div>
-            <label>Import Product Bank JSON<input className="fileInput" type="file" accept="application/json,.json" onChange={handleFileImport} /></label>
-            <label>Paste Product Bank JSON<textarea value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste productBank / bank JSON here..." /></label>
+            <label>Import Promo Parts JSON<input className="fileInput" type="file" accept="application/json,.json" onChange={handleFileImport} /></label>
+            <label>Paste Promo Parts JSON<textarea value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste productBank / promoParts / bank JSON here..." /></label>
             <div className="actions"><button type="button" onClick={() => restoreFromText(importText)}>Import Pasted JSON</button><button type="button" onClick={cleanupDuplicates}>Clean Duplicates</button><button type="button" className="danger" onClick={clearRejected}>Clear Rejected</button></div>
             <div className="savedBlock"><p className="mini">Saved packs for selected product</p>{savedForSelectedProduct.length === 0 && <p className="muted">No saved packs found for the selected product yet.</p>}<div className="savedList">{savedForSelectedProduct.map((item) => <article key={item.id} className="savedItem"><strong>{item.source || "Saved Pack"}</strong><p>{item.promo?.brand_angle || item.promo?.facebook_post || "Saved promo pack"}</p><button type="button" onClick={() => importSavedPack(item)}>Import Text</button></article>)}</div></div>
           </aside>
         </section>
 
         <section className="panel bankPanel">
-          <div className="bankHead"><div><p className="mini">BANK</p><h2>Reusable copy database</h2>{winnerOnly && <p className="winnerNotice">Showing Performance Winner entries only.</p>}</div><div className="actions"><button type="button" onClick={() => setWinnerOnly(!winnerOnly)}>{winnerOnly ? "Show All" : "Show Winners"}</button><button type="button" onClick={exportFilteredJson}>Export Filtered JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div></div>
-          <div className="filters"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search bank..." /><select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}><option value="all">All Products</option>{productOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">All Types</option>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">All Statuses</option>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
-          {filteredBank.length === 0 && <div className="empty">No bank entries match this view.</div>}
+          <div className="bankHead"><div><p className="mini">PROMO PARTS</p><h2>Reusable copy database</h2>{winnerOnly && <p className="winnerNotice">Showing Performance Winner entries only.</p>}</div><div className="actions"><button type="button" onClick={() => setWinnerOnly(!winnerOnly)}>{winnerOnly ? "Show All" : "Show Winners"}</button><button type="button" onClick={exportFilteredJson}>Export Filtered JSON</button><button type="button" onClick={exportCsv}>Export Filtered CSV</button></div></div>
+          <div className="filters"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Promo Parts..." /><select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}><option value="all">All Products</option>{productOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="all">All Types</option>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{PLATFORM_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">All Statuses</option>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+          {filteredBank.length === 0 && <div className="empty">No Promo Parts entries match this view.</div>}
           <div className="bankGrid">
             {filteredBank.map((entry) => <article key={entry.id} className={`entry ${isPerformanceWinner(entry) ? "winnerEntry" : ""}`}><div className="entryTop"><div><p className="mini">{labelFromOptions(TYPE_OPTIONS, entry.type)} • {labelFromOptions(PLATFORM_OPTIONS, entry.platform)}</p><h3>{entry.productName}</h3></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div><div className="entryControls"><span className={`status status${entry.status.replace(/\s+/g, "")}`}>{entry.status}</span>{isPerformanceWinner(entry) && <span className="winnerBadge">Winner</span>}<select value={entry.status} onChange={(e) => updateStatus(entry.id, e.target.value)}>{STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>{entry.tag && <p className="tag">{entry.tag}</p>}<pre>{entry.text}</pre><div className="entryActions"><button type="button" onClick={() => copyEntry(entry)}>Copy</button><button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}
           </div>
         </section>
       </main>
 
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;margin-bottom:14px}.stats div,.stats button,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats button{text-align:left;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:120px}.importPanel textarea{min-height:130px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions,.entryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.message{color:#ffe600;font-weight:900}.winnerNotice{margin:4px 0 0;color:#ffe600;font-weight:900}.savedBlock{margin-top:14px}.savedList{display:grid;gap:10px;max-height:330px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entry.winnerEntry{border-color:rgba(255,230,0,.38);background:linear-gradient(135deg,rgba(255,230,0,.08),rgba(13,13,13,.92))}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag,.status,.winnerBadge{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.winnerBadge{background:#ffe600;color:#000;border-color:#ffe600}.statusApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.statusNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.28);color:#ffe600}.statusRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.entryControls select{max-width:180px}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:1050px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
+      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1240px;margin:0 auto;padding-top:34px}.hero{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:26px;margin-bottom:16px;box-shadow:0 22px 80px rgba(0,0,0,.4)}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.muted,.savedItem p{color:#ddd;line-height:1.55}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:12px;margin-bottom:14px}.stats div,.stats button,.panel,.empty,.entry{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.stats button{text-align:left;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{font-size:12px;font-weight:900;color:#ccc;text-transform:uppercase;letter-spacing:1px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;margin-bottom:14px}.addPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full,.panelHead{grid-column:1/-1}.panelHead h2,.bankHead h2{font-size:26px;text-transform:uppercase}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}input,select,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px}textarea{min-height:120px}.importPanel textarea{min-height:130px}button{border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#1b1b1b;color:#fff;border:1px solid #333}.primary,.entryActions button:first-child,.savedItem button{background:#ffe600;color:#000;border-color:#ffe600}.danger{color:#ff9a9a!important}.actions,.entryActions,.entryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.message{color:#ffe600;font-weight:900}.winnerNotice{margin:4px 0 0;color:#ffe600;font-weight:900}.savedBlock{margin-top:14px}.savedList{display:grid;gap:10px;max-height:330px;overflow:auto}.savedItem{border:1px solid #242424;border-radius:16px;padding:12px;background:#050505}.bankHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}.bankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entry{padding:14px}.entry.winnerEntry{border-color:rgba(255,230,0,.38);background:linear-gradient(135deg,rgba(255,230,0,.08),rgba(13,13,13,.92))}.entryTop{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:10px}.entry h3{text-transform:uppercase}.entry img{width:70px;height:70px;object-fit:contain;background:#070707;border-radius:12px}.tag,.status,.winnerBadge{display:inline-flex;width:max-content;max-width:100%;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.25);border-radius:999px;padding:6px 10px;color:#ffe600;font-size:12px;font-weight:900}.winnerBadge{background:#ffe600;color:#000;border-color:#ffe600}.statusApproved{background:rgba(154,255,183,.12);border-color:rgba(154,255,183,.32);color:#9affb7}.statusNeedsReview{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.28);color:#ffe600}.statusRejected{background:rgba(255,95,95,.12);border-color:rgba(255,95,95,.3);color:#ff9a9a}.entryControls select{max-width:180px}.entry pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.empty{margin:12px 0;color:#ddd;text-align:center}@media(max-width:1050px){.layout,.bankGrid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:650px){.addPanel,.filters{grid-template-columns:1fr}.bankHead{display:grid}.actions button,.entryActions button,.bankHead button,.savedItem button{width:100%}}`}</style>
     </div>
   );
 }
