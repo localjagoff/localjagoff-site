@@ -62,19 +62,19 @@ export default function PromoAdminNav() {
   const primaryLinks = [
     ["/admin/promo-hub", "Hub"],
     ["/admin/promo-generator", "Promo Studio"],
-    ["/admin/promo-week-builder", "Week Builder"],
     ["/admin/promo-posting-board", "Posting Board"],
-    ["/admin/promo-queue", "Queue"],
+    ["/admin/promo-performance", "Performance"],
   ];
 
   const moreLinks = [
     ["/admin/promo-launch-checklist", "Checklist"],
-    ["/admin/promo-campaign-presets", "Presets"],
-    ["/admin/promo-performance", "Performance"],
-    ["/admin/promo-insights", "Insights"],
+    ["/admin/promo-queue", "Queue"],
+    ["/admin/promo-week-builder", "Week Builder"],
     ["/admin/promo-calendar", "Calendar"],
-    ["/admin/promo-library", "Library"],
     ["/admin/promo-product-bank", "Promo Parts"],
+    ["/admin/promo-campaign-presets", "Presets"],
+    ["/admin/promo-insights", "Insights"],
+    ["/admin/promo-library", "Library"],
     ["/admin/promo-bank-repair", "Parts Repair"],
     ["/admin/promo-health", "Health"],
     ["/admin/promo-backup", "Backup"],
