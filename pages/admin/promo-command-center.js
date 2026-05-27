@@ -5,6 +5,7 @@ import PromoCommandCenterBase from "./promo-command-center-v6";
 const QUEUE_STORAGE_KEY = "localJagoffPromoQueue";
 const BANK_KEY = "localJagoffProductPromoBank";
 const PRESETS_KEY = "localJagoffCampaignPresets";
+
 const PLATFORM_VALUES = new Set(["facebook", "instagram", "tiktok", "youtube_shorts"]);
 const PLATFORM_LABEL_TO_VALUE = {
   "full pack": "full_pack",
@@ -13,41 +14,36 @@ const PLATFORM_LABEL_TO_VALUE = {
   tiktok: "tiktok",
   "youtube shorts": "youtube_shorts",
 };
-const CTA_LINK_LABELS = {
-  facebook: ["Facebook link:", "Facebook tracked link:"],
-  instagram: ["Instagram link:", "Instagram tracked link:"],
-  tiktok: ["TikTok link:", "TikTok tracked link:"],
-  youtube_shorts: ["YouTube Shorts link:", "YouTube Shorts tracked link:"],
-};
+
 let cachedProducts = [];
 
 const DEFAULT_GENERATOR_PRESETS = [
-  { id: "preset-new-drop", name: "New Drop Push", description: "General launch push for a fresh product drop.", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 5, notes: "New gear is live. Keep it direct, product-focused, and local. Push urgency without sounding desperate. Mention Local Jagoff and make the product feel like part of Pittsburgh-area everyday gear." },
-  { id: "preset-hoodie-weather", name: "Hoodie Weather", description: "Cold-weather push for hoodies and heavier gear.", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "Lean into hoodie weather, chilly Pittsburgh mornings, and comfort without sounding generic. Make the copy feel local, practical, and a little jagoff. Avoid overexplaining fabric unless useful." },
-  { id: "preset-724-local", name: "724 Local Push", description: "Focused campaign for 724-area gear only.", mode: "product_drop", tone: "more_jagoff", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "This is for 724-area products. Do not mention 412 unless the product itself is specifically 412. Keep it western PA, local, gritty, and proud. The 724 angle should feel intentional, not like an afterthought." },
-  { id: "preset-weekend-sale", name: "Weekend Sale", description: "Short weekend promo with a discount code.", mode: "sale", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 3, notes: "Weekend sale push. Mention the promo code if provided. Keep the CTA simple and make the post feel like a limited-time reason to shop, not a clearance dump." },
-  { id: "preset-holiday-promo", name: "Holiday Promo", description: "Holiday sale framework with promo code support.", mode: "holiday", tone: "clean", platforms: ["facebook", "instagram", "tiktok", "youtube_shorts"], days: 7, notes: "Holiday promo campaign. Use the selected holiday as the reason for the campaign. Mention the promo code if provided. Keep the copy festive but still Local Jagoff, not corporate or cheesy." },
-  { id: "preset-winner-reuse", name: "Best Winner Reuse", description: "Campaign designed around proven winners.", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "Reuse proven Product Bank and Performance winners where possible. Keep the structure fresh, but borrow the angles that already worked. Do not copy the same wording over and over." },
-  { id: "preset-clean-ad-safe", name: "Clean Ad-Safe Campaign", description: "Safer copy for boosted posts or ad-style captions.", mode: "clean_ad", tone: "clean", platforms: ["facebook", "instagram"], days: 5, notes: "Keep this ad-safe and clean. Still sound like Local Jagoff, but avoid anything that could be flagged or feel too aggressive. Focus on product, local pride, and a clean CTA." },
-  { id: "preset-savage-organic", name: "Savage Organic", description: "Sharper organic posts where attitude matters more than ad safety.", mode: "funny_pittsburgh", tone: "savage_but_safe", platforms: ["facebook", "instagram", "tiktok"], days: 5, notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful. Do not sound like a generic brand. The copy should feel like a local jagoff wrote it on purpose." },
+  { id: "preset-new-drop", name: "New Drop Push", description: "General launch push", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 5, notes: "New gear is live. Keep it direct, product-focused, and local. Push urgency without sounding desperate. Mention Local Jagoff and make the product feel like part of Pittsburgh-area everyday gear." },
+  { id: "preset-hoodie-weather", name: "Hoodie Weather", description: "Cold-weather push", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "Lean into hoodie weather, chilly Pittsburgh mornings, and comfort without sounding generic. Make the copy feel local, practical, and a little jagoff." },
+  { id: "preset-724-local", name: "724 Local Push", description: "Focused 724 campaign", mode: "product_drop", tone: "more_jagoff", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "This is for 724-area products. Do not mention 412 unless the product itself is specifically 412. Keep it western PA, local, gritty, and proud." },
+  { id: "preset-weekend-sale", name: "Weekend Sale", description: "Short weekend promo", mode: "sale", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 3, notes: "Weekend sale push. Mention the promo code if provided. Keep the CTA simple and make the post feel like a limited-time reason to shop, not a clearance dump." },
+  { id: "preset-holiday-promo", name: "Holiday Promo", description: "Holiday sale framework", mode: "holiday", tone: "clean", platforms: ["facebook", "instagram", "tiktok", "youtube_shorts"], days: 7, notes: "Holiday promo campaign. Use the selected holiday as the reason for the campaign. Mention the promo code if provided. Keep the copy festive but still Local Jagoff, not corporate or cheesy." },
+  { id: "preset-winner-reuse", name: "Best Winner Reuse", description: "Reuse winners", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], days: 7, notes: "Reuse proven Promo Parts and Performance winners where possible. Keep the structure fresh, but borrow the angles that already worked." },
+  { id: "preset-clean-ad-safe", name: "Clean Ad-Safe Campaign", description: "Safer copy", mode: "clean_ad", tone: "clean", platforms: ["facebook", "instagram"], days: 5, notes: "Keep this ad-safe and clean. Still sound like Local Jagoff, but avoid anything that could be flagged or feel too aggressive." },
+  { id: "preset-savage-organic", name: "Savage Organic", description: "Sharper organic posts", mode: "funny_pittsburgh", tone: "savage_but_safe", platforms: ["facebook", "instagram", "tiktok"], days: 5, notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful." },
 ];
 
-function readBank() {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(BANK_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+function clean(value) {
+  return String(value || "").trim();
 }
 
-function writeBank(items) {
-  if (typeof window !== "undefined") window.localStorage.setItem(BANK_KEY, JSON.stringify(Array.isArray(items) ? items : []));
+function normalizeName(value) {
+  return clean(value).toLowerCase().replace(/\s+/g, " ");
 }
 
-function clean(value) { return String(value || "").trim(); }
-function normalizeName(value) { return clean(value).toLowerCase().replace(/\s+/g, " "); }
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function safeJsonArray(key) {
   if (typeof window === "undefined") return [];
@@ -57,6 +53,14 @@ function safeJsonArray(key) {
   } catch {
     return [];
   }
+}
+
+function readBank() {
+  return safeJsonArray(BANK_KEY);
+}
+
+function writeBank(items) {
+  if (typeof window !== "undefined") window.localStorage.setItem(BANK_KEY, JSON.stringify(Array.isArray(items) ? items : []));
 }
 
 function normalizePreset(item) {
@@ -114,16 +118,8 @@ function fieldControlByLabel(labelText) {
   return field?.querySelector("select, input, textarea") || null;
 }
 
-function setFieldByLabel(labelText, value) { return setNativeValue(fieldControlByLabel(labelText), value); }
-
-function appendExtraNotes(value, statusNode) {
-  const control = fieldControlByLabel("Extra notes");
-  const existing = clean(control?.value || "");
-  setFieldByLabel("Extra notes", [existing, clean(value)].filter(Boolean).join("\n\n"));
-  if (statusNode) {
-    statusNode.textContent = "Added to notes";
-    window.setTimeout(() => { statusNode.textContent = ""; }, 1500);
-  }
+function setFieldByLabel(labelText, value) {
+  return setNativeValue(fieldControlByLabel(labelText), value);
 }
 
 function setSelectByLabel(labelText, value) {
@@ -141,6 +137,19 @@ function setSelectByOptionText(labelText, text) {
   const option = Array.from(control.options).find((item) => normalizeName(item.textContent).includes(normalized) || normalized.includes(normalizeName(item.textContent)));
   if (!option) return false;
   return setNativeValue(control, option.value);
+}
+
+function appendExtraNotes(value, statusNode) {
+  const control = fieldControlByLabel("Extra notes");
+  const existing = clean(control?.value || "");
+  setFieldByLabel("Extra notes", [existing, clean(value)].filter(Boolean).join("\n\n"));
+  showStatus(statusNode, "Added to notes");
+}
+
+function showStatus(statusNode, text) {
+  if (!statusNode) return;
+  statusNode.textContent = text;
+  window.setTimeout(() => { statusNode.textContent = ""; }, 1600);
 }
 
 function inferGeneratorMode(preset) {
@@ -167,12 +176,12 @@ function inferCampaignStyle(preset) {
 
 function applyCampaignPreset(preset, statusNode) {
   const generatorMode = inferGeneratorMode(preset);
-  const generatorPlatform = inferGeneratorPlatform(preset);
   setSelectByLabel("Mode", generatorMode);
-  setSelectByLabel("Platform", generatorPlatform);
+  setSelectByLabel("Platform", inferGeneratorPlatform(preset));
   setSelectByLabel("Tone", preset.tone || "balanced");
   setFieldByLabel("Extra notes", presetSummary(preset));
   if (preset.platforms?.[0]) setSelectByLabel("Planned platform", preset.platforms[0]);
+
   window.setTimeout(() => {
     if (generatorMode === "holiday") {
       setFieldByLabel("Promo Code / Offer Details", preset.promoCode || "");
@@ -180,10 +189,8 @@ function applyCampaignPreset(preset, statusNode) {
       setSelectByLabel("Campaign Style", inferCampaignStyle(preset));
     }
   }, 80);
-  if (statusNode) {
-    statusNode.textContent = `Applied: ${preset.name}`;
-    window.setTimeout(() => { statusNode.textContent = ""; }, 1800);
-  }
+
+  showStatus(statusNode, `Applied: ${preset.name}`);
 }
 
 async function hydrateProducts() {
@@ -233,71 +240,6 @@ function getCurrentDisplayPlatform() {
   return matchedLabel ? PLATFORM_LABEL_TO_VALUE[matchedLabel] : "full_pack";
 }
 
-function normalizeCtaLabels(value) {
-  return String(value || "")
-    .replace(/Facebook tracked link:/gi, "Facebook link:")
-    .replace(/Instagram tracked link:/gi, "Instagram link:")
-    .replace(/TikTok tracked link:/gi, "TikTok link:")
-    .replace(/YouTube Shorts tracked link:/gi, "YouTube Shorts link:");
-}
-
-function findCtaLine(lines, labels) { return lines.find((line) => labels.some((label) => line.trim().toLowerCase().startsWith(label.toLowerCase()))) || ""; }
-function stripCtaLabel(line) { return String(line || "").replace(/^[^:]+:\s*/i, "").trim(); }
-
-function platformCtaHelper(value, platform) {
-  const cleaned = normalizeCtaLabels(value);
-  const lines = cleaned.split("\n").map((line) => line.trim()).filter(Boolean);
-  if (platform === "full_pack") return cleaned;
-  const linkLine = findCtaLine(lines, CTA_LINK_LABELS[platform] || []);
-  const fallbackLine = findCtaLine(lines, ["Product link:", "Site link:"]);
-  const mainCta = findCtaLine(lines, ["Main CTA:"]);
-  const firstComment = findCtaLine(lines, ["First comment:"]);
-  const link = stripCtaLabel(linkLine || fallbackLine);
-  return [mainCta, firstComment, link ? `Link:\n${link}` : ""].filter(Boolean).join("\n");
-}
-
-function filterCopiedPromoText(value) {
-  const text = String(value || "");
-  if (!text) return value;
-  const platform = getCurrentDisplayPlatform();
-  const cleaned = normalizeCtaLabels(text);
-  if (platform === "full_pack") return cleaned;
-  const marker = "CTA / Link Helper:";
-  const markerIndex = cleaned.indexOf(marker);
-  if (markerIndex >= 0) {
-    const separator = "\n\n---\n\n";
-    const before = cleaned.slice(0, markerIndex + marker.length);
-    const rest = cleaned.slice(markerIndex + marker.length);
-    const nextSeparatorIndex = rest.indexOf(separator);
-    const ctaBlock = nextSeparatorIndex >= 0 ? rest.slice(0, nextSeparatorIndex) : rest;
-    const after = nextSeparatorIndex >= 0 ? rest.slice(nextSeparatorIndex) : "";
-    return `${before}\n${platformCtaHelper(ctaBlock, platform)}${after}`;
-  }
-  const hasAnyPlatformLink = Object.values(CTA_LINK_LABELS).flat().some((label) => cleaned.toLowerCase().includes(label.toLowerCase()));
-  return hasAnyPlatformLink ? platformCtaHelper(cleaned, platform) : cleaned;
-}
-
-function patchClipboardForCtaHelper() {
-  if (typeof navigator === "undefined" || !navigator?.clipboard?.writeText) return;
-  if (navigator.clipboard.__localJagoffCtaFilterPatched) return;
-  const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
-  navigator.clipboard.writeText = (value) => originalWriteText(filterCopiedPromoText(value));
-  navigator.clipboard.__localJagoffCtaFilterPatched = true;
-}
-
-function filterVisibleCtaHelpers() {
-  if (typeof document === "undefined") return;
-  const platform = getCurrentDisplayPlatform();
-  document.querySelectorAll(".resultBlock").forEach((block) => {
-    const title = block.querySelector("h3")?.textContent?.trim().toLowerCase() || "";
-    if (!title.includes("cta / link helper")) return;
-    const contentNode = block.querySelector("pre") || block.querySelector("p");
-    if (!contentNode) return;
-    if (!contentNode.dataset.originalCtaHelper) contentNode.dataset.originalCtaHelper = contentNode.textContent || "";
-    contentNode.textContent = platformCtaHelper(contentNode.dataset.originalCtaHelper, platform);
-  });
-}
-
 function normalizeQueuePlatformCopy() {
   if (typeof window === "undefined") return;
   try {
@@ -314,13 +256,6 @@ function normalizeQueuePlatformCopy() {
   } catch {}
 }
 
-function relabelLoadButtons() {
-  if (typeof document === "undefined") return;
-  document.querySelectorAll("button").forEach((button) => {
-    if (button.textContent?.trim() === "Load") button.textContent = "Open Pack";
-  });
-}
-
 function classifyResultBlock(title = "") {
   const lower = title.toLowerCase();
   if (lower.includes("facebook post") || lower.includes("facebook bundle")) return { type: "caption", platform: "facebook" };
@@ -332,8 +267,6 @@ function classifyResultBlock(title = "") {
   if (lower.includes("short video script")) return { type: "note", platform: "general" };
   if (lower.includes("image overlay")) return { type: "overlay", platform: "general" };
   if (lower.includes("cta")) return { type: "cta", platform: "general" };
-  if (lower.includes("brand angle")) return { type: "note", platform: "general" };
-  if (lower.includes("clean ad") || lower.includes("edgy version")) return { type: "caption", platform: "general" };
   return { type: "note", platform: "general" };
 }
 
@@ -347,9 +280,10 @@ function saveBlockToBank(block, button) {
   const text = getResultText(block);
   if (!text) {
     button.textContent = "No Text";
-    window.setTimeout(() => { button.textContent = "Save to Bank"; }, 1200);
+    window.setTimeout(() => { button.textContent = "Save to Parts"; }, 1200);
     return;
   }
+
   const { type, platform } = classifyResultBlock(title);
   const product = getCurrentProduct();
   const entry = {
@@ -366,10 +300,11 @@ function saveBlockToBank(block, button) {
     tag: title,
     status: product.id ? "Approved" : "Needs Review",
   };
+
   writeBank([entry, ...readBank()].slice(0, 800));
   button.textContent = product.id ? "Saved" : "Saved - Review";
   button.classList.add("bankSaved");
-  window.setTimeout(() => { button.textContent = "Save to Bank"; button.classList.remove("bankSaved"); }, 1400);
+  window.setTimeout(() => { button.textContent = "Save to Parts"; button.classList.remove("bankSaved"); }, 1400);
 }
 
 function attachBankButtons() {
@@ -383,7 +318,7 @@ function attachBankButtons() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "saveToBankButton";
-    button.textContent = "Save to Bank";
+    button.textContent = "Save to Parts";
     button.addEventListener("click", () => saveBlockToBank(block, button));
     top.appendChild(button);
   });
@@ -417,34 +352,93 @@ function getRelevantBankEntries(product, platform) {
 }
 
 function bankEntrySummary(entry) {
-  return `Product Bank winner (${entry.type || "note"} / ${entry.platform || "general"}): ${entry.text || ""}`;
+  return `Promo Parts winner (${entry.type || "note"} / ${entry.platform || "general"}): ${entry.text || ""}`;
+}
+
+function relabelLoadButtons() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("button").forEach((button) => {
+    if (button.textContent?.trim() === "Load") button.textContent = "Open Pack";
+  });
+}
+
+function smartRowForControls(controls) {
+  let row = controls.querySelector(".promoSmartRow");
+  if (row) return row;
+
+  row = document.createElement("div");
+  row.className = "promoSmartRow full";
+  const panelHead = controls.querySelector(".panelHead");
+  if (panelHead?.nextSibling) controls.insertBefore(row, panelHead.nextSibling);
+  else controls.prepend(row);
+  return row;
+}
+
+function attachPresetHelper() {
+  if (typeof document === "undefined") return;
+  const controls = document.querySelector(".controls");
+  if (!controls) return;
+  const row = smartRowForControls(controls);
+  if (row.querySelector(".campaignPresetHelper")) return;
+
+  const presets = readCampaignPresets();
+  if (!presets.length) return;
+
+  const panel = document.createElement("section");
+  panel.className = "campaignPresetHelper";
+  panel.innerHTML = `
+    <div class="helperTop">
+      <p class="miniKicker">CAMPAIGN PRESET</p>
+      <h3>Apply strategy</h3>
+      <p class="presetHelp">Use a saved/default preset to fill mode, tone, platform, and notes for this promo pack.</p>
+    </div>
+    <div class="presetControls">
+      <select aria-label="Campaign preset">${presets.map((preset, index) => `<option value="${index}">${escapeHtml(preset.name)}${preset.description ? ` — ${escapeHtml(preset.description)}` : ""}</option>`).join("")}</select>
+      <button type="button" class="applyPresetButton">Apply Preset</button>
+      <button type="button" class="copyPresetButton">Copy Notes</button>
+      <a href="/admin/promo-campaign-presets">Open Presets</a>
+      <span class="presetStatus" aria-live="polite"></span>
+    </div>
+  `;
+
+  const select = panel.querySelector("select");
+  const statusNode = panel.querySelector(".presetStatus");
+  panel.querySelector(".applyPresetButton")?.addEventListener("click", () => applyCampaignPreset(presets[Number(select.value)] || presets[0], statusNode));
+  panel.querySelector(".copyPresetButton")?.addEventListener("click", () => {
+    const preset = presets[Number(select.value)] || presets[0];
+    navigator.clipboard?.writeText(presetSummary(preset));
+    showStatus(statusNode, "Copied preset notes");
+  });
+
+  row.prepend(panel);
 }
 
 function attachProductBankWinnerHelper() {
   if (typeof document === "undefined") return;
   const controls = document.querySelector(".controls");
   if (!controls) return;
+  const row = smartRowForControls(controls);
 
   const product = getCurrentProduct();
   const platform = getCurrentDisplayPlatform();
   const productKey = `${product.id || product.name}|${platform}`;
-  const existing = controls.querySelector(".productBankWinnerHelper");
+  const existing = row.querySelector(".productBankWinnerHelper");
   if (existing?.dataset.productKey === productKey) return;
   if (existing) existing.remove();
 
   const entries = getRelevantBankEntries(product, platform);
-  const panel = document.createElement("div");
-  panel.className = "productBankWinnerHelper full";
+  const panel = document.createElement("section");
+  panel.className = "productBankWinnerHelper";
   panel.dataset.productKey = productKey;
   panel.innerHTML = `
-    <div>
-      <p class="miniKicker">PRODUCT BANK WINNERS</p>
+    <div class="helperTop">
+      <p class="miniKicker">PROMO PARTS WINNERS</p>
       <h3>Reuse what worked</h3>
-      <p class="presetHelp">${entries.length ? `${entries.length} approved line${entries.length === 1 ? "" : "s"} found for this product/platform.` : "No approved Product Bank winners found for the current product/platform yet."}</p>
+      <p class="presetHelp">${entries.length ? `${entries.length} approved line${entries.length === 1 ? "" : "s"} found for this product/platform.` : "No approved Promo Parts winners found for the current product/platform yet."}</p>
     </div>
     <div class="presetControls">
-      ${entries.length ? `<select aria-label="Product Bank winner">${entries.map((entry, index) => `<option value="${index}">${entry.type || "note"} / ${entry.platform || "general"}: ${String(entry.text || "").slice(0, 95)}</option>`).join("")}</select><button type="button" class="applyBankWinnerButton">Add to Notes</button><button type="button" class="copyBankWinnerButton">Copy Winner</button>` : ""}
-      <a href="/admin/promo-product-bank">Open Product Bank</a>
+      ${entries.length ? `<select aria-label="Promo Parts winner">${entries.map((entry, index) => `<option value="${index}">${escapeHtml(entry.type || "note")} / ${escapeHtml(entry.platform || "general")}: ${escapeHtml(String(entry.text || "").slice(0, 95))}</option>`).join("")}</select><button type="button" class="applyBankWinnerButton">Add to Notes</button><button type="button" class="copyBankWinnerButton">Copy Winner</button>` : ""}
+      <a href="/admin/promo-product-bank">Open Promo Parts</a>
       <span class="presetStatus" aria-live="polite"></span>
     </div>
   `;
@@ -458,57 +452,10 @@ function attachProductBankWinnerHelper() {
   panel.querySelector(".copyBankWinnerButton")?.addEventListener("click", () => {
     const entry = entries[Number(select.value)] || entries[0];
     if (entry) navigator.clipboard?.writeText(entry.text || "");
-    if (statusNode) {
-      statusNode.textContent = "Copied winner";
-      window.setTimeout(() => { statusNode.textContent = ""; }, 1500);
-    }
+    showStatus(statusNode, "Copied winner");
   });
 
-  const presetPanel = controls.querySelector(".campaignPresetHelper");
-  if (presetPanel?.nextSibling) controls.insertBefore(panel, presetPanel.nextSibling);
-  else if (presetPanel) controls.appendChild(panel);
-  else controls.prepend(panel);
-}
-
-function attachPresetHelper() {
-  if (typeof document === "undefined") return;
-  const controls = document.querySelector(".controls");
-  if (!controls || controls.querySelector(".campaignPresetHelper")) return;
-  const presets = readCampaignPresets();
-  if (!presets.length) return;
-  const panel = document.createElement("div");
-  panel.className = "campaignPresetHelper full";
-  panel.innerHTML = `
-    <div>
-      <p class="miniKicker">CAMPAIGN PRESET</p>
-      <h3>Apply strategy</h3>
-      <p class="presetHelp">Use a saved/default campaign preset to fill mode, tone, platform, and notes for this single promo pack.</p>
-    </div>
-    <div class="presetControls">
-      <select aria-label="Campaign preset">${presets.map((preset, index) => `<option value="${index}">${preset.name}${preset.description ? ` — ${preset.description}` : ""}</option>`).join("")}</select>
-      <button type="button" class="applyPresetButton">Apply Preset</button>
-      <button type="button" class="copyPresetButton">Copy Notes</button>
-      <a href="/admin/promo-campaign-presets">Open Presets</a>
-      <span class="presetStatus" aria-live="polite"></span>
-    </div>
-  `;
-  const select = panel.querySelector("select");
-  const statusNode = panel.querySelector(".presetStatus");
-  panel.querySelector(".applyPresetButton")?.addEventListener("click", () => {
-    const preset = presets[Number(select.value)] || presets[0];
-    applyCampaignPreset(preset, statusNode);
-  });
-  panel.querySelector(".copyPresetButton")?.addEventListener("click", () => {
-    const preset = presets[Number(select.value)] || presets[0];
-    navigator.clipboard?.writeText(presetSummary(preset));
-    if (statusNode) {
-      statusNode.textContent = "Copied preset notes";
-      window.setTimeout(() => { statusNode.textContent = ""; }, 1500);
-    }
-  });
-  const panelHead = controls.querySelector(".panelHead");
-  if (panelHead?.nextSibling) controls.insertBefore(panel, panelHead.nextSibling);
-  else controls.prepend(panel);
+  row.appendChild(panel);
 }
 
 function injectStyles() {
@@ -516,11 +463,21 @@ function injectStyles() {
   const style = document.createElement("style");
   style.id = "local-jagoff-generator-wrapper-style";
   style.textContent = `
+    .controls{min-width:0!important;align-items:start!important}
+    .controls > .full,.controls > .promoSmartRow{grid-column:1/-1!important;min-width:0!important;width:100%!important}
+    .promoSmartRow{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))!important;gap:14px!important;align-items:stretch!important;margin:0!important;padding:0!important}
+    .campaignPresetHelper,.productBankWinnerHelper{min-width:0!important;width:100%!important;box-sizing:border-box!important;display:grid!important;grid-template-columns:1fr!important;gap:14px!important;align-content:start!important;padding:18px!important;background:linear-gradient(135deg,rgba(255,230,0,.13),rgba(5,5,5,.96))!important;border:1px solid rgba(255,230,0,.34)!important;border-radius:18px!important;overflow:hidden!important}
+    .productBankWinnerHelper{background:linear-gradient(135deg,rgba(255,230,0,.09),rgba(5,5,5,.96))!important;border-color:rgba(255,230,0,.24)!important}
+    .campaignPresetHelper .helperTop,.productBankWinnerHelper .helperTop{min-width:0!important}
+    .campaignPresetHelper h3,.productBankWinnerHelper h3{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;font-size:24px!important;line-height:1.05!important;word-break:normal!important;overflow-wrap:normal!important}
+    .campaignPresetHelper .presetHelp,.productBankWinnerHelper .presetHelp{margin:8px 0 0!important;color:#ddd!important;line-height:1.45!important;max-width:62ch!important;word-break:normal!important;overflow-wrap:normal!important}
+    .presetControls{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:10px!important;align-items:center!important;min-width:0!important;width:100%!important}
+    .presetControls select{min-width:0!important;width:100%!important;max-width:100%!important;margin-top:0!important;box-sizing:border-box!important;white-space:normal!important}
+    .presetControls button,.presetControls a{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:44px!important;border:1px solid #333!important;border-radius:14px!important;padding:11px 14px!important;font-weight:900!important;color:#fff!important;background:#1b1b1b!important;text-decoration:none!important;cursor:pointer!important;white-space:nowrap!important;line-height:1.1!important;box-sizing:border-box!important}
+    .presetControls .applyPresetButton,.presetControls .applyBankWinnerButton{color:#000!important;background:#ffe600!important;border-color:#ffe600!important}
+    .presetStatus{grid-column:1/-1;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;min-height:16px!important}
     .saveToBankButton{color:#000!important;background:#ffe600!important;border-color:#ffe600!important}.saveToBankButton.bankSaved{color:#000!important;background:#9affb7!important;border-color:#9affb7!important}
-    .campaignPresetHelper,.productBankWinnerHelper{display:grid;grid-template-columns:minmax(0,1fr) 1.25fr;gap:14px;align-items:center;padding:16px;background:linear-gradient(135deg,rgba(255,230,0,.13),rgba(5,5,5,.96));border:1px solid rgba(255,230,0,.34);border-radius:18px}
-    .productBankWinnerHelper{background:linear-gradient(135deg,rgba(255,230,0,.09),rgba(5,5,5,.96));border-color:rgba(255,230,0,.24)}
-    .campaignPresetHelper h3,.productBankWinnerHelper h3{margin:0;color:#ffe600;text-transform:uppercase;font-size:22px}.campaignPresetHelper .presetHelp,.productBankWinnerHelper .presetHelp{margin:6px 0 0;color:#ddd;line-height:1.45}.presetControls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.presetControls select{min-width:240px;flex:1 1 260px;margin-top:0!important}.presetControls button,.presetControls a{border:1px solid #333;border-radius:14px;padding:12px 14px;font-weight:900;color:#fff;background:#1b1b1b;text-decoration:none;cursor:pointer}.presetControls .applyPresetButton,.presetControls .applyBankWinnerButton{color:#000;background:#ffe600;border-color:#ffe600}.presetStatus{color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
-    @media(max-width:760px){.campaignPresetHelper,.productBankWinnerHelper{grid-template-columns:1fr}.presetControls button,.presetControls a,.presetControls select,.saveToBankButton{width:100%;text-align:center}}
+    @media(max-width:980px){.promoSmartRow{grid-template-columns:1fr!important}.presetControls{grid-template-columns:1fr!important}.presetControls button,.presetControls a,.presetControls select,.saveToBankButton{width:100%!important;text-align:center!important}}
   `;
   document.head.appendChild(style);
 }
@@ -532,10 +489,8 @@ export default function PromoCommandCenter() {
     normalizeQueuePlatformCopy();
     hydrateProducts();
     injectStyles();
-    patchClipboardForCtaHelper();
     attachPresetHelper();
     attachProductBankWinnerHelper();
-    filterVisibleCtaHelpers();
     attachBankButtons();
     relabelLoadButtons();
     setReady(true);
@@ -543,7 +498,6 @@ export default function PromoCommandCenter() {
     const observer = new MutationObserver(() => {
       attachPresetHelper();
       attachProductBankWinnerHelper();
-      filterVisibleCtaHelpers();
       attachBankButtons();
       relabelLoadButtons();
     });
