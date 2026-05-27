@@ -1,3 +1,4 @@
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
@@ -5,6 +6,13 @@ import Link from "next/link";
 import { getProductImages, getProductThumbnail } from "../lib/getProductImages";
 import { sortProducts } from "../lib/productSort";
 import { getFeaturedProducts } from "../lib/featuredProducts";
+
+const SITE_URL = "https://www.localjagoff.com";
+const PAGE_URL = SITE_URL;
+const PAGE_TITLE = "Local Jagoff | Pittsburgh Shirts, Hoodies & Gear";
+const PAGE_DESCRIPTION =
+  "Shop Local Jagoff for Pittsburgh shirts, hoodies, hats, 412 gear, 724 gear, and black-and-gold Western PA streetwear built for jagoffs, yinzers, and locals who get it.";
+const SHARE_IMAGE = `${SITE_URL}/images/social-share.jpg`;
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -33,8 +41,53 @@ export default function Home() {
   const hats = sortProducts(products.filter((p) => p.category === "hats"));
   const other = sortProducts(products.filter((p) => p.category === "other"));
 
+  const homeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Local Jagoff",
+    url: SITE_URL,
+    description: PAGE_DESCRIPTION,
+    publisher: {
+      "@type": "Organization",
+      name: "Local Jagoff",
+      url: SITE_URL,
+      logo: `${SITE_URL}/images/social-share.jpg`,
+    },
+  };
+
   return (
     <div className="page-shell">
+      <Head>
+        <title>{PAGE_TITLE}</title>
+        <meta name="description" content={PAGE_DESCRIPTION} key="description" />
+        <link rel="canonical" href={PAGE_URL} key="canonical" />
+
+        <meta property="og:title" content={PAGE_TITLE} key="og:title" />
+        <meta property="og:description" content={PAGE_DESCRIPTION} key="og:description" />
+        <meta property="og:url" content={PAGE_URL} key="og:url" />
+        <meta property="og:type" content="website" key="og:type" />
+        <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
+        <meta property="og:image" content={SHARE_IMAGE} key="og:image" />
+        <meta property="og:image:secure_url" content={SHARE_IMAGE} key="og:image:secure_url" />
+        <meta property="og:image:width" content="1200" key="og:image:width" />
+        <meta property="og:image:height" content="630" key="og:image:height" />
+        <meta property="og:image:alt" content="Local Jagoff Pittsburgh shirts, hoodies, hats, and gear" key="og:image:alt" />
+
+        <meta name="twitter:card" content="summary_large_image" key="twitter:card" />
+        <meta name="twitter:title" content={PAGE_TITLE} key="twitter:title" />
+        <meta name="twitter:description" content={PAGE_DESCRIPTION} key="twitter:description" />
+        <meta name="twitter:image" content={SHARE_IMAGE} key="twitter:image" />
+        <meta name="twitter:image:alt" content="Local Jagoff Pittsburgh shirts, hoodies, hats, and gear" key="twitter:image:alt" />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(homeJsonLd).replace(/</g, "\\u003c"),
+          }}
+          key="home-jsonld"
+        />
+      </Head>
+
       <Navbar />
 
       <div className="banner-shell">
@@ -61,7 +114,7 @@ export default function Home() {
       {featured.length > 0 && (
         <section className="featured-wrap">
           <div className="section-head">
-            <div>              
+            <div>
               <h2>Featured Picks</h2>
             </div>
             <p className="mobile-scroll-hint">Swipe →</p>
@@ -182,11 +235,11 @@ export default function Home() {
         }
 
         .page-shell {
-        min-height: 100vh;
-        background: transparent;
-        color: #fff;
-        position: relative;
-      }
+          min-height: 100vh;
+          background: transparent;
+          color: #fff;
+          position: relative;
+        }
 
         .banner-shell,
         .featured-wrap,
@@ -371,8 +424,7 @@ export default function Home() {
           border: 1px solid rgba(255, 230, 0, 0.5);
           border-radius: 999px;
           padding: 6px 9px;
-          background:
-            linear-gradient(180deg, rgba(255, 242, 122, 0.96), rgba(255, 230, 0, 0.96));
+          background: linear-gradient(180deg, rgba(255, 242, 122, 0.96), rgba(255, 230, 0, 0.96));
           color: #000;
           font-size: 10px;
           font-weight: 900;
