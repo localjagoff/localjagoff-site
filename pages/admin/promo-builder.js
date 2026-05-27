@@ -222,15 +222,18 @@ function ChoiceGroup({ title, items, selected, onSelect, render = (item) => item
 
       <div className="optionList">
         {items.map((item, index) => (
-          <article key={`${title}-${index}`} className={`optionRow ${selected === index ? "picked" : ""}`}>
-            <div className="optionText">
+          <button
+            key={`${title}-${index}`}
+            type="button"
+            className={`optionButton ${selected === index ? "picked" : ""}`}
+            onClick={() => onSelect(index)}
+          >
+            <span className="optionButtonCopy">
               <strong>Option {index + 1}</strong>
-              <p>{render(item)}</p>
-            </div>
-            <button type="button" className="useBtn" onClick={() => onSelect(index)}>
-              {selected === index ? "Using" : "Use"}
-            </button>
-          </article>
+              <em>{render(item)}</em>
+            </span>
+            <span className="optionButtonAction">{selected === index ? "Using" : "Use"}</span>
+          </button>
         ))}
       </div>
     </section>
@@ -337,7 +340,7 @@ export default function PromoBuilder() {
 
     setOptions(buildOptions(product, platform));
     setSelected(defaultSelected());
-    setMessage("Options generated. Use the yellow buttons to pick the final post parts.");
+    setMessage("Options generated. Pick one menu option from each section.");
   };
 
   const copyCaptionOnly = () => setMessage(copyText(finalCaption) ? "Copied caption." : "Nothing to copy.");
@@ -404,7 +407,7 @@ export default function PromoBuilder() {
   };
 
   return (
-    <div className="page">
+    <div className="promoBuilderPage">
       <Head>
         <title>Local Jagoff Promo Builder</title>
         <meta name="robots" content="noindex,nofollow" />
@@ -412,55 +415,28 @@ export default function PromoBuilder() {
 
       <PromoAdminNav />
 
-      <main className="wrap">
-        <header className="hero">
+      <main className="builderWrap">
+        <header className="builderHero">
           <p className="kicker">PRIVATE ADMIN TOOL</p>
           <h1>Promo Builder</h1>
           <p>Pick clean post parts, preview the post, then save it to the Posting Board. Facebook and Instagram stay caption-only with no video script junk.</p>
         </header>
 
         <section className="setup" aria-label="Promo setup">
-          <label>
-            Product
-            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-              {products.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-          </label>
-
-          <label>
-            Platform
-            <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-              {PLATFORMS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-
-          <label>
-            Destination
-            <select value={destination} onChange={(e) => setDestination(e.target.value)}>
-              {destinationList(platform).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-
-          <label>
-            Date
-            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
-          </label>
-
+          <label>Product<select value={productId} onChange={(e) => setProductId(e.target.value)}>{products.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value)}>{PLATFORMS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label>Destination<select value={destination} onChange={(e) => setDestination(e.target.value)}>{destinationList(platform).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label>Date<input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></label>
           <button type="button" className="generate" onClick={generateOptions}>Generate Options</button>
         </section>
 
         {message && <section className="message">{message}</section>}
 
-        {!options && (
-          <section className="empty">
-            <h2>Generate options first</h2>
-            <p>You will get clean dark option cards with yellow Use buttons for hook, caption, CTA, hashtags, and overlay text.</p>
-          </section>
-        )}
+        {!options && <section className="empty"><h2>Generate options first</h2><p>You will get clean menu buttons for hook, caption, CTA, hashtags, and overlay text.</p></section>}
 
         {options && (
-          <section className="builder">
-            <div className="left">
+          <section className="builderGrid">
+            <div className="leftCol">
               <ChoiceGroup title="Hook" items={options.hooks} selected={selected.hook} onSelect={(index) => setSelected({ ...selected, hook: index })} />
               <ChoiceGroup title="Caption" items={options.captions} selected={selected.caption} onSelect={(index) => setSelected({ ...selected, caption: index })} />
               <ChoiceGroup title="CTA" items={options.ctas} selected={selected.cta} onSelect={(index) => setSelected({ ...selected, cta: index })} />
@@ -469,109 +445,82 @@ export default function PromoBuilder() {
               {isVideoPlatform && <ChoiceGroup title="Video Script" items={options.scripts} selected={selected.script} onSelect={(index) => setSelected({ ...selected, script: index })} />}
             </div>
 
-            <aside className="right">
+            <aside className="rightCol">
               <section className="finalBox">
-                <div className="choiceHead">
-                  <div>
-                    <p className="miniKicker">Final copy</p>
-                    <h2>Edit Before Saving</h2>
-                  </div>
-                </div>
-
+                <div className="choiceHead"><div><p className="miniKicker">Final copy</p><h2>Edit Before Saving</h2></div></div>
                 <textarea value={finalEdit} onChange={(e) => setFinalEdit(e.target.value)} rows={12} />
-
-                <div className="cleanCopy">
-                  <strong>Clean copy output</strong>
-                  <p>No labels are included when copying. Copy Full Post includes caption, hashtags, and tracked link only.</p>
-                </div>
-
-                <div className="actions">
-                  <button type="button" onClick={copyCaptionOnly}>Copy Caption</button>
-                  <button type="button" onClick={copyFullPost}>Copy Full Post</button>
-                  <button type="button" onClick={() => saveToQueueWithStatus("Draft")}>Save Draft</button>
-                  <button type="button" onClick={() => saveToQueueWithStatus("Ready")}>Save Ready</button>
-                  <button type="button" onClick={saveSelectedToBank}>Save Parts</button>
-                </div>
+                <div className="cleanCopy"><strong>Clean copy output</strong><p>No labels are included when copying. Copy Full Post includes caption, hashtags, and tracked link only.</p></div>
+                <div className="actions"><button type="button" onClick={copyCaptionOnly}>Copy Caption</button><button type="button" onClick={copyFullPost}>Copy Full Post</button><button type="button" onClick={() => saveToQueueWithStatus("Draft")}>Save Draft</button><button type="button" onClick={() => saveToQueueWithStatus("Ready")}>Save Ready</button><button type="button" onClick={saveSelectedToBank}>Save Parts</button></div>
               </section>
-
-              <PlatformPreview
-                product={product}
-                platform={platform}
-                destination={destination}
-                caption={finalCaption}
-                hashtags={tags}
-                link={link}
-                overlay={overlay}
-                firstComment={firstComment}
-                script={script}
-              />
+              <PlatformPreview product={product} platform={platform} destination={destination} caption={finalCaption} hashtags={tags} link={link} overlay={overlay} firstComment={firstComment} script={script} />
             </aside>
           </section>
         )}
       </main>
 
-      <style jsx>{`
-        .page{min-height:100vh;padding:0 16px 90px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}
-        .wrap{max-width:1320px;margin:0 auto;padding-top:34px}
-        .hero,.setup,.choiceGroup,.finalBox,.preview,.empty,.message{background:rgba(12,12,12,.94);border:1px solid rgba(255,230,0,.2);border-radius:26px;box-shadow:0 22px 80px rgba(0,0,0,.42)}
-        .hero{padding:28px;margin-bottom:16px}
-        .kicker,.miniKicker{margin:0 0 9px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
-        .miniKicker{font-size:10px;letter-spacing:1.6px;margin-bottom:5px}
-        h1,h2,p{margin-top:0}
-        h1{margin-bottom:12px;font-size:clamp(46px,8vw,96px);line-height:.9;text-transform:uppercase}
-        h2{margin-bottom:0;color:#ffe600;text-transform:uppercase;line-height:1.05}
-        p{color:#ddd;line-height:1.55}
-        .setup{display:grid;grid-template-columns:minmax(240px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:12px;align-items:end;padding:18px;margin-bottom:14px}
-        label{display:grid;gap:8px;color:#ffe600;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-        select,input,textarea{width:100%;border:1px solid rgba(255,230,0,.25);border-radius:14px;background:#050505;color:#fff;padding:12px;font:inherit;outline:none}
-        textarea{min-height:240px;resize:vertical;line-height:1.5;white-space:pre-wrap}
-        select:focus,input:focus,textarea:focus{border-color:#ffe600;box-shadow:0 0 0 3px rgba(255,230,0,.1)}
-        button{border:none;border-radius:14px;background:#ffe600;color:#000;padding:12px 15px;font-weight:950;letter-spacing:.3px;cursor:pointer;text-transform:uppercase}
-        button:hover{filter:brightness(1.03);transform:translateY(-1px)}
-        .generate{min-height:45px;white-space:nowrap}
-        .message,.empty{padding:18px;margin-bottom:14px}
-        .message{color:#ffe600;font-weight:900}
-        .builder{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:16px;align-items:start}
-        .left{display:grid;gap:14px}
-        .right{position:sticky;top:74px;display:grid;gap:14px}
-        .choiceGroup,.finalBox,.preview{padding:18px}
-        .choiceHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}
-        .choiceHead span{flex:0 0 auto;border:1px solid rgba(255,230,0,.3);border-radius:999px;padding:7px 10px;color:#ffe600;font-size:11px;font-weight:900;text-transform:uppercase;white-space:nowrap}
-        .optionList{display:grid;gap:10px}
-        .optionRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018))}
-        .optionRow.picked{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.15),rgba(12,12,12,.94))}
-        .optionText strong{display:block;margin-bottom:7px;color:#fff;font-size:12px;font-weight:950;letter-spacing:1px;text-transform:uppercase}
-        .optionText p{margin:0;white-space:pre-wrap;color:#e8e8e8}
-        .useBtn{min-width:82px}
-        .optionRow.picked .useBtn{background:#fff;color:#000}
-        .cleanCopy{margin:12px 0;padding:13px;border:1px solid rgba(255,230,0,.18);border-radius:16px;background:#050505}
-        .cleanCopy strong{display:block;color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}
-        .cleanCopy p{margin:6px 0 0;color:#cfcfcf;font-size:13px}
-        .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-        .actions button:last-child{grid-column:1 / -1;background:#fff;color:#000}
-        .previewHeader{display:flex;gap:12px;align-items:center;margin-bottom:14px}
-        .avatar{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#ffe600;color:#000;font-weight:950}
-        .previewHeader strong,.previewHeader span{display:block}
-        .previewHeader span{color:#aaa;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
-        .previewText{padding:14px;border-radius:18px;background:#050505;border:1px solid rgba(255,255,255,.08)}
-        .previewText p{white-space:pre-wrap;margin:0 0 12px}
-        .previewText p:last-child{margin-bottom:0}
-        .hashes{color:#ffe600;font-weight:800}
-        .media{position:relative;display:grid;place-items:center;min-height:340px;margin-top:12px;border-radius:22px;overflow:hidden;background:#111;border:1px solid rgba(255,230,0,.15)}
-        .videoMedia{min-height:520px;max-width:330px;margin-left:auto;margin-right:auto}
-        .media img{display:block;width:100%;height:100%;object-fit:cover}
-        .noImage{color:#777;font-weight:900;text-transform:uppercase}
-        .overlay{position:absolute;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.74);color:#ffe600;font-size:24px;font-weight:950;text-align:center;text-transform:uppercase;letter-spacing:1px}
-        .linkPreview,.comment,.script{margin-top:12px;padding:13px;border-radius:16px;background:#050505;border:1px solid rgba(255,255,255,.08)}
-        .linkPreview span,.linkPreview strong,.linkPreview small{display:block}
-        .linkPreview span{color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}
-        .linkPreview small{margin-top:6px;color:#999;overflow-wrap:anywhere}
-        .comment strong{color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}
-        .comment p{margin:7px 0 0}
-        .script summary{color:#ffe600;font-weight:950;cursor:pointer;text-transform:uppercase}
-        .script pre{white-space:pre-wrap;color:#ddd;line-height:1.5;font-family:inherit}
-        @media(max-width:1100px){.setup{grid-template-columns:repeat(2,minmax(0,1fr))}.generate{grid-column:1 / -1}.builder{grid-template-columns:1fr}.right{position:static}.videoMedia{max-width:none}}
-        @media(max-width:680px){.page{padding-left:12px;padding-right:12px}.setup,.optionRow,.choiceHead{grid-template-columns:1fr;display:grid}.useBtn,.generate,.actions button{width:100%}.actions{grid-template-columns:1fr}.hero,.setup,.choiceGroup,.finalBox,.preview,.empty,.message{border-radius:20px;padding:16px}.media{min-height:260px}}
+      <style jsx global>{`
+        .promoBuilderPage{min-height:100vh;padding:0 16px 90px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}
+        .promoBuilderPage .builderWrap{max-width:1320px;margin:0 auto;padding-top:34px}
+        .promoBuilderPage .builderHero,.promoBuilderPage .setup,.promoBuilderPage .choiceGroup,.promoBuilderPage .finalBox,.promoBuilderPage .preview,.promoBuilderPage .empty,.promoBuilderPage .message{background:rgba(12,12,12,.94);border:1px solid rgba(255,230,0,.2);border-radius:26px;box-shadow:0 22px 80px rgba(0,0,0,.42)}
+        .promoBuilderPage .builderHero{padding:28px;margin-bottom:16px}
+        .promoBuilderPage .kicker,.promoBuilderPage .miniKicker{margin:0 0 9px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
+        .promoBuilderPage .miniKicker{font-size:10px;letter-spacing:1.6px;margin-bottom:5px}
+        .promoBuilderPage h1,.promoBuilderPage h2,.promoBuilderPage p{margin-top:0}
+        .promoBuilderPage h1{margin-bottom:12px;font-size:clamp(46px,8vw,96px);line-height:.9;text-transform:uppercase}
+        .promoBuilderPage h2{margin-bottom:0;color:#ffe600;text-transform:uppercase;line-height:1.05}
+        .promoBuilderPage p{color:#ddd;line-height:1.55}
+        .promoBuilderPage .setup{display:grid;grid-template-columns:minmax(240px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:12px;align-items:end;padding:18px;margin-bottom:14px}
+        .promoBuilderPage label{display:grid;gap:8px;color:#ffe600;font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+        .promoBuilderPage select,.promoBuilderPage input,.promoBuilderPage textarea{width:100%;border:1px solid rgba(255,230,0,.25);border-radius:14px;background:#050505;color:#fff;padding:12px;font:inherit;outline:none}
+        .promoBuilderPage textarea{min-height:240px;resize:vertical;line-height:1.5;white-space:pre-wrap}
+        .promoBuilderPage select:focus,.promoBuilderPage input:focus,.promoBuilderPage textarea:focus{border-color:#ffe600;box-shadow:0 0 0 3px rgba(255,230,0,.1)}
+        .promoBuilderPage button{border:none;border-radius:14px;background:#ffe600;color:#000;padding:12px 15px;font-weight:950;letter-spacing:.3px;cursor:pointer;text-transform:uppercase}
+        .promoBuilderPage button:hover{filter:brightness(1.03);transform:translateY(-1px)}
+        .promoBuilderPage .generate{min-height:45px;white-space:nowrap}
+        .promoBuilderPage .message,.promoBuilderPage .empty{padding:18px;margin-bottom:14px}
+        .promoBuilderPage .message{color:#ffe600;font-weight:900}
+        .promoBuilderPage .builderGrid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:16px;align-items:start}
+        .promoBuilderPage .leftCol{display:grid;gap:14px}
+        .promoBuilderPage .rightCol{position:sticky;top:74px;display:grid;gap:14px}
+        .promoBuilderPage .choiceGroup,.promoBuilderPage .finalBox,.promoBuilderPage .preview{padding:18px}
+        .promoBuilderPage .choiceHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}
+        .promoBuilderPage .choiceHead span{flex:0 0 auto;border:1px solid rgba(255,230,0,.3);border-radius:999px;padding:7px 10px;color:#ffe600;font-size:11px;font-weight:900;text-transform:uppercase;white-space:nowrap}
+        .promoBuilderPage .optionList{display:grid;gap:10px}
+        .promoBuilderPage .optionButton{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;width:100%;padding:14px;text-align:left;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));color:#fff;text-transform:none}
+        .promoBuilderPage .optionButton.picked{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.15),rgba(12,12,12,.94))}
+        .promoBuilderPage .optionButtonCopy{display:block;min-width:0}
+        .promoBuilderPage .optionButtonCopy strong{display:block;margin-bottom:7px;color:#fff;font-size:12px;font-weight:950;letter-spacing:1px;text-transform:uppercase}
+        .promoBuilderPage .optionButtonCopy em{display:block;color:#e8e8e8;font-style:normal;font-weight:700;line-height:1.5;white-space:pre-wrap}
+        .promoBuilderPage .optionButtonAction{display:inline-flex;align-items:center;justify-content:center;min-width:82px;border-radius:12px;padding:10px 12px;background:#ffe600;color:#000;font-weight:950;text-transform:uppercase}
+        .promoBuilderPage .optionButton.picked .optionButtonAction{background:#fff;color:#000}
+        .promoBuilderPage .cleanCopy{margin:12px 0;padding:13px;border:1px solid rgba(255,230,0,.18);border-radius:16px;background:#050505}
+        .promoBuilderPage .cleanCopy strong{display:block;color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}
+        .promoBuilderPage .cleanCopy p{margin:6px 0 0;color:#cfcfcf;font-size:13px}
+        .promoBuilderPage .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+        .promoBuilderPage .actions button:last-child{grid-column:1 / -1;background:#fff;color:#000}
+        .promoBuilderPage .previewHeader{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+        .promoBuilderPage .avatar{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#ffe600;color:#000;font-weight:950}
+        .promoBuilderPage .previewHeader strong,.promoBuilderPage .previewHeader span{display:block}
+        .promoBuilderPage .previewHeader span{color:#aaa;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+        .promoBuilderPage .previewText{padding:14px;border-radius:18px;background:#050505;border:1px solid rgba(255,255,255,.08)}
+        .promoBuilderPage .previewText p{white-space:pre-wrap;margin:0 0 12px}
+        .promoBuilderPage .previewText p:last-child{margin-bottom:0}
+        .promoBuilderPage .hashes{color:#ffe600;font-weight:800}
+        .promoBuilderPage .media{position:relative;display:grid;place-items:center;min-height:340px;margin-top:12px;border-radius:22px;overflow:hidden;background:#111;border:1px solid rgba(255,230,0,.15)}
+        .promoBuilderPage .videoMedia{min-height:520px;max-width:330px;margin-left:auto;margin-right:auto}
+        .promoBuilderPage .media img{display:block;width:100%;height:100%;object-fit:cover}
+        .promoBuilderPage .noImage{color:#777;font-weight:900;text-transform:uppercase}
+        .promoBuilderPage .overlay{position:absolute;left:16px;right:16px;bottom:16px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.74);color:#ffe600;font-size:24px;font-weight:950;text-align:center;text-transform:uppercase;letter-spacing:1px}
+        .promoBuilderPage .linkPreview,.promoBuilderPage .comment,.promoBuilderPage .script{margin-top:12px;padding:13px;border-radius:16px;background:#050505;border:1px solid rgba(255,255,255,.08)}
+        .promoBuilderPage .linkPreview span,.promoBuilderPage .linkPreview strong,.promoBuilderPage .linkPreview small{display:block}
+        .promoBuilderPage .linkPreview span{color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}
+        .promoBuilderPage .linkPreview small{margin-top:6px;color:#999;overflow-wrap:anywhere}
+        .promoBuilderPage .comment strong{color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}
+        .promoBuilderPage .comment p{margin:7px 0 0}
+        .promoBuilderPage .script summary{color:#ffe600;font-weight:950;cursor:pointer;text-transform:uppercase}
+        .promoBuilderPage .script pre{white-space:pre-wrap;color:#ddd;line-height:1.5;font-family:inherit}
+        @media(max-width:1100px){.promoBuilderPage .setup{grid-template-columns:repeat(2,minmax(0,1fr))}.promoBuilderPage .generate{grid-column:1 / -1}.promoBuilderPage .builderGrid{grid-template-columns:1fr}.promoBuilderPage .rightCol{position:static}.promoBuilderPage .videoMedia{max-width:none}}
+        @media(max-width:680px){.promoBuilderPage{padding-left:12px;padding-right:12px}.promoBuilderPage .setup,.promoBuilderPage .optionButton,.promoBuilderPage .choiceHead{grid-template-columns:1fr;display:grid}.promoBuilderPage .optionButtonAction,.promoBuilderPage .generate,.promoBuilderPage .actions button{width:100%}.promoBuilderPage .actions{grid-template-columns:1fr}.promoBuilderPage .builderHero,.promoBuilderPage .setup,.promoBuilderPage .choiceGroup,.promoBuilderPage .finalBox,.promoBuilderPage .preview,.promoBuilderPage .empty,.promoBuilderPage .message{border-radius:20px;padding:16px}.promoBuilderPage .media{min-height:260px}}
       `}</style>
     </div>
   );
