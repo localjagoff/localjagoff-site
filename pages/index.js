@@ -109,6 +109,9 @@ export default function Home() {
           jagoff shirts, hoodies, hats, 412 gear, 724 gear, and everyday streetwear
           made for the people who get it.
         </p>
+        <Link href="/whats-a-jagoff" className="jagoffMeaningLink">
+          What’s a jagoff?
+        </Link>
       </section>
 
       {featured.length > 0 && (
@@ -222,6 +225,7 @@ export default function Home() {
 
       <footer className="footer">
         <div className="footer-links">
+          <Link href="/whats-a-jagoff">What’s a Jagoff?</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>
@@ -328,6 +332,28 @@ export default function Home() {
           color: #d8d8d8;
           font-size: 15px;
           line-height: 1.65;
+        }
+
+        .jagoffMeaningLink {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 14px;
+          border: 1px solid rgba(255, 230, 0, 0.35);
+          border-radius: 999px;
+          padding: 9px 14px;
+          background: rgba(255, 230, 0, 0.08);
+          color: #ffe600;
+          font-size: 12px;
+          font-weight: 950;
+          letter-spacing: 0.8px;
+          text-decoration: none;
+          text-transform: uppercase;
+        }
+
+        .jagoffMeaningLink:hover {
+          background: #ffe600;
+          color: #000;
         }
 
         .featured-wrap {
