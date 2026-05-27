@@ -6,7 +6,6 @@ const KEYS = {
   queue: "localJagoffPromoQueue",
   productBank: "localJagoffProductPromoBank",
   performance: "localJagoffPromoPerformance",
-  campaignPresets: "localJagoffCampaignPresets",
   launchChecklist: "localJagoffPromoLaunchChecklist",
   launchChecklistDate: "localJagoffPromoLaunchChecklistDate",
 };
@@ -42,17 +41,6 @@ function readString(key) {
   return window.localStorage.getItem(key) || "";
 }
 
-function downloadJson(filename, data) {
-  if (typeof document === "undefined") return;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 function platformLabel(value) {
   const labels = {
     facebook: "Facebook",
@@ -68,11 +56,17 @@ function productName(item) {
   return item?.product?.name || item?.productName || "Promo item";
 }
 
+function nextStep({ ready, posted, tracked, checklistComplete }) {
+  if (ready > 0 && posted === 0) return ["Post today's ready item", "/admin/promo-posting-board", "Open Posting Board"];
+  if (posted > tracked) return ["Track posted items", "/admin/promo-performance", "Open Performance"];
+  if (checklistComplete < CHECKLIST_TOTAL) return ["Run checklist", "/admin/promo-launch-checklist", "Open Checklist"];
+  return ["Create next promo", "/admin/promo-generator", "Open Promo Studio"];
+}
+
 export default function PromoHub() {
   const [queue, setQueue] = useState([]);
   const [productBank, setProductBank] = useState([]);
   const [performance, setPerformance] = useState([]);
-  const [campaignPresets, setCampaignPresets] = useState([]);
   const [launchChecklist, setLaunchChecklist] = useState({});
   const [launchChecklistDate, setLaunchChecklistDate] = useState("");
 
@@ -80,7 +74,6 @@ export default function PromoHub() {
     setQueue(readArray(KEYS.queue));
     setProductBank(readArray(KEYS.productBank));
     setPerformance(readArray(KEYS.performance));
-    setCampaignPresets(readArray(KEYS.campaignPresets));
     setLaunchChecklist(readObject(KEYS.launchChecklist));
     setLaunchChecklistDate(readString(KEYS.launchChecklistDate));
   }, []);
@@ -94,45 +87,32 @@ export default function PromoHub() {
     ready: todayItems.filter((item) => item.status === "Ready").length,
     draft: todayItems.filter((item) => (item.status || "Draft") === "Draft").length,
     posted: todayItems.filter((item) => item.status === "Posted").length,
-    next: todayItems.slice(0, 5),
+    next: todayItems.slice(0, 4),
   }), [todayItems]);
 
-  const stats = [
-    ["Checklist", `${checklistComplete}/${CHECKLIST_TOTAL}`],
-    ["Today", todaySnapshot.total],
-    ["Ready", queue.filter((item) => item.status === "Ready").length],
-    ["Queued", queue.length],
-    ["Posted", queue.filter((item) => item.status === "Posted").length],
-    ["Performance", performance.length],
-    ["Winners", performance.filter((item) => item.winner).length],
-    ["Presets", campaignPresets.length],
-    ["Promo Parts", productBank.length],
-  ];
-
-  const cards = [
-    ["Promo Studio", "/admin/promo-generator", "Create promo packs, image-post copy, captions, video scripts, hooks, links, and bundles from one main creation screen.", "Open Studio", true],
-    ["Posting Board", "/admin/promo-posting-board", "Copy clean posts, paste live post URLs, and mark posts as Posted.", "Open Posting Board", true],
-    ["Performance", "/admin/promo-performance", "Track post metrics, keep the Meta tracking path, and save winners to Promo Parts.", "Open Performance", true],
-    ["Launch Checklist", "/admin/promo-launch-checklist", "Run the workflow in order: checklist, Studio, queue, post, track, and learn.", "Open Checklist", true],
-    ["Campaign Presets", "/admin/promo-campaign-presets", "Save reusable strategies that feed Promo Studio.", "Open Presets"],
-    ["Queue", "/admin/promo-queue", "Review, approve, schedule, copy, export, and clean queued drafts.", "Open Queue"],
-    ["Week Builder", "/admin/promo-week-builder", "Build a full week or month of promo drafts and push them to the queue.", "Open Week Builder"],
-    ["Promo Parts", "/admin/promo-product-bank", "Save approved captions, hooks, CTAs, overlays, and notes by product.", "Open Promo Parts"],
-    ["Insights", "/admin/promo-insights", "Review best platforms, products, winner rate, and top copy.", "Open Insights"],
-    ["Calendar", "/admin/promo-calendar", "See scheduled promos by date, status, and platform.", "Open Calendar"],
-    ["Health", "/admin/promo-health", "Check and repair browser-stored promo data.", "Open Health"],
-    ["Backup", "/admin/promo-backup", "Export or restore browser-stored promo data.", "Open Backup"],
-  ];
-
-  const backupAll = () => downloadJson("local-jagoff-promo-backup.json", {
-    exportedAt: new Date().toISOString(),
-    queue,
-    productBank,
-    performance,
-    campaignPresets,
-    launchChecklist,
-    launchChecklistDate,
+  const trackedToday = performance.filter((item) => String(item.createdAt || item.trackedAt || "").slice(0, 10) === todayIso()).length;
+  const [stepTitle, stepHref, stepCta] = nextStep({
+    ready: todaySnapshot.ready,
+    posted: todaySnapshot.posted,
+    tracked: trackedToday,
+    checklistComplete,
   });
+
+  const primaryCards = [
+    ["Promo Studio", "/admin/promo-generator", "Create posts, captions, video scripts, hooks, and queue drafts."],
+    ["Posting Board", "/admin/promo-posting-board", "Copy posts, paste live URLs, and mark Posted."],
+    ["Performance", "/admin/promo-performance", "Track results and save winners back to Promo Parts."],
+  ];
+
+  const utilityCards = [
+    ["Checklist", "/admin/promo-launch-checklist"],
+    ["Queue", "/admin/promo-queue"],
+    ["Promo Parts", "/admin/promo-product-bank"],
+    ["Presets", "/admin/promo-campaign-presets"],
+    ["Insights", "/admin/promo-insights"],
+    ["Health", "/admin/promo-health"],
+    ["Backup", "/admin/promo-backup"],
+  ];
 
   return (
     <div className="page">
@@ -145,58 +125,66 @@ export default function PromoHub() {
 
       <main className="wrap">
         <header className="hero">
-          <p className="kicker">LOCAL JAGOFF ADMIN</p>
-          <h1>Promo Hub</h1>
-          <p>
-            One landing page for the promo workflow: Promo Studio, queue, manual posting,
-            live post URLs, performance tracking, Promo Parts, health, and backups.
-          </p>
-
-          <div className="callout">
-            <div>
-              <p className="kicker">START HERE</p>
-              <strong>Promo Studio is the one creation tool.</strong>
-              <span>Facebook and Instagram focus on image/post copy. TikTok and YouTube Shorts focus on scripts, hooks, captions, and shot lists.</span>
-            </div>
-            <a href="/admin/promo-generator">Open Promo Studio</a>
+          <div>
+            <p className="kicker">LOCAL JAGOFF ADMIN</p>
+            <h1>Promo Hub</h1>
+            <p>Dashboard for the daily promo workflow. Create in Promo Studio, post from Posting Board, then track performance.</p>
           </div>
-
-          <div className={`checklist ${checklistIsToday ? "today" : "stale"}`}>
-            <div>
-              <p className="kicker">DAILY CHECKLIST</p>
-              <strong>{checklistComplete}/{CHECKLIST_TOTAL} complete</strong>
-              <span>{launchChecklistDate ? `Saved date: ${launchChecklistDate}` : "No checklist date saved yet"}{checklistIsToday ? " • today" : " • needs today reset"}</span>
-            </div>
-            <a href="/admin/promo-launch-checklist">Open Checklist</a>
-          </div>
-
-          <div className="actions">
-            <a href="/admin/promo-generator">Open Promo Studio</a>
-            <a href="/admin/promo-posting-board">Open Posting Board</a>
-            <a href="/admin/promo-performance">Open Performance</a>
-            <button type="button" onClick={backupAll}>Download Backup</button>
-          </div>
+          <a className="nextStep" href={stepHref}>
+            <span>Next step</span>
+            <strong>{stepTitle}</strong>
+            <em>{stepCta}</em>
+          </a>
         </header>
 
-        <section className="stats">
-          {stats.map(([label, value]) => (
-            <div key={label}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
+        <section className="statusGrid">
+          <article className={checklistIsToday ? "good" : "warn"}>
+            <strong>{checklistComplete}/{CHECKLIST_TOTAL}</strong>
+            <span>Checklist</span>
+            <small>{checklistIsToday ? "Today" : "Needs reset"}</small>
+          </article>
+          <article>
+            <strong>{todaySnapshot.ready}</strong>
+            <span>Ready</span>
+            <small>Ready to post</small>
+          </article>
+          <article>
+            <strong>{todaySnapshot.posted}</strong>
+            <span>Posted</span>
+            <small>Marked posted</small>
+          </article>
+          <article>
+            <strong>{trackedToday}</strong>
+            <span>Tracked</span>
+            <small>Performance today</small>
+          </article>
+          <article>
+            <strong>{productBank.length}</strong>
+            <span>Promo Parts</span>
+            <small>Reusable winners</small>
+          </article>
+        </section>
+
+        <section className="primaryFlow">
+          {primaryCards.map(([title, href, text]) => (
+            <a key={href} href={href}>
+              <h2>{title}</h2>
+              <p>{text}</p>
+              <span>Open</span>
+            </a>
           ))}
         </section>
 
         <section className="todayPanel">
           <div className="todayHead">
             <div>
-              <p className="kicker">TODAY SNAPSHOT</p>
+              <p className="kicker">TODAY</p>
               <h2>{todayIso()}</h2>
-              <p>{todaySnapshot.total} scheduled today • {todaySnapshot.ready} ready • {todaySnapshot.draft} draft • {todaySnapshot.posted} posted</p>
+              <p>{todaySnapshot.total} scheduled • {todaySnapshot.ready} ready • {todaySnapshot.draft} draft • {todaySnapshot.posted} posted</p>
             </div>
-            <div className="actions slim">
+            <div className="actions">
               <a href="/admin/promo-posting-board">Posting Board</a>
-              <a href="/admin/promo-queue">Queue</a>
+              <a href="/admin/promo-generator">Create More</a>
             </div>
           </div>
 
@@ -214,57 +202,57 @@ export default function PromoHub() {
           )}
         </section>
 
-        <section className="flow">
-          <p className="kicker">DAILY FLOW</p>
-          <strong>Launch Checklist → Promo Studio → Posting Board → Posted → Performance → Save Winners to Promo Parts</strong>
-          <p>Promo Studio creates the content. Posting Board keeps manual posting clean. Performance keeps the Meta tracking path intact.</p>
-        </section>
-
-        <section className="cards">
-          {cards.map(([title, href, text, cta, featured]) => (
-            <a key={href} className={`card ${featured ? "featured" : ""}`} href={href}>
-              <h2>{title}</h2>
-              <p>{text}</p>
-              <span>{cta}</span>
-            </a>
-          ))}
+        <section className="utilityPanel">
+          <div>
+            <p className="kicker">MORE TOOLS</p>
+            <h2>Maintenance & Planning</h2>
+          </div>
+          <div className="utilityLinks">
+            {utilityCards.map(([title, href]) => (
+              <a key={href} href={href}>{title}</a>
+            ))}
+          </div>
         </section>
       </main>
 
       <style jsx>{`
         .page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.16),transparent 30%),linear-gradient(180deg,#050505,#000)}
-        .wrap{max-width:1220px;margin:0 auto;padding-top:38px}
-        .hero,.flow,.todayPanel{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.2);border-radius:28px;padding:28px;box-shadow:0 22px 80px rgba(0,0,0,.45);margin-bottom:16px}
+        .wrap{max-width:1160px;margin:0 auto;padding-top:34px}
+        .hero,.todayPanel,.utilityPanel,.statusGrid article,.primaryFlow a,.todayList article,.emptyToday{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 22px 80px rgba(0,0,0,.42)}
+        .hero{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:stretch;padding:28px;margin-bottom:14px}
         .kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
-        h1{font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}
+        h1{margin:0 0 12px;font-size:clamp(48px,9vw,104px);line-height:.88;text-transform:uppercase}
+        h2{margin:0;color:#ffe600;text-transform:uppercase}
         p{color:#d6d6d6;line-height:1.6}
-        .callout,.checklist{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:18px 0;padding:16px;border-radius:20px;background:#050505;border:1px solid rgba(255,230,0,.34)}
-        .callout{background:linear-gradient(135deg,rgba(255,230,0,.16),rgba(5,5,5,.96));border-color:#ffe600}
-        .callout strong,.checklist strong{display:block;color:#ffe600;font-size:26px;text-transform:uppercase}
-        .callout span,.checklist span{display:block;color:#ddd;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px;line-height:1.5}
-        .checklist.today{border-color:rgba(80,255,140,.42)}
-        .checklist.stale{border-color:rgba(255,230,0,.5)}
-        .callout a,.checklist a,.actions a,.actions button,.card span{display:inline-flex;border:none;border-radius:14px;background:#ffe600;color:#000;padding:12px 14px;font-weight:900;text-decoration:none;white-space:nowrap;cursor:pointer}
-        .actions{display:flex;gap:10px;flex-wrap:wrap}
-        .actions.slim{justify-content:flex-end}
-        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-        .stats div,.card,.todayList article,.emptyToday{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.35)}
-        .stats strong{display:block;color:#ffe600;font-size:30px;line-height:1.1;overflow-wrap:anywhere}
-        .stats span{display:block;margin-top:8px;color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+        .nextStep{display:grid;align-content:center;gap:8px;border:1px solid #ffe600;border-radius:22px;padding:18px;background:linear-gradient(135deg,rgba(255,230,0,.18),rgba(5,5,5,.96));color:#fff;text-decoration:none}
+        .nextStep span,.nextStep em{color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;font-style:normal}
+        .nextStep strong{font-size:24px;line-height:1.1;text-transform:uppercase}
+        .statusGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+        .statusGrid article{padding:16px;min-width:0}
+        .statusGrid article.good{border-color:rgba(154,255,183,.35)}
+        .statusGrid article.warn{border-color:rgba(255,230,0,.55)}
+        .statusGrid strong{display:block;color:#ffe600;font-size:32px;line-height:1.1;overflow-wrap:anywhere}
+        .statusGrid span{display:block;margin-top:8px;color:#fff;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+        .statusGrid small{display:block;margin-top:5px;color:#aaa;font-size:12px}
+        .primaryFlow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}
+        .primaryFlow a{display:block;padding:20px;color:#fff;text-decoration:none}
+        .primaryFlow p{min-height:54px;margin-bottom:14px}
+        .primaryFlow span,.actions a,.utilityLinks a{display:inline-flex;border-radius:14px;background:#ffe600;color:#000;padding:11px 14px;font-weight:900;text-decoration:none;text-transform:uppercase}
+        .todayPanel,.utilityPanel{padding:22px;margin-bottom:14px}
         .todayHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
-        .todayHead h2{margin:0;color:#ffe600;font-size:34px;text-transform:uppercase}
-        .todayList{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px}
+        .todayHead h2{font-size:34px}
+        .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+        .todayList{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}
+        .todayList article,.emptyToday{padding:16px}
         .todayList strong,.todayList span{display:block}
         .todayList strong{color:#fff;text-transform:uppercase;font-size:14px}
         .todayList span{margin-top:8px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}
         .emptyToday{margin-top:14px;color:#ddd;text-align:center}
-        .flow strong{display:block;color:#ffe600;font-size:20px;line-height:1.35}
-        .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-        .card{display:block;color:#fff;text-decoration:none}
-        .card.featured{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.12),rgba(13,13,13,.92))}
-        .card h2{text-transform:uppercase;color:#ffe600}
-        .card:hover{border-color:#ffe600;transform:translateY(-1px)}
-        @media(max-width:800px){.callout,.checklist,.todayHead{display:grid}.callout a,.checklist a,.actions a,.actions button{width:100%;justify-content:center;text-align:center}.actions.slim{justify-content:stretch}}
+        .utilityPanel{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:center}
+        .utilityLinks{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+        .utilityLinks a{background:#1b1b1b;color:#fff;border:1px solid #333}
+        @media(max-width:920px){.hero,.primaryFlow,.utilityPanel{grid-template-columns:1fr}.statusGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.utilityLinks,.actions{justify-content:flex-start}.todayHead{display:grid}.nextStep,.actions a,.utilityLinks a{width:100%;justify-content:center;text-align:center}}
+        @media(max-width:520px){.statusGrid{grid-template-columns:1fr}}
       `}</style>
     </div>
   );
