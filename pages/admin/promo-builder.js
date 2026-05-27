@@ -5,168 +5,41 @@ import PromoAdminNav from "../../components/PromoAdminNav";
 const QUEUE_KEY = "localJagoffPromoQueue";
 const BANK_KEY = "localJagoffProductPromoBank";
 
-const PLATFORMS = [
-  ["facebook", "Facebook"],
-  ["instagram", "Instagram"],
-  ["tiktok", "TikTok"],
-  ["youtube_shorts", "YouTube Shorts"],
-];
-
+const PLATFORMS = [["facebook", "Facebook"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube_shorts", "YouTube Shorts"]];
 const DESTINATIONS = {
-  facebook: [
-    ["facebook_page_local_jagoff", "Facebook Page - Local Jagoff"],
-    ["facebook_personal_local_jagoff", "Facebook Personal - Local Jagoff"],
-  ],
+  facebook: [["facebook_page_local_jagoff", "Facebook Page - Local Jagoff"], ["facebook_personal_local_jagoff", "Facebook Personal - Local Jagoff"]],
   instagram: [["instagram_local_jagoff", "Instagram - Local Jagoff"]],
   tiktok: [["tiktok_local_jagoff", "TikTok - Local Jagoff"]],
   youtube_shorts: [["youtube_shorts_local_jagoff", "YouTube Shorts - Local Jagoff"]],
 };
-
-const HOOKS = [
-  "New drop for anyone who knows exactly what a jagoff is.",
-  "Western PA attitude, cleaned up just enough for public viewing.",
-  "Not tourist gear. Not fake tough. Just Local Jagoff.",
-  "For the locals, the loud ones, and the beautifully difficult ones.",
-  "A little local pride. A little smart mouth. That is the brand.",
-  "Clean enough to wear out. Jagoff enough to feel right.",
-];
-
-const CTAS = [
-  "Grab it at localjagoff.com.",
-  "Shop the drop at localjagoff.com.",
-  "Get yours at localjagoff.com.",
-  "Shop Local Jagoff before someone else gets loud about it.",
-  "Check the drop at localjagoff.com.",
-];
-
+const HOOKS = ["New drop for anyone who knows exactly what a jagoff is.", "Western PA attitude, cleaned up just enough for public viewing.", "Not tourist gear. Not fake tough. Just Local Jagoff.", "For the locals, the loud ones, and the beautifully difficult ones.", "A little local pride. A little smart mouth. That is the brand.", "Clean enough to wear out. Jagoff enough to feel right."];
+const CTAS = ["Grab it at localjagoff.com.", "Shop the drop at localjagoff.com.", "Get yours at localjagoff.com.", "Shop Local Jagoff before someone else gets loud about it.", "Check the drop at localjagoff.com."];
 const OVERLAYS = ["NEW DROP LIVE", "LOCAL JAGOFF ENERGY", "FOR THE LOCALS", "BUILT FOR JAGOFFS", "WESTERN PA READY", "LOCALJAGOFF.COM"];
 
-function readArray(key) {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeArray(key, value) {
-  if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : []));
-}
-
-function copyText(value) {
-  if (!value || typeof navigator === "undefined") return false;
-  navigator.clipboard.writeText(value);
-  return true;
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function slugify(value) {
-  return String(value || "promo").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "promo";
-}
-
-function platformLabel(value) {
-  return PLATFORMS.find(([key]) => key === value)?.[1] || value;
-}
-
-function destinationList(platform) {
-  return DESTINATIONS[platform] || [[`${platform}_local_jagoff`, `${platformLabel(platform)} - Local Jagoff`]];
-}
-
-function destinationLabel(platform, destination) {
-  return destinationList(platform).find(([value]) => value === destination)?.[1] || destinationList(platform)[0][1];
-}
-
-function productName(product) {
-  return product?.name || "Local Jagoff Product";
-}
-
-function productImage(product) {
-  return product?.thumbnail_url || product?.image || product?.image_url || "";
-}
-
-function productUrl(product) {
-  return product?.id ? `https://www.localjagoff.com/product/${product.id}` : "https://www.localjagoff.com";
-}
-
-function trackedProductUrl(product, platform, destination) {
-  const params = new URLSearchParams({
-    utm_source: platform,
-    utm_medium: "social",
-    utm_campaign: "builder-post",
-    utm_content: slugify(productName(product)),
-    utm_term: destination,
-  });
-  return `${productUrl(product)}?${params.toString()}`;
-}
-
-function productType(product) {
-  const name = productName(product).toLowerCase();
-  if (name.includes("hoodie")) return "hoodie";
-  if (name.includes("shirt") || name.includes("tee")) return "shirt";
-  if (name.includes("hat") || name.includes("cap")) return "hat";
-  if (name.includes("724")) return "724 gear";
-  return "gear";
-}
-
-function hashtagOptions(product, platform) {
-  const type = productType(product);
-  const base = ["#LocalJagoff", "#Pittsburgh", "#WesternPA", "#Yinzer"];
-  if (productName(product).includes("724")) base.push("#724");
-  else base.push("#412", "#724");
-  if (type === "hoodie") base.push("#HoodieSeason");
-  if (type === "shirt") base.push("#PittsburghShirts");
-  if (type === "hat") base.push("#PittsburghHats");
-  if (platform === "tiktok") base.push("#Streetwear", "#SmallBusiness");
-  return [base, base.filter((tag) => tag !== "#Yinzer"), ["#LocalJagoff", "#Pittsburgh", "#WesternPA", "#SmallBusiness"]];
-}
-
-function captionOptions(product) {
-  const name = productName(product);
-  const type = productType(product);
-  const local = name.includes("724") ? "724 / Western PA" : "Pittsburgh / Western PA";
-  return [
-    `⚡ New from Local Jagoff.\n\n${name}. ${local} ${type} with enough attitude to make it feel right.\n\nGrab yours before another jagoff does.`,
-    `${name} is live.\n\nLocal gear for people who can take a joke, give one back, and still somehow have good taste.`,
-    `A little black-and-gold attitude. A little local mouth.\n\n${name} from Local Jagoff is ready to go.`,
-    `Not tourist gear. Not fake tough.\n\n${name}. Built for the locals who get it.`,
-    `For the jagoff who says they are leaving in five and is absolutely not.\n\n${name} is live now.`,
-    `Fresh drop from Local Jagoff.\n\n${name}. Local gear with a little attitude built in.`,
-  ];
-}
-
-function scriptOptions(product) {
-  const name = productName(product);
-  return [
-    `Scene 1: Product pops on a black-and-gold background. Text: NEW DROP LIVE.\nScene 2: Quick zoom on design. Text: ${name}.\nScene 3: End card. Text: LOCALJAGOFF.COM. Voiceover: Shop Local Jagoff before someone else gets loud about it.`,
-    `Scene 1: Start with product closeup. Text: LOCAL JAGOFF ENERGY.\nScene 2: Show full product. Text: FOR THE LOCALS.\nScene 3: Site URL and CTA. Voiceover: Grab it at localjagoff.com.`,
-    `Scene 1: Fast intro cut. Text: NOT TOURIST GEAR.\nScene 2: Product detail. Text: ${name}.\nScene 3: Logo/site. Text: LOCALJAGOFF.COM.`,
-  ];
-}
-
-function defaultSelected() {
-  return { hook: 0, caption: 0, cta: 0, hashtags: 0, overlay: 0, script: 0 };
-}
-
-function buildOptions(product, platform) {
-  return { hooks: HOOKS, captions: captionOptions(product), ctas: CTAS, hashtags: hashtagOptions(product, platform), overlays: OVERLAYS, scripts: scriptOptions(product) };
-}
-
-function buildCaption(options, selected) {
-  return [options?.hooks?.[selected.hook], options?.captions?.[selected.caption], options?.ctas?.[selected.cta]].filter(Boolean).join("\n\n");
-}
-
-function bankEntry(product, type, platform, text, tag) {
-  return { id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt: new Date().toISOString(), productId: String(product?.id || ""), productName: productName(product), productImage: productImage(product), productCategory: product?.category || productType(product), type, platform, text, source: "Promo Builder", tag, status: "Approved" };
-}
+function readArray(key) { if (typeof window === "undefined") return []; try { const parsed = JSON.parse(window.localStorage.getItem(key) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+function writeArray(key, value) { if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : [])); }
+function copyText(value) { if (!value || typeof navigator === "undefined") return false; navigator.clipboard.writeText(value); return true; }
+function todayIso() { return new Date().toISOString().slice(0, 10); }
+function slugify(value) { return String(value || "promo").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "promo"; }
+function platformLabel(value) { return PLATFORMS.find(([key]) => key === value)?.[1] || value; }
+function destinationList(platform) { return DESTINATIONS[platform] || [[`${platform}_local_jagoff`, `${platformLabel(platform)} - Local Jagoff`]]; }
+function destinationLabel(platform, destination) { return destinationList(platform).find(([value]) => value === destination)?.[1] || destinationList(platform)[0][1]; }
+function productName(product) { return product?.name || "Local Jagoff Product"; }
+function productImage(product) { return product?.thumbnail_url || product?.image || product?.image_url || ""; }
+function productUrl(product) { return product?.id ? `https://www.localjagoff.com/product/${product.id}` : "https://www.localjagoff.com"; }
+function trackedProductUrl(product, platform, destination) { const params = new URLSearchParams({ utm_source: platform, utm_medium: "social", utm_campaign: "builder-post", utm_content: slugify(productName(product)), utm_term: destination }); return `${productUrl(product)}?${params.toString()}`; }
+function productType(product) { const name = productName(product).toLowerCase(); if (name.includes("hoodie")) return "hoodie"; if (name.includes("shirt") || name.includes("tee")) return "shirt"; if (name.includes("hat") || name.includes("cap")) return "hat"; if (name.includes("724")) return "724 gear"; return "gear"; }
+function hashtagOptions(product, platform) { const type = productType(product); const base = ["#LocalJagoff", "#Pittsburgh", "#WesternPA", "#Yinzer"]; if (productName(product).includes("724")) base.push("#724"); else base.push("#412", "#724"); if (type === "hoodie") base.push("#HoodieSeason"); if (type === "shirt") base.push("#PittsburghShirts"); if (type === "hat") base.push("#PittsburghHats"); if (platform === "tiktok") base.push("#Streetwear", "#SmallBusiness"); return [base, base.filter((tag) => tag !== "#Yinzer"), ["#LocalJagoff", "#Pittsburgh", "#WesternPA", "#SmallBusiness"]]; }
+function captionOptions(product) { const name = productName(product); const type = productType(product); const local = name.includes("724") ? "724 / Western PA" : "Pittsburgh / Western PA"; return [`⚡ New from Local Jagoff.\n\n${name}. ${local} ${type} with enough attitude to make it feel right.\n\nGrab yours before another jagoff does.`, `${name} is live.\n\nLocal gear for people who can take a joke, give one back, and still somehow have good taste.`, `A little black-and-gold attitude. A little local mouth.\n\n${name} from Local Jagoff is ready to go.`, `Not tourist gear. Not fake tough.\n\n${name}. Built for the locals who get it.`, `For the jagoff who says they are leaving in five and is absolutely not.\n\n${name} is live now.`, `Fresh drop from Local Jagoff.\n\n${name}. Local gear with a little attitude built in.`]; }
+function scriptOptions(product) { const name = productName(product); return [`Scene 1: Product pops on a black-and-gold background. Text: NEW DROP LIVE.\nScene 2: Quick zoom on design. Text: ${name}.\nScene 3: End card. Text: LOCALJAGOFF.COM. Voiceover: Shop Local Jagoff before someone else gets loud about it.`, `Scene 1: Start with product closeup. Text: LOCAL JAGOFF ENERGY.\nScene 2: Show full product. Text: FOR THE LOCALS.\nScene 3: Site URL and CTA. Voiceover: Grab it at localjagoff.com.`, `Scene 1: Fast intro cut. Text: NOT TOURIST GEAR.\nScene 2: Product detail. Text: ${name}.\nScene 3: Logo/site. Text: LOCALJAGOFF.COM.`]; }
+function defaultSelected() { return { hook: 0, caption: 0, cta: 0, hashtags: 0, overlay: 0, script: 0 }; }
+function buildOptions(product, platform) { return { hooks: HOOKS, captions: captionOptions(product), ctas: CTAS, hashtags: hashtagOptions(product, platform), overlays: OVERLAYS, scripts: scriptOptions(product) }; }
+function buildCaption(options, selected) { return [options?.hooks?.[selected.hook], options?.captions?.[selected.caption], options?.ctas?.[selected.cta]].filter(Boolean).join("\n\n"); }
+function bankEntry(product, type, platform, text, tag) { return { id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt: new Date().toISOString(), productId: String(product?.id || ""), productName: productName(product), productImage: productImage(product), productCategory: product?.category || productType(product), type, platform, text, source: "Promo Builder", tag, status: "Approved" }; }
 
 function ChoiceGroup({ title, items, selected, onSelect, render = (item) => item }) {
   if (!items?.length) return null;
-  return <section className="choiceGroup"><h2>{title}</h2><div className="choiceCards">{items.map((item, index) => <button key={`${title}-${index}`} type="button" className={`choiceCard ${selected === index ? "selected" : ""}`} onClick={() => onSelect(index)}><span className="choiceNumber">{index + 1}</span><span className="choiceText">{render(item)}</span></button>)}</div></section>;
+  return <section className="choiceGroup"><div className="choiceHead"><h2>{title}</h2><span>{items.length} options</span></div><div className="optionList">{items.map((item, index) => <div key={`${title}-${index}`} className={`optionRow ${selected === index ? "picked" : ""}`}><button type="button" className="useBtn" onClick={() => onSelect(index)}>{selected === index ? "Using" : "Use"}</button><div className="optionText"><strong>Option {index + 1}</strong><p>{render(item)}</p></div></div>)}</div></section>;
 }
 
 function PlatformPreview({ product, platform, destination, caption, hashtags, link, overlay, firstComment, script }) {
@@ -186,17 +59,8 @@ export default function PromoBuilder() {
   const [finalEdit, setFinalEdit] = useState("");
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    fetch("/api/get-products").then((res) => res.json()).then((data) => {
-      const list = Array.isArray(data) ? data : [];
-      setProducts(list);
-      setProductId(list[0]?.id ? String(list[0].id) : "");
-    }).catch(() => setProducts([]));
-  }, []);
-
-  useEffect(() => {
-    if (!destinationList(platform).some(([value]) => value === destination)) setDestination(destinationList(platform)[0][0]);
-  }, [platform, destination]);
+  useEffect(() => { fetch("/api/get-products").then((res) => res.json()).then((data) => { const list = Array.isArray(data) ? data : []; setProducts(list); setProductId(list[0]?.id ? String(list[0].id) : ""); }).catch(() => setProducts([])); }, []);
+  useEffect(() => { if (!destinationList(platform).some(([value]) => value === destination)) setDestination(destinationList(platform)[0][0]); }, [platform, destination]);
 
   const product = useMemo(() => products.find((item) => String(item.id) === String(productId)) || products[0] || null, [products, productId]);
   const generatedCaption = useMemo(() => options ? buildCaption(options, selected) : "", [options, selected]);
@@ -210,63 +74,20 @@ export default function PromoBuilder() {
 
   useEffect(() => { setFinalEdit(generatedCaption); }, [generatedCaption]);
 
-  const generateOptions = () => {
-    if (!product) return setMessage("Pick a product first.");
-    setOptions(buildOptions(product, platform));
-    setSelected(defaultSelected());
-    setMessage("Options generated. Pick one card from each section.");
-  };
-
+  const generateOptions = () => { if (!product) return setMessage("Pick a product first."); setOptions(buildOptions(product, platform)); setSelected(defaultSelected()); setMessage("Options generated. Use the buttons to pick one from each section."); };
   const copyCaptionOnly = () => setMessage(copyText(finalCaption) ? "Copied caption." : "Nothing to copy.");
-  const copyFullPost = () => {
-    const parts = [finalCaption, tags, link].filter(Boolean).join("\n\n");
-    setMessage(copyText(parts) ? "Copied clean full post." : "Nothing to copy.");
-  };
+  const copyFullPost = () => setMessage(copyText([finalCaption, tags, link].filter(Boolean).join("\n\n")) ? "Copied clean full post." : "Nothing to copy.");
 
   const saveToQueueWithStatus = (status) => {
     if (!finalCaption || !product) return setMessage("Build a final caption first.");
     const queue = readArray(QUEUE_KEY);
     const cleanCaptionWithTags = [finalCaption, tags].filter(Boolean).join("\n\n");
-    const item = {
-      id: `builder-${Date.now()}`,
-      queueId: `queue-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      createdAt: new Date().toISOString(),
-      queuedAt: new Date().toISOString(),
-      source: "Promo Builder",
-      mode: "builder",
-      platform,
-      displayPlatform: platform,
-      scheduledPlatform: platform,
-      destination,
-      destinationLabel: destinationLabel(platform, destination),
-      scheduledDate,
-      status,
-      product,
-      promo: {
-        brand_angle: "Built from selected Promo Builder parts.",
-        builder_final: cleanCaptionWithTags,
-        facebook_post: platform === "facebook" ? finalCaption : "",
-        instagram_caption: platform === "instagram" ? cleanCaptionWithTags : "",
-        tiktok_caption: platform === "tiktok" ? cleanCaptionWithTags : "",
-        youtube_shorts_title: platform === "youtube_shorts" ? `${productName(product)} | Local Jagoff Drop` : "",
-        youtube_shorts_description: platform === "youtube_shorts" ? cleanCaptionWithTags : "",
-        cta: [firstComment ? `First comment: ${firstComment}` : "", `Link: ${link}`].filter(Boolean).join("\n"),
-        hashtags: tags,
-        image_overlay_text: overlay,
-        short_video_script: isVideoPlatform ? script : "",
-      },
-    };
+    const item = { id: `builder-${Date.now()}`, queueId: `queue-${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt: new Date().toISOString(), queuedAt: new Date().toISOString(), source: "Promo Builder", mode: "builder", platform, displayPlatform: platform, scheduledPlatform: platform, destination, destinationLabel: destinationLabel(platform, destination), scheduledDate, status, product, promo: { brand_angle: "Built from selected Promo Builder parts.", builder_final: cleanCaptionWithTags, facebook_post: platform === "facebook" ? finalCaption : "", instagram_caption: platform === "instagram" ? cleanCaptionWithTags : "", tiktok_caption: platform === "tiktok" ? cleanCaptionWithTags : "", youtube_shorts_title: platform === "youtube_shorts" ? `${productName(product)} | Local Jagoff Drop` : "", youtube_shorts_description: platform === "youtube_shorts" ? cleanCaptionWithTags : "", cta: [firstComment ? `First comment: ${firstComment}` : "", `Link: ${link}`].filter(Boolean).join("\n"), hashtags: tags, image_overlay_text: overlay, short_video_script: isVideoPlatform ? script : "" } };
     writeArray(QUEUE_KEY, [item, ...queue].slice(0, 500));
     setMessage(`Saved to Queue as ${status} for ${destinationLabel(platform, destination)}.`);
   };
 
-  const saveSelectedToBank = () => {
-    if (!options || !product) return setMessage("Generate options first.");
-    const bank = readArray(BANK_KEY);
-    const entries = [bankEntry(product, "hook", platform, options.hooks[selected.hook], "Builder hook"), bankEntry(product, "caption", platform, options.captions[selected.caption], "Builder caption"), bankEntry(product, "cta", platform, options.ctas[selected.cta], "Builder CTA"), bankEntry(product, "overlay", "general", overlay, "Builder overlay")].filter((entry) => entry.text);
-    writeArray(BANK_KEY, [...entries, ...bank].slice(0, 800));
-    setMessage(`${entries.length} selected parts saved.`);
-  };
+  const saveSelectedToBank = () => { if (!options || !product) return setMessage("Generate options first."); const bank = readArray(BANK_KEY); const entries = [bankEntry(product, "hook", platform, options.hooks[selected.hook], "Builder hook"), bankEntry(product, "caption", platform, options.captions[selected.caption], "Builder caption"), bankEntry(product, "cta", platform, options.ctas[selected.cta], "Builder CTA"), bankEntry(product, "overlay", "general", overlay, "Builder overlay")].filter((entry) => entry.text); writeArray(BANK_KEY, [...entries, ...bank].slice(0, 800)); setMessage(`${entries.length} selected parts saved.`); };
 
-  return <div className="page"><Head><title>Local Jagoff Promo Builder</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">PRIVATE ADMIN TOOL</p><h1>Promo Builder</h1><p>Pick clean post parts, preview the post, then save it to the Posting Board. Facebook and Instagram stay caption-only with no video script junk.</p></header><section className="setup"><label>Product<select value={productId} onChange={(e) => setProductId(e.target.value)}>{products.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value)}>{PLATFORMS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Destination<select value={destination} onChange={(e) => setDestination(e.target.value)}>{destinationList(platform).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Date<input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></label><button type="button" className="generate" onClick={generateOptions}>Generate Options</button></section>{message && <section className="message">{message}</section>}{!options && <section className="empty"><h2>Generate options first</h2><p>You will get clean card choices for hook, caption, CTA, hashtags, and overlay text.</p></section>}{options && <section className="builder"><div className="left"><ChoiceGroup title="Hook" items={options.hooks} selected={selected.hook} onSelect={(index) => setSelected({ ...selected, hook: index })} /><ChoiceGroup title="Caption" items={options.captions} selected={selected.caption} onSelect={(index) => setSelected({ ...selected, caption: index })} /><ChoiceGroup title="CTA" items={options.ctas} selected={selected.cta} onSelect={(index) => setSelected({ ...selected, cta: index })} /><ChoiceGroup title="Hashtags" items={options.hashtags} selected={selected.hashtags} onSelect={(index) => setSelected({ ...selected, hashtags: index })} render={(item) => item.join(" ")} /><ChoiceGroup title="Overlay" items={options.overlays} selected={selected.overlay} onSelect={(index) => setSelected({ ...selected, overlay: index })} />{isVideoPlatform && <ChoiceGroup title="Video Script" items={options.scripts} selected={selected.script} onSelect={(index) => setSelected({ ...selected, script: index })} />}</div><aside className="right"><p className="kicker">FINAL POST</p><h2>{platformLabel(platform)}</h2><label>Final caption<textarea value={finalEdit} onChange={(e) => setFinalEdit(e.target.value)} /></label><div className="quickParts"><div><strong>Hashtags</strong><p>{tags}</p></div><div><strong>Link</strong><p>{link}</p></div><div><strong>First Comment</strong><p>{firstComment}</p></div><div><strong>Overlay</strong><p>{overlay}</p></div></div>{product && <PlatformPreview product={product} platform={platform} destination={destination} caption={finalCaption} hashtags={tags} link={link} overlay={overlay} firstComment={firstComment} script={script} />}<div className="actions"><button type="button" onClick={copyCaptionOnly}>Copy Caption</button><button type="button" onClick={copyFullPost}>Copy Full Post</button><button type="button" onClick={() => saveToQueueWithStatus("Approved")}>Save Approved</button><button type="button" onClick={() => saveToQueueWithStatus("Needs Review")} className="dark">Save Needs Review</button><button type="button" onClick={saveSelectedToBank} className="dark">Save Parts</button><button type="button" onClick={() => setFinalEdit(generatedCaption)} className="dark">Reset Caption</button></div></aside></section>}</main><style jsx>{`.page{min-height:100vh;padding:0 18px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 32%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1380px;margin:0 auto;padding-top:34px}.hero,.setup,.message,.empty,.choiceGroup,.right{background:rgba(13,13,13,.94);border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.36)}.hero{padding:26px;margin-bottom:14px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{margin:0;font-size:clamp(46px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.empty p{color:#ddd;line-height:1.55}.setup{display:grid;grid-template-columns:2fr 1fr 1.4fr .9fr auto;gap:12px;align-items:end;padding:16px;margin-bottom:14px}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}select,input,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px;font:inherit}textarea{min-height:240px;resize:vertical;line-height:1.55;text-transform:none;letter-spacing:0}button{border:0;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.generate{height:46px}.message,.empty{padding:16px;margin-bottom:14px;color:#ffe600;font-weight:900}.builder{display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:14px;align-items:start}.choiceGroup{padding:16px;margin-bottom:14px}.choiceGroup h2,.right h2{margin:0 0 12px;color:#ffe600;text-transform:uppercase}.choiceCards{display:grid;gap:10px}.choiceCard{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;width:100%;text-align:left;align-items:start;background:#070707;color:#f5f5f5;border:1px solid #2b2b2b;border-radius:18px;padding:14px;line-height:1.45;white-space:pre-wrap;text-transform:none;letter-spacing:0;font-size:15px;user-select:none}.choiceCard:hover{border-color:rgba(255,230,0,.65);background:#111}.choiceCard.selected{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.16),rgba(7,7,7,.96));box-shadow:0 0 0 2px rgba(255,230,0,.18)}.choiceNumber{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#202020;color:#ffe600;font-weight:1000;border:1px solid #333}.choiceCard.selected .choiceNumber{background:#ffe600;color:#000;border-color:#ffe600}.choiceText{display:block;overflow-wrap:anywhere}.right{position:sticky;top:76px;padding:16px}.quickParts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.quickParts div{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.quickParts strong{display:block;color:#ffe600;font-size:11px;text-transform:uppercase;letter-spacing:1px}.quickParts p{margin:6px 0 0;color:#eee;line-height:1.35;overflow-wrap:anywhere}.preview{margin:14px 0;background:#090909;border:1px solid rgba(255,230,0,.22);border-radius:20px;overflow:hidden}.previewHeader{display:flex;gap:10px;align-items:center;padding:12px;border-bottom:1px solid #222}.avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:999px;background:#ffe600;color:#000;font-weight:1000}.previewHeader strong,.previewHeader span{display:block}.previewHeader span{color:#aaa;font-size:12px;margin-top:3px}.previewText{padding:12px}.previewText p{white-space:pre-wrap;color:#f2f2f2;line-height:1.45;margin:0 0 10px}.hashes{color:#ffe600!important;font-weight:800}.media{position:relative;display:grid;place-items:center;min-height:260px;background:linear-gradient(135deg,#171717,#050505)}.videoMedia{min-height:400px}.media img{max-width:100%;max-height:410px;object-fit:contain}.noImage{color:#777;font-weight:900;text-transform:uppercase}.overlay{position:absolute;left:18px;right:18px;bottom:18px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.76);color:#ffe600;text-align:center;font-size:clamp(18px,4vw,34px);font-weight:1000;text-transform:uppercase;letter-spacing:1px}.linkPreview{padding:12px;background:#f2f2f2;color:#111}.linkPreview span,.linkPreview strong,.linkPreview small{display:block}.linkPreview span{font-size:11px;color:#555;font-weight:900;text-transform:uppercase;letter-spacing:1px}.linkPreview strong{margin:4px 0;text-transform:uppercase}.linkPreview small{color:#666;overflow-wrap:anywhere}.comment{padding:12px;border-top:1px solid #222;background:#050505}.comment strong{color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}.comment p{white-space:pre-wrap;color:#eee;line-height:1.45}.script{padding:12px;border-top:1px solid #222;background:#050505}.script summary{cursor:pointer;color:#ffe600;font-weight:900;text-transform:uppercase}.script pre{white-space:pre-wrap;color:#eee}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.dark{background:#1b1b1b;color:#fff;border:1px solid #333}@media(max-width:1100px){.setup,.builder{grid-template-columns:1fr}.right{position:static}.actions,.quickParts{grid-template-columns:1fr}}`}</style></div>;
+  return <div className="page"><Head><title>Local Jagoff Promo Builder</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><p className="kicker">PRIVATE ADMIN TOOL</p><h1>Promo Builder</h1><p>Pick clean post parts, preview the post, then save it to the Posting Board. Facebook and Instagram stay caption-only with no video script junk.</p></header><section className="setup"><label>Product<select value={productId} onChange={(e) => setProductId(e.target.value)}>{products.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value)}>{PLATFORMS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Destination<select value={destination} onChange={(e) => setDestination(e.target.value)}>{destinationList(platform).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Date<input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></label><button type="button" className="generate" onClick={generateOptions}>Generate Options</button></section>{message && <section className="message">{message}</section>}{!options && <section className="empty"><h2>Generate options first</h2><p>You will get clean rows with Use buttons for hook, caption, CTA, hashtags, and overlay text.</p></section>}{options && <section className="builder"><div className="left"><ChoiceGroup title="Hook" items={options.hooks} selected={selected.hook} onSelect={(index) => setSelected({ ...selected, hook: index })} /><ChoiceGroup title="Caption" items={options.captions} selected={selected.caption} onSelect={(index) => setSelected({ ...selected, caption: index })} /><ChoiceGroup title="CTA" items={options.ctas} selected={selected.cta} onSelect={(index) => setSelected({ ...selected, cta: index })} /><ChoiceGroup title="Hashtags" items={options.hashtags} selected={selected.hashtags} onSelect={(index) => setSelected({ ...selected, hashtags: index })} render={(item) => item.join(" ")} /><ChoiceGroup title="Overlay" items={options.overlays} selected={selected.overlay} onSelect={(index) => setSelected({ ...selected, overlay: index })} />{isVideoPlatform && <ChoiceGroup title="Video Script" items={options.scripts} selected={selected.script} onSelect={(index) => setSelected({ ...selected, script: index })} />}</div><aside className="right"><p className="kicker">FINAL POST</p><h2>{platformLabel(platform)}</h2><label>Final caption<textarea value={finalEdit} onChange={(e) => setFinalEdit(e.target.value)} /></label><div className="quickParts"><div><strong>Hashtags</strong><p>{tags}</p></div><div><strong>Link</strong><p>{link}</p></div><div><strong>First Comment</strong><p>{firstComment}</p></div><div><strong>Overlay</strong><p>{overlay}</p></div></div>{product && <PlatformPreview product={product} platform={platform} destination={destination} caption={finalCaption} hashtags={tags} link={link} overlay={overlay} firstComment={firstComment} script={script} />}<div className="actions"><button type="button" onClick={copyCaptionOnly}>Copy Caption</button><button type="button" onClick={copyFullPost}>Copy Full Post</button><button type="button" onClick={() => saveToQueueWithStatus("Approved")}>Save Approved</button><button type="button" onClick={() => saveToQueueWithStatus("Needs Review")} className="dark">Save Needs Review</button><button type="button" onClick={saveSelectedToBank} className="dark">Save Parts</button><button type="button" onClick={() => setFinalEdit(generatedCaption)} className="dark">Reset Caption</button></div></aside></section>}</main><style jsx global>{`body .left,body .choiceGroup,body .optionList,body .optionRow,body .optionText{user-select:none!important}body .choiceGroup{background:#0b0b0b!important;border:1px solid rgba(255,230,0,.25)!important;border-radius:22px!important;padding:16px!important;margin-bottom:14px!important;box-shadow:0 18px 50px rgba(0,0,0,.35)!important}body .choiceHead{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin-bottom:12px!important}body .choiceHead h2{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;font-size:26px!important}body .choiceHead span{color:#aaa!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important}body .optionList{display:grid!important;gap:10px!important}body .optionRow{display:grid!important;grid-template-columns:92px minmax(0,1fr)!important;gap:12px!important;align-items:stretch!important;background:#111!important;border:1px solid #333!important;border-radius:18px!important;padding:12px!important}body .optionRow.picked{border-color:#ffe600!important;background:linear-gradient(135deg,rgba(255,230,0,.14),#101010)!important;box-shadow:0 0 0 2px rgba(255,230,0,.15)!important}body .useBtn{display:flex!important;align-items:center!important;justify-content:center!important;min-height:54px!important;border-radius:14px!important;border:1px solid #333!important;background:#1f1f1f!important;color:#fff!important;font-weight:1000!important;text-transform:uppercase!important;cursor:pointer!important}body .optionRow.picked .useBtn{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}body .optionText{background:#060606!important;border:1px solid #222!important;border-radius:14px!important;padding:12px!important}body .optionText strong{display:block!important;color:#ffe600!important;font-size:11px!important;text-transform:uppercase!important;letter-spacing:1px!important;margin-bottom:7px!important}body .optionText p{margin:0!important;color:#f4f4f4!important;line-height:1.5!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;background:transparent!important}`}</style><style jsx>{`.page{min-height:100vh;padding:0 18px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 32%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1380px;margin:0 auto;padding-top:34px}.hero,.setup,.message,.empty,.right{background:rgba(13,13,13,.94);border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.36)}.hero{padding:26px;margin-bottom:14px}.kicker{margin:0 0 10px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.hero h1{margin:0;font-size:clamp(46px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p,.empty p{color:#ddd;line-height:1.55}.setup{display:grid;grid-template-columns:2fr 1fr 1.4fr .9fr auto;gap:12px;align-items:end;padding:16px;margin-bottom:14px}label{display:block;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}select,input,textarea{width:100%;margin-top:8px;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px;font:inherit}textarea{min-height:240px;resize:vertical;line-height:1.55;text-transform:none;letter-spacing:0}button{border:0;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:900;background:#ffe600;color:#000}.generate{height:46px}.message,.empty{padding:16px;margin-bottom:14px;color:#ffe600;font-weight:900}.builder{display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:14px;align-items:start}.right{position:sticky;top:76px;padding:16px}.right h2{margin:0 0 12px;color:#ffe600;text-transform:uppercase}.quickParts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.quickParts div{background:#050505;border:1px solid #242424;border-radius:14px;padding:12px}.quickParts strong{display:block;color:#ffe600;font-size:11px;text-transform:uppercase;letter-spacing:1px}.quickParts p{margin:6px 0 0;color:#eee;line-height:1.35;overflow-wrap:anywhere}.preview{margin:14px 0;background:#090909;border:1px solid rgba(255,230,0,.22);border-radius:20px;overflow:hidden}.previewHeader{display:flex;gap:10px;align-items:center;padding:12px;border-bottom:1px solid #222}.avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:999px;background:#ffe600;color:#000;font-weight:1000}.previewHeader strong,.previewHeader span{display:block}.previewHeader span{color:#aaa;font-size:12px;margin-top:3px}.previewText{padding:12px}.previewText p{white-space:pre-wrap;color:#f2f2f2;line-height:1.45;margin:0 0 10px}.hashes{color:#ffe600!important;font-weight:800}.media{position:relative;display:grid;place-items:center;min-height:260px;background:linear-gradient(135deg,#171717,#050505)}.videoMedia{min-height:400px}.media img{max-width:100%;max-height:410px;object-fit:contain}.noImage{color:#777;font-weight:900;text-transform:uppercase}.overlay{position:absolute;left:18px;right:18px;bottom:18px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.76);color:#ffe600;text-align:center;font-size:clamp(18px,4vw,34px);font-weight:1000;text-transform:uppercase;letter-spacing:1px}.linkPreview{padding:12px;background:#f2f2f2;color:#111}.linkPreview span,.linkPreview strong,.linkPreview small{display:block}.linkPreview span{font-size:11px;color:#555;font-weight:900;text-transform:uppercase;letter-spacing:1px}.linkPreview strong{margin:4px 0;text-transform:uppercase}.linkPreview small{color:#666;overflow-wrap:anywhere}.comment{padding:12px;border-top:1px solid #222;background:#050505}.comment strong{color:#ffe600;text-transform:uppercase;font-size:12px;letter-spacing:1px}.comment p{white-space:pre-wrap;color:#eee;line-height:1.45}.script{padding:12px;border-top:1px solid #222;background:#050505}.script summary{cursor:pointer;color:#ffe600;font-weight:900;text-transform:uppercase}.script pre{white-space:pre-wrap;color:#eee}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.dark{background:#1b1b1b;color:#fff;border:1px solid #333}@media(max-width:1100px){.setup,.builder{grid-template-columns:1fr}.right{position:static}.actions,.quickParts{grid-template-columns:1fr}body .optionRow{grid-template-columns:1fr!important}body .useBtn{min-height:44px!important}}`}</style></div>;
 }
