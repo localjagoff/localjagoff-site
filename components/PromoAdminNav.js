@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function PromoAdminNav() {
   const [copied, setCopied] = useState(false);
+  const moreRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) return undefined;
@@ -37,6 +38,27 @@ export default function PromoAdminNav() {
     return () => window.removeEventListener("local-jagoff-copied", onCopied);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const closeMore = (event) => {
+      const node = moreRef.current;
+      if (!node || !node.open || node.contains(event.target)) return;
+      node.open = false;
+    };
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && moreRef.current?.open) moreRef.current.open = false;
+    };
+
+    document.addEventListener("pointerdown", closeMore);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMore);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
   const primaryLinks = [
     ["/admin/promo-hub", "Hub"],
     ["/admin/promo-generator", "Promo Studio"],
@@ -67,7 +89,7 @@ export default function PromoAdminNav() {
           ))}
         </div>
 
-        <details className="navMore">
+        <details className="navMore" ref={moreRef}>
           <summary>More</summary>
           <div className="morePanel">
             {moreLinks.map(([href, label]) => (
