@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
-import { normalizePromoProduct } from "../lib/promoTemplates";
+import { makeFreePromoPack, normalizePromoProduct } from "../lib/promoTemplates";
 
 const QUEUE_KEY = "localJagoffPromoQueue";
 const PHRASES_KEY = "localJagoffRecentPromoPhrases";
@@ -206,6 +206,7 @@ export default function PromoStudioCore() {
   const [selected, setSelected] = useState({ opening: "", main: "", extra: "", shop: "", hashtags: "" });
   const [activeTab, setActiveTab] = useState("create");
   const [loading, setLoading] = useState(false);
+  const [freeLoading, setFreeLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [queue, setQueue] = useState([]);
@@ -293,6 +294,24 @@ export default function PromoStudioCore() {
     }
   };
 
+  const generateFreePromo = () => {
+    setError("");
+    setMessage("");
+    if (!selectedProduct) return setError("Pick a product first.");
+
+    setFreeLoading(true);
+    try {
+      const freePromo = makeFreePromoPack(selectedProduct, { mode, platform, toneIntensity, notes });
+      setPromo(freePromo);
+      setPromoSource("Free Template");
+      buildPartsFromPromo(freePromo, platform);
+      setActiveTab("output");
+      setMessage("Free template generated. No AI credits used.");
+    } finally {
+      setFreeLoading(false);
+    }
+  };
+
   const onUsePart = (field, value) => setSelected((current) => ({ ...current, [field]: value }));
 
   const changePlatform = (nextPlatform) => {
@@ -358,14 +377,14 @@ export default function PromoStudioCore() {
           <section className="createGrid">
             <div className="panel controls">
               <p className="mini">CREATE PACK</p><h2>Generate content</h2>
-              <label className="full">Promo generation key<input type="password" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} placeholder="Enter private generation key" /></label>
+              <label className="full">Promo generation key<input type="password" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} placeholder="Only needed for AI generation" /></label>
               <label className="full">Product<select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} disabled={productsLoading}>{productsLoading && <option>Loading products...</option>}{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
               <label>Preset<select onChange={(e) => applyPreset(e.target.value)} defaultValue=""><option value="">Manual / No Preset</option>{PRESETS.map((preset) => <option key={preset.name} value={preset.name}>{preset.name}</option>)}</select></label>
               <label>Mode<select value={mode} onChange={(e) => setMode(e.target.value)}>{MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
               <label>Platform<select value={platform} onChange={(e) => changePlatform(e.target.value)}>{PLATFORMS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
               <label>Tone<select value={toneIntensity} onChange={(e) => setToneIntensity(e.target.value)}>{TONES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
               <label className="full">Extra notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Direction, product angle, sale details, what to avoid..." /></label>
-              <div className="actions full"><button type="button" className="primary" onClick={generatePromo} disabled={loading}>{loading ? "Generating..." : "Generate"}</button><button type="button" onClick={clearMemory}>Clear No-Repeat Memory</button></div>
+              <div className="actions full"><button type="button" className="primary" onClick={generatePromo} disabled={loading || freeLoading}>{loading ? "Generating..." : "Generate With AI"}</button><button type="button" onClick={generateFreePromo} disabled={loading || freeLoading}>{freeLoading ? "Building..." : "Generate Free Template"}</button><button type="button" onClick={clearMemory}>Clear No-Repeat Memory</button></div>
             </div>
             <aside className="panel productPanel">{selectedProduct?.thumbnail_url && <img src={selectedProduct.thumbnail_url} alt={selectedProduct.name} />}<p className="mini">SELECTED PRODUCT</p><h2>{selectedProduct?.name || "No product selected"}</h2><p>{selectedProduct?.category || "gear"} {selectedProduct?.retail_price && `• $${selectedProduct.retail_price}`}</p><label>Queue date<input type="date" value={queueDate} onChange={(e) => setQueueDate(e.target.value)} /></label></aside>
           </section>
@@ -375,7 +394,7 @@ export default function PromoStudioCore() {
           <section>
             {!promo || !parts ? <div className="empty"><h2>No promo generated yet.</h2><p>Generate a Facebook or Instagram pack first.</p><button type="button" className="primary" onClick={() => setActiveTab("create")}>Create One</button></div> : (
               <>
-                <div className="outputTop"><div><p className="mini">{promoSource} • {platform === "instagram" ? "Instagram" : "Facebook"}</p><h2>{selectedProduct?.name}</h2></div><div className="actions"><button type="button" className="primary" onClick={() => copyText(finalPost)}>Copy Ready Post</button><button type="button" onClick={generatePromo} disabled={loading}>{loading ? "Regenerating..." : "Regenerate All"}</button><button type="button" onClick={addToQueue}>Add to Queue</button></div></div>
+                <div className="outputTop"><div><p className="mini">{promoSource} • {platform === "instagram" ? "Instagram" : "Facebook"}</p><h2>{selectedProduct?.name}</h2></div><div className="actions"><button type="button" className="primary" onClick={() => copyText(finalPost)}>Copy Ready Post</button><button type="button" onClick={promoSource === "Free Template" ? generateFreePromo : generatePromo} disabled={loading || freeLoading}>{loading || freeLoading ? "Regenerating..." : "Regenerate All"}</button><button type="button" onClick={addToQueue}>Add to Queue</button></div></div>
                 <div className="platformSwitch"><button type="button" className={platform === "facebook" ? "active" : ""} onClick={() => changePlatform("facebook")}>Facebook</button><button type="button" className={platform === "instagram" ? "active" : ""} onClick={() => changePlatform("instagram")}>Instagram</button></div>
                 <div className="builderGrid">
                   <aside className="preview panel"><p className="mini">LIVE PREVIEW</p><h2>{platform === "instagram" ? "Instagram" : "Facebook"} Final Post</h2><textarea readOnly value={finalPost} /><div className="actions"><button type="button" className="primary" onClick={() => copyText(finalPost)}>Copy Ready Post</button><button type="button" onClick={addToQueue}>Add to Queue</button></div></aside>
