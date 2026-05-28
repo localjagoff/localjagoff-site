@@ -195,7 +195,7 @@ function splitPreviewText(finalPost) {
   return { body, hashtags, linkLine };
 }
 
-function SocialPreview({ platform, product, finalPost }) {
+function SocialPreview({ platform, product, finalPost, isEditing, draft, onDraftChange, onEdit, onSave, onCancel, onCopy, onQueue }) {
   const { body, hashtags, linkLine } = splitPreviewText(finalPost);
 
   return (
@@ -209,22 +209,39 @@ function SocialPreview({ platform, product, finalPost }) {
         <span>{platformLabel(platform)}</span>
       </div>
 
-      <div className="socialCard">
+      <div className={`socialCard ${isEditing ? "editingPreview" : ""}`}>
         <div className="socialHeader">
           <div className="avatar">👑</div>
-          <div><strong>Local Jagoff</strong><small>Preview • Manual post</small></div>
+          <div><strong>Local Jagoff</strong><small>{isEditing ? "Editing direct preview" : "Preview • Manual post"}</small></div>
         </div>
 
         {product?.thumbnail_url && <img className="previewProduct" src={product.thumbnail_url} alt={product.name} />}
 
-        <div className="previewCopy">
-          {body.length ? body.map((line, index) => <p key={`body-${index}`}>{line}</p>) : <p>No copy selected yet.</p>}
-          {linkLine && <div className="previewLink">{linkLine}</div>}
-          {hashtags.length > 0 && <div className="previewTags">{hashtags.join(" ")}</div>}
-        </div>
+        {isEditing ? (
+          <textarea className="directPreviewEditor" value={draft} onChange={(event) => onDraftChange(event.target.value)} autoFocus />
+        ) : (
+          <button type="button" className="previewCopy" onClick={onEdit} aria-label="Edit final post preview directly">
+            {body.length ? body.map((line, index) => <p key={`body-${index}`}>{line}</p>) : <p>No copy selected yet.</p>}
+            {linkLine && <div className="previewLink">{linkLine}</div>}
+            {hashtags.length > 0 && <div className="previewTags">{hashtags.join(" ")}</div>}
+          </button>
+        )}
       </div>
 
-      <textarea className="copySource" readOnly value={finalPost} aria-label="Copy-ready final post" />
+      <div className="previewActions">
+        {isEditing ? (
+          <>
+            <button type="button" className="primary" onClick={onSave}>Save Preview</button>
+            <button type="button" onClick={onCancel}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={onEdit}>Edit Preview</button>
+            <button type="button" className="primary" onClick={onCopy}>Copy Ready Post</button>
+            <button type="button" onClick={onQueue}>Add to Queue</button>
+          </>
+        )}
+      </div>
     </aside>
   );
 }
@@ -250,38 +267,39 @@ function OptionGroup({ title, field, values, selected, isOpen, editingKey, onTog
 
               return (
                 <article key={key} className={`optionTile ${isSelected ? "selected" : ""} ${isEditing ? "editing" : ""}`} role="radio" aria-checked={isSelected}>
-                  <button type="button" className="optionMain" onClick={() => onUse(field, value)}>
-                    <span className="radioDot" aria-hidden="true" />
-                    <span className="optionCopy">{value}</span>
-                    <span className="tonePill">{optionTone(field, index)}</span>
-                  </button>
+                  <div className="optionTop">
+                    <button type="button" className="radioOnly" onClick={() => onUse(field, value)} aria-label={`Select ${title} option ${index + 1}`}>
+                      <span className="radioDot" aria-hidden="true" />
+                    </button>
 
-                  <div className="optionActions">
-                    <button type="button" onClick={() => onEditStart(key)}>Edit</button>
-                    <button type="button" onClick={() => onSave(field, index, value)}>Save</button>
+                    {isEditing ? (
+                      <textarea className="inlineOptionEditor" value={value} onChange={(event) => onEdit(field, index, event.target.value)} autoFocus />
+                    ) : (
+                      <button type="button" className="optionTextButton" onClick={() => onUse(field, value)}>
+                        <span className="optionCopy">{value}</span>
+                      </button>
+                    )}
+
+                    <span className="tonePill">{optionTone(field, index)}</span>
                   </div>
 
-                  {isEditing && (
-                    <div className="editPanel">
-                      <label>
-                        Edit wording
-                        <textarea value={value} onChange={(event) => onEdit(field, index, event.target.value)} autoFocus />
-                      </label>
-                      <div className="editActions">
+                  <div className="optionActions">
+                    {isEditing ? (
+                      <>
                         <button type="button" className="primary" onClick={() => { onUse(field, value); onSave(field, index, value); onEditCancel(); }}>Save + Use</button>
                         <button type="button" onClick={onEditCancel}>Close</button>
-                      </div>
-                    </div>
-                  )}
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => onEditStart(key)}>Edit</button>
+                        <button type="button" onClick={() => onSave(field, index, value)}>Save</button>
+                      </>
+                    )}
+                  </div>
                 </article>
               );
             })}
           </div>
-
-          <label className="customLabel">
-            Custom {title.toLowerCase()}
-            <textarea value={selected || ""} onChange={(event) => onUse(field, event.target.value)} />
-          </label>
         </div>
       )}
     </section>
@@ -302,6 +320,9 @@ export default function PromoStudioCore() {
   const [promoSource, setPromoSource] = useState("");
   const [parts, setParts] = useState(null);
   const [selected, setSelected] = useState({ opening: "", main: "", extra: "", shop: "", hashtags: "" });
+  const [manualFinalPost, setManualFinalPost] = useState("");
+  const [previewDraft, setPreviewDraft] = useState("");
+  const [previewEditing, setPreviewEditing] = useState(false);
   const [openSections, setOpenSections] = useState(DEFAULT_OPEN_SECTIONS);
   const [activeTab, setActiveTab] = useState("create");
   const [loading, setLoading] = useState(false);
@@ -328,7 +349,14 @@ export default function PromoStudioCore() {
   }, []);
 
   const selectedProduct = useMemo(() => products.find((product) => String(product.id) === String(selectedId)), [products, selectedId]);
-  const finalPost = useMemo(() => buildFinalPost(selected), [selected]);
+  const generatedFinalPost = useMemo(() => buildFinalPost(selected), [selected]);
+  const finalPost = manualFinalPost || generatedFinalPost;
+
+  const resetManualPreview = () => {
+    setManualFinalPost("");
+    setPreviewDraft("");
+    setPreviewEditing(false);
+  };
 
   const applyPreset = (presetName) => {
     const preset = PRESETS.find((item) => item.name === presetName);
@@ -350,6 +378,9 @@ export default function PromoStudioCore() {
       shop: nextParts.shop[0] || "",
       hashtags: nextParts.hashtags[0] || "",
     });
+    setManualFinalPost("");
+    setPreviewDraft("");
+    setPreviewEditing(false);
     setOpenSections(DEFAULT_OPEN_SECTIONS);
     setEditingKey("");
   };
@@ -412,7 +443,10 @@ export default function PromoStudioCore() {
     }
   };
 
-  const onUsePart = (field, value) => setSelected((current) => ({ ...current, [field]: value }));
+  const onUsePart = (field, value) => {
+    resetManualPreview();
+    setSelected((current) => ({ ...current, [field]: value }));
+  };
 
   const onEditOption = (field, index, value) => {
     setParts((current) => {
@@ -421,6 +455,9 @@ export default function PromoStudioCore() {
       const oldValue = nextValues[index];
       nextValues[index] = value;
       setSelected((selectedCurrent) => selectedCurrent[field] === oldValue ? { ...selectedCurrent, [field]: value } : selectedCurrent);
+      setManualFinalPost("");
+      setPreviewDraft("");
+      setPreviewEditing(false);
       return { ...current, [field]: nextValues };
     });
   };
@@ -430,6 +467,22 @@ export default function PromoStudioCore() {
     saved[optionKey(selectedProduct, platform, field, index)] = value;
     writeObject(OPTION_MEMORY_KEY, saved);
     setMessage("Saved wording. This option will reuse your edit next time for this product/platform.");
+  };
+
+  const editPreview = () => {
+    setPreviewDraft(finalPost);
+    setPreviewEditing(true);
+  };
+
+  const savePreview = () => {
+    setManualFinalPost(previewDraft);
+    setPreviewEditing(false);
+    setMessage("Preview wording saved for this queued/copied post.");
+  };
+
+  const cancelPreviewEdit = () => {
+    setPreviewDraft(finalPost);
+    setPreviewEditing(false);
   };
 
   const toggleSection = (field) => {
@@ -464,6 +517,7 @@ export default function PromoStudioCore() {
         facebook_post: platform === "facebook" ? finalPost : promo?.facebook_post || "",
         instagram_caption: platform === "instagram" ? finalPost : promo?.instagram_caption || "",
         hashtags: selected.hashtags,
+        manuallyEditedFinal: Boolean(manualFinalPost),
       },
     };
     const next = [item, ...queue].slice(0, 100);
@@ -530,10 +584,10 @@ export default function PromoStudioCore() {
           <section>
             {!promo || !parts ? <div className="empty"><h2>No promo generated yet.</h2><p>Generate a Facebook or Instagram pack first.</p><button type="button" className="primary" onClick={() => setActiveTab("create")}>Create One</button></div> : (
               <>
-                <div className="outputTop"><div><p className="mini">{promoSource} • {platformLabel(platform)}</p><h2>{selectedProduct?.name}</h2></div><div className="actions"><button type="button" className="primary" onClick={() => copyText(finalPost)}>Copy Ready Post</button><button type="button" onClick={promoSource === "Free Template" ? generateFreePromo : generatePromo} disabled={loading || freeLoading}>{loading || freeLoading ? "Regenerating..." : "Regenerate All"}</button><button type="button" onClick={addToQueue}>Add to Queue</button></div></div>
+                <div className="outputTop"><div><p className="mini">{promoSource} • {platformLabel(platform)}{manualFinalPost ? " • Manually edited" : ""}</p><h2>{selectedProduct?.name}</h2></div><div className="actions"><button type="button" className="primary" onClick={() => copyText(finalPost)}>Copy Ready Post</button><button type="button" onClick={promoSource === "Free Template" ? generateFreePromo : generatePromo} disabled={loading || freeLoading}>{loading || freeLoading ? "Regenerating..." : "Regenerate All"}</button><button type="button" onClick={addToQueue}>Add to Queue</button></div></div>
                 <div className="platformSwitch"><button type="button" className={platform === "facebook" ? "active" : ""} onClick={() => changePlatform("facebook")}>Facebook</button><button type="button" className={platform === "instagram" ? "active" : ""} onClick={() => changePlatform("instagram")}>Instagram</button></div>
                 <div className="builderGrid">
-                  <SocialPreview platform={platform} product={selectedProduct} finalPost={finalPost} />
+                  <SocialPreview platform={platform} product={selectedProduct} finalPost={finalPost} isEditing={previewEditing} draft={previewDraft} onDraftChange={setPreviewDraft} onEdit={editPreview} onSave={savePreview} onCancel={cancelPreviewEdit} onCopy={() => copyText(finalPost)} onQueue={addToQueue} />
                   <div className="buildDeck">
                     <div className="deckControls"><div><p className="mini">BUILD DECK</p><h2>Pick your parts</h2></div><div><button type="button" onClick={() => setOpenSections(ALL_OPEN_SECTIONS)}>Expand All</button><button type="button" onClick={() => setOpenSections(ALL_CLOSED_SECTIONS)}>Collapse All</button></div></div>
                     <div className="parts">
@@ -552,7 +606,7 @@ export default function PromoStudioCore() {
 
         {activeTab === "queue" && <section className="panel"><p className="mini">QUEUE</p><h2>Drafts</h2>{queue.length === 0 ? <p>No queued drafts yet.</p> : <div className="queueList">{queue.map((item) => <article key={item.queueId}><strong>{item.product?.name || "Queued Promo"}</strong><span>{item.scheduledPlatform} • {item.scheduledDate || "No date"} • {item.status || "Draft"}</span><pre>{item.promo?.builder_final || "No copy saved."}</pre></article>)}</div>}</section>}
       </main>
-      <style jsx global>{`.promoPage{min-height:100vh;color:#fff;background:radial-gradient(circle at 12% 0,rgba(255,230,0,.18),transparent 34%),radial-gradient(circle at 88% 10%,rgba(255,230,0,.08),transparent 30%),linear-gradient(180deg,#050505,#000);padding:34px 16px 70px}.promoPage .wrap{max-width:1260px;margin:0 auto}.promoPage .hero{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:end;margin-bottom:16px}.promoPage .kicker,.promoPage .mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase}.promoPage h1{margin:0;font-size:clamp(42px,8vw,94px);line-height:.88;text-transform:uppercase}.promoPage h2,.promoPage h3{text-transform:uppercase}.promoPage .hero p{color:#ddd;line-height:1.55}.promoPage .heroCard,.promoPage .panel,.promoPage .partCard,.promoPage .message,.promoPage .error,.promoPage .empty,.promoPage .outputTop,.promoPage .deckControls{background:linear-gradient(145deg,rgba(18,18,18,.96),rgba(4,4,4,.96));border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.04)}.promoPage .heroCard,.promoPage .panel,.promoPage .partCard,.promoPage .message,.promoPage .error,.promoPage .empty,.promoPage .outputTop,.promoPage .deckControls{padding:18px}.promoPage .heroCard p{margin:0 0 8px;color:#ffe600;font-weight:900}.promoPage .tabs,.promoPage .actions,.promoPage .platformSwitch{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.promoPage .tabs button,.promoPage .actions button,.promoPage .platformSwitch button,.promoPage .editActions button,.promoPage .deckControls button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;cursor:pointer;text-transform:uppercase}.promoPage .tabs button.active,.promoPage .platformSwitch button.active,.promoPage .primary{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.promoPage .message{color:#ffe600;font-weight:900;margin-bottom:14px}.promoPage .error{color:#ffb4b4;border-color:rgba(255,95,95,.4);margin-bottom:14px}.promoPage .createGrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}.promoPage .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.promoPage .full{grid-column:1/-1}.promoPage label{display:grid;gap:7px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.promoPage input,.promoPage select,.promoPage textarea{width:100%;box-sizing:border-box;border:1px solid #333;border-radius:14px;background:#050505;color:#fff;padding:12px;font-size:14px}.promoPage textarea{min-height:110px;resize:vertical}.promoPage .productPanel img{width:100%;height:220px;object-fit:contain;background:#070707;border-radius:16px}.promoPage .outputTop{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.promoPage .builderGrid{display:grid;grid-template-columns:minmax(290px,410px) minmax(0,1fr);gap:16px;align-items:start}.promoPage .preview{position:sticky;top:74px}.promoPage .previewTop{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:14px}.promoPage .brandMark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#ffe600;color:#000;font-weight:1000;box-shadow:0 0 28px rgba(255,230,0,.22)}.promoPage .previewTop h2{margin:0;color:#fff}.promoPage .previewTop span{border:1px solid rgba(255,230,0,.3);border-radius:999px;padding:8px 10px;color:#ffe600;background:rgba(255,230,0,.08);font-size:11px;font-weight:900;text-transform:uppercase}.promoPage .socialCard{border:1px solid rgba(255,255,255,.12);border-radius:22px;background:linear-gradient(180deg,#121212,#050505);overflow:hidden}.promoPage .socialHeader{display:flex;gap:10px;align-items:center;padding:14px}.promoPage .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#1d1d1d;border:1px solid rgba(255,230,0,.25)}.promoPage .socialHeader strong,.promoPage .socialHeader small{display:block}.promoPage .socialHeader small{color:#aaa;margin-top:3px}.promoPage .previewProduct{display:block;width:100%;height:220px;object-fit:contain;background:#f7f7f7}.promoPage .previewCopy{padding:16px}.promoPage .previewCopy p{margin:0 0 12px;color:#f1f1f1;line-height:1.55;white-space:pre-wrap}.promoPage .previewLink{border:1px solid rgba(255,230,0,.18);border-radius:14px;padding:10px;color:#ffe600;background:rgba(255,230,0,.07);font-size:12px;line-break:anywhere}.promoPage .previewTags{margin-top:12px;color:#9fd1ff;line-height:1.45;font-size:13px}.promoPage .copySource{margin-top:12px;min-height:86px;max-height:130px;opacity:.72;line-height:1.45;white-space:pre-wrap}.promoPage .buildDeck{display:grid;gap:14px}.promoPage .deckControls{display:flex;justify-content:space-between;gap:14px;align-items:center}.promoPage .deckControls h2{margin:0;color:#ffe600}.promoPage .deckControls>div:last-child{display:flex;gap:8px;flex-wrap:wrap}.promoPage .parts{display:grid;gap:12px}.promoPage .partCard{padding:0;overflow:hidden}.promoPage .partHeadButton{width:100%;border:0!important;border-radius:0!important;background:transparent!important;color:#fff!important;display:grid!important;grid-template-columns:minmax(0,1fr) 44px;gap:12px;align-items:center;text-align:left;padding:16px!important;cursor:pointer;box-shadow:none!important;text-transform:none!important}.promoPage .partTitleRow{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}.promoPage .partTitleRow h3{margin:0;color:#ffe600}.promoPage .partTitleRow span{color:#aaa;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}.promoPage .partHeadButton p{margin:0;color:#cfcfcf;font-size:13px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.promoPage .chevron{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.28);color:#ffe600;font-weight:1000;font-size:20px}.promoPage .partBody{border-top:1px solid rgba(255,230,0,.12);padding:14px}.promoPage .optionList{display:grid;gap:10px}.promoPage .optionTile{border:1px solid rgba(255,255,255,.12);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015));overflow:hidden;transition:border-color .15s ease,background .15s ease,transform .15s ease,box-shadow .15s ease}.promoPage .optionTile:hover{border-color:rgba(255,230,0,.55);background:rgba(255,230,0,.08);transform:translateY(-1px)}.promoPage .optionTile.selected{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.16),rgba(255,230,0,.045));box-shadow:0 0 0 2px rgba(255,230,0,.08)}.promoPage .optionMain{width:100%;border:0!important;border-radius:0!important;background:transparent!important;color:#fff!important;display:grid!important;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:start;text-align:left;padding:14px!important;cursor:pointer;box-shadow:none!important;text-transform:none!important}.promoPage .radioDot{width:18px;height:18px;border-radius:999px;border:2px solid #777;box-sizing:border-box;position:relative;margin-top:2px}.promoPage .optionTile.selected .radioDot{border-color:#ffe600;background:#ffe600}.promoPage .optionTile.selected .radioDot:after{content:"";position:absolute;inset:4px;border-radius:999px;background:#000}.promoPage .optionCopy{color:#f2f2f2;line-height:1.48;overflow-wrap:anywhere}.promoPage .tonePill{border:1px solid rgba(255,230,0,.25);border-radius:999px;color:#ffe600;background:rgba(255,230,0,.08);padding:6px 9px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}.promoPage .optionActions{display:flex;gap:8px;justify-content:flex-end;padding:0 14px 14px}.promoPage .optionActions button{border:1px solid #333;border-radius:999px;background:#171717;color:#fff;padding:8px 11px;font-size:11px;font-weight:900;text-transform:uppercase;cursor:pointer}.promoPage .optionActions button:hover{background:#ffe600;color:#000;border-color:#ffe600}.promoPage .editPanel{border-top:1px solid rgba(255,230,0,.18);background:rgba(0,0,0,.3);padding:14px}.promoPage .editPanel textarea{min-height:105px;border-color:rgba(255,230,0,.3);background:#040404;line-height:1.5}.promoPage .editActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.promoPage .customLabel{margin-top:14px}.promoPage .queueList{display:grid;gap:12px}.promoPage .queueList article{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;background:#050505}.promoPage .queueList strong,.promoPage .queueList span{display:block}.promoPage .queueList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.promoPage .queueList pre{white-space:pre-wrap;color:#ddd;line-height:1.45}@media(max-width:900px){.promoPage .hero,.promoPage .createGrid,.promoPage .builderGrid{grid-template-columns:1fr}.promoPage .preview{position:static}.promoPage .outputTop,.promoPage .deckControls{display:grid}.promoPage .controls{grid-template-columns:1fr}.promoPage .actions button,.promoPage .tabs button,.promoPage .platformSwitch button,.promoPage .deckControls button{width:100%}.promoPage .optionMain{grid-template-columns:24px minmax(0,1fr)}.promoPage .tonePill{grid-column:2}.promoPage .optionActions{justify-content:stretch}.promoPage .optionActions button,.promoPage .editActions button{width:100%}.promoPage .previewTop{grid-template-columns:44px minmax(0,1fr)}}`}</style>
+      <style jsx global>{`.promoPage{min-height:100vh;color:#fff;background:radial-gradient(circle at 12% 0,rgba(255,230,0,.18),transparent 34%),radial-gradient(circle at 88% 10%,rgba(255,230,0,.08),transparent 30%),linear-gradient(180deg,#050505,#000);padding:34px 16px 70px}.promoPage .wrap{max-width:1260px;margin:0 auto}.promoPage .hero{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:end;margin-bottom:16px}.promoPage .kicker,.promoPage .mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase}.promoPage h1{margin:0;font-size:clamp(42px,8vw,94px);line-height:.88;text-transform:uppercase}.promoPage h2,.promoPage h3{text-transform:uppercase}.promoPage .hero p{color:#ddd;line-height:1.55}.promoPage .heroCard,.promoPage .panel,.promoPage .partCard,.promoPage .message,.promoPage .error,.promoPage .empty,.promoPage .outputTop,.promoPage .deckControls{background:linear-gradient(145deg,rgba(18,18,18,.96),rgba(4,4,4,.96));border:1px solid rgba(255,230,0,.18);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.04)}.promoPage .heroCard,.promoPage .panel,.promoPage .partCard,.promoPage .message,.promoPage .error,.promoPage .empty,.promoPage .outputTop,.promoPage .deckControls{padding:18px}.promoPage .heroCard p{margin:0 0 8px;color:#ffe600;font-weight:900}.promoPage .tabs,.promoPage .actions,.promoPage .platformSwitch,.promoPage .previewActions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.promoPage .tabs button,.promoPage .actions button,.promoPage .platformSwitch button,.promoPage .deckControls button,.promoPage .previewActions button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;cursor:pointer;text-transform:uppercase}.promoPage .tabs button.active,.promoPage .platformSwitch button.active,.promoPage .primary{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.promoPage .message{color:#ffe600;font-weight:900;margin-bottom:14px}.promoPage .error{color:#ffb4b4;border-color:rgba(255,95,95,.4);margin-bottom:14px}.promoPage .createGrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}.promoPage .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.promoPage .full{grid-column:1/-1}.promoPage label{display:grid;gap:7px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.promoPage input,.promoPage select,.promoPage textarea{width:100%;box-sizing:border-box;border:1px solid #333;border-radius:14px;background:#050505;color:#fff;padding:12px;font-size:14px}.promoPage textarea{min-height:110px;resize:vertical}.promoPage .productPanel img{width:100%;height:220px;object-fit:contain;background:#070707;border-radius:16px}.promoPage .outputTop{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.promoPage .builderGrid{display:grid;grid-template-columns:minmax(290px,410px) minmax(0,1fr);gap:16px;align-items:start}.promoPage .preview{position:sticky;top:74px}.promoPage .previewTop{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:14px}.promoPage .brandMark{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#ffe600;color:#000;font-weight:1000;box-shadow:0 0 28px rgba(255,230,0,.22)}.promoPage .previewTop h2{margin:0;color:#fff}.promoPage .previewTop span{border:1px solid rgba(255,230,0,.3);border-radius:999px;padding:8px 10px;color:#ffe600;background:rgba(255,230,0,.08);font-size:11px;font-weight:900;text-transform:uppercase}.promoPage .socialCard{border:1px solid rgba(255,255,255,.12);border-radius:22px;background:linear-gradient(180deg,#121212,#050505);overflow:hidden}.promoPage .socialCard.editingPreview{border-color:#ffe600;box-shadow:0 0 0 2px rgba(255,230,0,.1)}.promoPage .socialHeader{display:flex;gap:10px;align-items:center;padding:14px}.promoPage .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#1d1d1d;border:1px solid rgba(255,230,0,.25)}.promoPage .socialHeader strong,.promoPage .socialHeader small{display:block}.promoPage .socialHeader small{color:#aaa;margin-top:3px}.promoPage .previewProduct{display:block;width:100%;height:220px;object-fit:contain;background:#f7f7f7}.promoPage .previewCopy{display:block;width:100%;border:0;background:transparent;text-align:left;padding:16px;cursor:text}.promoPage .previewCopy p{margin:0 0 12px;color:#f1f1f1;line-height:1.55;white-space:pre-wrap;font-size:15px}.promoPage .previewLink{border:1px solid rgba(255,230,0,.18);border-radius:14px;padding:10px;color:#ffe600;background:rgba(255,230,0,.07);font-size:12px;line-break:anywhere}.promoPage .previewTags{margin-top:12px;color:#9fd1ff;line-height:1.45;font-size:13px}.promoPage .directPreviewEditor{border:0;border-top:1px solid rgba(255,230,0,.18);border-radius:0;background:#050505;min-height:360px;color:#fff;font-size:15px;line-height:1.55;padding:16px}.promoPage .previewActions{margin:12px 0 0}.promoPage .previewActions button{flex:1}.promoPage .buildDeck{display:grid;gap:14px}.promoPage .deckControls{display:flex;justify-content:space-between;gap:14px;align-items:center}.promoPage .deckControls h2{margin:0;color:#ffe600}.promoPage .deckControls>div:last-child{display:flex;gap:8px;flex-wrap:wrap}.promoPage .parts{display:grid;gap:12px}.promoPage .partCard{padding:0;overflow:hidden}.promoPage .partHeadButton{width:100%;border:0!important;border-radius:0!important;background:transparent!important;color:#fff!important;display:grid!important;grid-template-columns:minmax(0,1fr) 44px;gap:12px;align-items:center;text-align:left;padding:16px!important;cursor:pointer;box-shadow:none!important;text-transform:none!important}.promoPage .partTitleRow{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}.promoPage .partTitleRow h3{margin:0;color:#ffe600}.promoPage .partTitleRow span{color:#aaa;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}.promoPage .partHeadButton p{margin:0;color:#cfcfcf;font-size:13px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.promoPage .chevron{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,230,0,.1);border:1px solid rgba(255,230,0,.28);color:#ffe600;font-weight:1000;font-size:20px}.promoPage .partBody{border-top:1px solid rgba(255,230,0,.12);padding:14px}.promoPage .optionList{display:grid;gap:10px}.promoPage .optionTile{border:1px solid rgba(255,255,255,.12);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015));overflow:hidden;transition:border-color .15s ease,background .15s ease,transform .15s ease,box-shadow .15s ease}.promoPage .optionTile:hover{border-color:rgba(255,230,0,.55);background:rgba(255,230,0,.08);transform:translateY(-1px)}.promoPage .optionTile.selected{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.16),rgba(255,230,0,.045));box-shadow:0 0 0 2px rgba(255,230,0,.08)}.promoPage .optionTop{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:start;padding:14px}.promoPage .radioOnly{width:24px;height:24px;border:0;background:transparent;padding:0;cursor:pointer}.promoPage .radioDot{display:block;width:18px;height:18px;border-radius:999px;border:2px solid #777;box-sizing:border-box;position:relative;margin-top:2px}.promoPage .optionTile.selected .radioDot{border-color:#ffe600;background:#ffe600}.promoPage .optionTile.selected .radioDot:after{content:"";position:absolute;inset:4px;border-radius:999px;background:#000}.promoPage .optionTextButton{border:0!important;background:transparent!important;color:#fff!important;text-align:left!important;padding:0!important;cursor:pointer;text-transform:none!important}.promoPage .optionCopy{color:#f2f2f2;line-height:1.48;overflow-wrap:anywhere;font-size:15px}.promoPage .inlineOptionEditor{min-height:96px;border-color:rgba(255,230,0,.32);background:#050505;line-height:1.5;font-size:15px}.promoPage .tonePill{border:1px solid rgba(255,230,0,.25);border-radius:999px;color:#ffe600;background:rgba(255,230,0,.08);padding:6px 9px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}.promoPage .optionActions{display:flex;gap:8px;justify-content:flex-end;padding:0 14px 14px}.promoPage .optionActions button{border:1px solid #333;border-radius:999px;background:#171717;color:#fff;padding:8px 11px;font-size:11px;font-weight:900;text-transform:uppercase;cursor:pointer}.promoPage .optionActions button:hover{background:#ffe600;color:#000;border-color:#ffe600}.promoPage .queueList{display:grid;gap:12px}.promoPage .queueList article{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;background:#050505}.promoPage .queueList strong,.promoPage .queueList span{display:block}.promoPage .queueList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.promoPage .queueList pre{white-space:pre-wrap;color:#ddd;line-height:1.45}@media(max-width:900px){.promoPage .hero,.promoPage .createGrid,.promoPage .builderGrid{grid-template-columns:1fr}.promoPage .preview{position:static}.promoPage .outputTop,.promoPage .deckControls{display:grid}.promoPage .controls{grid-template-columns:1fr}.promoPage .actions button,.promoPage .tabs button,.promoPage .platformSwitch button,.promoPage .deckControls button{width:100%}.promoPage .optionTop{grid-template-columns:24px minmax(0,1fr)}.promoPage .tonePill{grid-column:2}.promoPage .optionActions{justify-content:stretch}.promoPage .optionActions button{width:100%}.promoPage .previewTop{grid-template-columns:44px minmax(0,1fr)}}`}</style>
     </div>
   );
 }
