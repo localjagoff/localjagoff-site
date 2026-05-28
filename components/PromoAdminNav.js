@@ -72,7 +72,6 @@ export default function PromoAdminNav() {
     ["/admin/promo-calendar", "Calendar"],
     ["/admin/promo-product-bank", "Promo Parts"],
     ["/admin/promo-campaign-presets", "Presets"],
-    ["/admin/promo-library", "Library"],
     ["/admin/promo-bank-repair", "Parts Repair"],
     ["/admin/promo-health", "Health"],
     ["/admin/promo-backup", "Backup"],
