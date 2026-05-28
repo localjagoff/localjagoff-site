@@ -14,49 +14,15 @@ const MODES = [
   ["regenerate_no_repeat", "Regenerate / No Repeat"],
 ];
 
-const PLATFORMS = [
-  ["facebook", "Facebook"],
-  ["instagram", "Instagram"],
-];
-
-const TONES = [
-  ["clean", "Clean"],
-  ["balanced", "Balanced"],
-  ["more_jagoff", "More Jagoff"],
-  ["savage_but_safe", "Savage but Safe"],
-];
+const PLATFORMS = [["facebook", "Facebook"], ["instagram", "Instagram"]];
+const TONES = [["clean", "Clean"], ["balanced", "Balanced"], ["more_jagoff", "More Jagoff"], ["savage_but_safe", "Savage but Safe"]];
 
 const PRESETS = [
-  {
-    name: "Savage Organic",
-    mode: "funny_pittsburgh",
-    tone: "savage_but_safe",
-    notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful. Do not default to generic new-drop wording unless this is actually a launch/new drop post.",
-  },
-  {
-    name: "724 Local Push",
-    mode: "funny_pittsburgh",
-    tone: "more_jagoff",
-    notes: "Keep it western PA, local, gritty, and proud. Focus on 724 only if the product/title supports it. Avoid generic new-drop scripting.",
-  },
-  {
-    name: "Clean Ad-Safe",
-    mode: "clean_ad",
-    tone: "clean",
-    notes: "Keep this ad-safe and clean. Still sound like Local Jagoff, but avoid anything that could be flagged or feel too aggressive.",
-  },
-  {
-    name: "Weekend Push",
-    mode: "funny_pittsburgh",
-    tone: "balanced",
-    notes: "Weekend push. Keep it casual, local, and direct. Do not invent a discount unless one is typed in the notes.",
-  },
-  {
-    name: "New Drop Only",
-    mode: "product_drop",
-    tone: "balanced",
-    notes: "Use only when the product is actually a new drop or launch. Keep it product-focused, direct, and local.",
-  },
+  { name: "Savage Organic", mode: "funny_pittsburgh", tone: "savage_but_safe", notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful. Do not default to generic new-drop wording unless this is actually a launch/new drop post." },
+  { name: "724 Local Push", mode: "funny_pittsburgh", tone: "more_jagoff", notes: "Keep it western PA, local, gritty, and proud. Focus on 724 only if the product/title supports it. Avoid generic new-drop scripting." },
+  { name: "Clean Ad-Safe", mode: "clean_ad", tone: "clean", notes: "Keep this ad-safe and clean. Still sound like Local Jagoff, but avoid anything that could be flagged or feel too aggressive." },
+  { name: "Weekend Push", mode: "funny_pittsburgh", tone: "balanced", notes: "Weekend push. Keep it casual, local, and direct. Do not invent a discount unless one is typed in the notes." },
+  { name: "New Drop Only", mode: "product_drop", tone: "balanced", notes: "Use only when the product is actually a new drop or launch. Keep it product-focused, direct, and local." },
 ];
 
 function readArray(key) {
@@ -164,23 +130,24 @@ function makeParts({ promo, product, platform, mode }) {
   };
 }
 
-function buildFinalPost(platform, selected) {
-  const parts = [selected.opening, selected.main, selected.extra, selected.shop];
-  if (platform === "instagram") parts.push(selected.hashtags);
-  return parts.map(clean).filter(Boolean).join("\n\n");
+function buildFinalPost(selected) {
+  return [selected.opening, selected.main, selected.extra, selected.shop, selected.hashtags].map(clean).filter(Boolean).join("\n\n");
 }
 
 function OptionGroup({ title, field, values, selected, onUse }) {
   return (
     <section className="partCard">
       <div className="partHead"><h3>{title}</h3><span>{values.length} options</span></div>
-      <div className="optionList">
-        {values.map((value, index) => (
-          <button key={`${field}-${index}`} type="button" className={selected === value ? "selected" : ""} onClick={() => onUse(field, value)}>
-            <strong>Use {index + 1}</strong>
-            <span>{value}</span>
-          </button>
-        ))}
+      <div className="optionList" role="radiogroup" aria-label={title}>
+        {values.map((value, index) => {
+          const isSelected = selected === value;
+          return (
+            <button key={`${field}-${index}`} type="button" role="radio" aria-checked={isSelected} className={isSelected ? "selected" : ""} onClick={() => onUse(field, value)}>
+              <span className="radioDot" aria-hidden="true" />
+              <span className="optionText">{value}</span>
+            </button>
+          );
+        })}
       </div>
       <label>
         Custom {title.toLowerCase()}
@@ -229,7 +196,7 @@ export default function PromoStudioCore() {
   }, []);
 
   const selectedProduct = useMemo(() => products.find((product) => String(product.id) === String(selectedId)), [products, selectedId]);
-  const finalPost = useMemo(() => buildFinalPost(platform, selected), [platform, selected]);
+  const finalPost = useMemo(() => buildFinalPost(selected), [selected]);
 
   const applyPreset = (presetName) => {
     const preset = PRESETS.find((item) => item.name === presetName);
@@ -248,7 +215,7 @@ export default function PromoStudioCore() {
       main: nextParts.main[0] || "",
       extra: nextParts.extra[0] || "",
       shop: nextParts.shop[0] || "",
-      hashtags: nextPlatform === "instagram" ? nextParts.hashtags[0] || "" : "",
+      hashtags: nextParts.hashtags[0] || "",
     });
   };
 
@@ -341,6 +308,7 @@ export default function PromoStudioCore() {
         builder_final: finalPost,
         facebook_post: platform === "facebook" ? finalPost : promo?.facebook_post || "",
         instagram_caption: platform === "instagram" ? finalPost : promo?.instagram_caption || "",
+        hashtags: selected.hashtags,
       },
     };
     const next = [item, ...queue].slice(0, 100);
@@ -403,7 +371,7 @@ export default function PromoStudioCore() {
                     <OptionGroup title="Main Copy" field="main" values={parts.main} selected={selected.main} onUse={onUsePart} />
                     <OptionGroup title="Extra Line" field="extra" values={parts.extra} selected={selected.extra} onUse={onUsePart} />
                     <OptionGroup title="Shop Line" field="shop" values={parts.shop} selected={selected.shop} onUse={onUsePart} />
-                    {platform === "instagram" && <OptionGroup title="Hashtags" field="hashtags" values={parts.hashtags} selected={selected.hashtags} onUse={onUsePart} />}
+                    <OptionGroup title="Hashtags" field="hashtags" values={parts.hashtags} selected={selected.hashtags} onUse={onUsePart} />
                   </div>
                 </div>
               </>
@@ -415,7 +383,7 @@ export default function PromoStudioCore() {
           <section className="panel"><p className="mini">QUEUE</p><h2>Drafts</h2>{queue.length === 0 ? <p>No queued drafts yet.</p> : <div className="queueList">{queue.map((item) => <article key={item.queueId}><strong>{item.product?.name || "Queued Promo"}</strong><span>{item.scheduledPlatform} • {item.scheduledDate || "No date"} • {item.status || "Draft"}</span><pre>{item.promo?.builder_final || "No copy saved."}</pre></article>)}</div>}</section>
         )}
       </main>
-      <style jsx>{`.promoPage{min-height:100vh;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000);padding:34px 16px 70px}.wrap{max-width:1220px;margin:0 auto}.hero{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:end;margin-bottom:16px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}h1{margin:0;font-size:clamp(42px,8vw,90px);line-height:.9;text-transform:uppercase}h2,h3{text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.heroCard,.panel,.partCard,.message,.error,.empty,.outputTop{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 22px 80px rgba(0,0,0,.42)}.heroCard,.panel,.partCard,.message,.error,.empty,.outputTop{padding:18px}.heroCard p{margin:0 0 8px;color:#ffe600;font-weight:900}.tabs,.actions,.platformSwitch{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tabs button,.actions button,.platformSwitch button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;cursor:pointer;text-transform:uppercase}.tabs button.active,.platformSwitch button.active,.primary{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message{color:#ffe600;font-weight:900;margin-bottom:14px}.error{color:#ffb4b4;border-color:rgba(255,95,95,.4);margin-bottom:14px}.createGrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}label{display:grid;gap:7px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #333;border-radius:14px;background:#050505;color:#fff;padding:12px;font-size:14px}textarea{min-height:110px;resize:vertical}.productPanel img{width:100%;height:220px;object-fit:contain;background:#070707;border-radius:16px}.outputTop{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.builderGrid{display:grid;grid-template-columns:minmax(280px,390px) minmax(0,1fr);gap:16px;align-items:start}.preview{position:sticky;top:74px}.preview textarea{min-height:390px;line-height:1.45;white-space:pre-wrap}.parts{display:grid;gap:12px}.partHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.partHead h3{margin:0;color:#ffe600}.partHead span{color:#aaa;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.optionList{display:grid;gap:8px}.optionList button{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;width:100%;text-align:left;border:1px solid #333;border-radius:14px;background:#101010;color:#fff;padding:12px;cursor:pointer}.optionList button.selected,.optionList button:hover{border-color:#ffe600;background:rgba(255,230,0,.12)}.optionList strong{grid-row:1/3;color:#000;background:#ffe600;border-radius:999px;padding:7px 9px;font-size:11px;text-transform:uppercase;align-self:start;white-space:nowrap}.optionList span{color:#ddd;line-height:1.4;overflow-wrap:anywhere}.queueList{display:grid;gap:12px}.queueList article{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;background:#050505}.queueList strong,.queueList span{display:block}.queueList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.queueList pre{white-space:pre-wrap;color:#ddd;line-height:1.45}@media(max-width:900px){.hero,.createGrid,.builderGrid{grid-template-columns:1fr}.preview{position:static}.outputTop{display:grid}.controls{grid-template-columns:1fr}.actions button,.tabs button,.platformSwitch button{width:100%}.optionList button{grid-template-columns:1fr}.optionList strong{grid-row:auto;width:max-content}}`}</style>
+      <style jsx>{`.promoPage{min-height:100vh;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000);padding:34px 16px 70px}.wrap{max-width:1220px;margin:0 auto}.hero{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:end;margin-bottom:16px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}h1{margin:0;font-size:clamp(42px,8vw,90px);line-height:.9;text-transform:uppercase}h2,h3{text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.heroCard,.panel,.partCard,.message,.error,.empty,.outputTop{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 22px 80px rgba(0,0,0,.42)}.heroCard,.panel,.partCard,.message,.error,.empty,.outputTop{padding:18px}.heroCard p{margin:0 0 8px;color:#ffe600;font-weight:900}.tabs,.actions,.platformSwitch{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tabs button,.actions button,.platformSwitch button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;cursor:pointer;text-transform:uppercase}.tabs button.active,.platformSwitch button.active,.primary{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.message{color:#ffe600;font-weight:900;margin-bottom:14px}.error{color:#ffb4b4;border-color:rgba(255,95,95,.4);margin-bottom:14px}.createGrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}label{display:grid;gap:7px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #333;border-radius:14px;background:#050505;color:#fff;padding:12px;font-size:14px}textarea{min-height:110px;resize:vertical}.productPanel img{width:100%;height:220px;object-fit:contain;background:#070707;border-radius:16px}.outputTop{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.builderGrid{display:grid;grid-template-columns:minmax(280px,390px) minmax(0,1fr);gap:16px;align-items:start}.preview{position:sticky;top:74px}.preview textarea{min-height:390px;line-height:1.45;white-space:pre-wrap}.parts{display:grid;gap:12px}.partHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.partHead h3{margin:0;color:#ffe600}.partHead span{color:#aaa;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.optionList{display:grid;gap:10px}.optionList button{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:start;gap:12px;width:100%;text-align:left;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#101010;color:#fff;padding:13px 14px;cursor:pointer;box-shadow:none}.optionList button:hover{border-color:rgba(255,230,0,.55);background:rgba(255,230,0,.08)}.optionList button.selected{border-color:#ffe600;background:rgba(255,230,0,.13);box-shadow:0 0 0 2px rgba(255,230,0,.08)}.radioDot{width:18px;height:18px;border-radius:999px;border:2px solid #777;margin-top:1px;box-sizing:border-box;background:#050505;position:relative}.optionList button.selected .radioDot{border-color:#ffe600;background:#ffe600}.optionList button.selected .radioDot:after{content:"";position:absolute;inset:4px;border-radius:999px;background:#000}.optionText{color:#f2f2f2;line-height:1.45;overflow-wrap:anywhere}.partCard label{margin-top:14px}.queueList{display:grid;gap:12px}.queueList article{border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;background:#050505}.queueList strong,.queueList span{display:block}.queueList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.queueList pre{white-space:pre-wrap;color:#ddd;line-height:1.45}@media(max-width:900px){.hero,.createGrid,.builderGrid{grid-template-columns:1fr}.preview{position:static}.outputTop{display:grid}.controls{grid-template-columns:1fr}.actions button,.tabs button,.platformSwitch button{width:100%}}`}</style>
     </div>
   );
 }
