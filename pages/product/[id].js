@@ -53,6 +53,8 @@ const productDescriptions = {
     "Another one that hits. Keystone, 412, done right.",
   429536493:
     "Basic? Yeah. Boring? Not even close.",
+  430964873:
+    "724 pride with Local Jagoff attitude. Western PA knows what this one means.",
 };
 
 const productSeoDescriptions = {
@@ -78,6 +80,8 @@ const productSeoDescriptions = {
     "Shop the Local Jagoff Keystone Hoodie, a Pittsburgh hoodie made for black and gold streetwear, yinzer attitude, and Western PA pride.",
   429536493:
     "Shop the Local Jagoff 412 Tee, a Pittsburgh jagoff shirt built for 412 pride, black and gold attitude, and Western PA locals.",
+  430964873:
+    "Shop the Local Jagoff Keystone 724 Tee, a Pittsburgh-area jagoff shirt with 724 pride, Western PA attitude, and black and gold local energy.",
 };
 
 const productFallbackNames = {
@@ -92,6 +96,7 @@ const productFallbackNames = {
   428980566: "Local Jagoff Trucker Hat",
   429208592: "Local Jagoff Keystone Hoodie",
   429536493: "Local Jagoff 412 Tee",
+  430964873: "Local Jagoff Keystone 724 Tee",
 };
 
 const productSignals = {
@@ -132,6 +137,45 @@ function getProductSeoDescription(productId, productName, category) {
   return `Shop ${cleanName} from Local Jagoff, Pittsburgh clothing and gear made for yinzers, jagoffs, black and gold pride, and Western PA attitude.`;
 }
 
+function ProductMeta({ shareTitle, shareDescription, shareImage, shareUrl, productJsonLd }) {
+  const fullTitle = `${shareTitle} | Local Jagoff`;
+
+  return (
+    <Head>
+      <title>{fullTitle}</title>
+      <meta name="description" content={shareDescription} key="description" />
+      <link rel="canonical" href={shareUrl} key="canonical" />
+
+      <meta property="og:title" content={fullTitle} key="og:title" />
+      <meta property="og:description" content={shareDescription} key="og:description" />
+      <meta property="og:image" content={shareImage} key="og:image" />
+      <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
+      <meta property="og:image:type" content="image/jpeg" key="og:image:type" />
+      <meta property="og:image:width" content="1200" key="og:image:width" />
+      <meta property="og:image:height" content="1200" key="og:image:height" />
+      <meta property="og:image:alt" content={`${shareTitle} product photo`} key="og:image:alt" />
+      <meta property="og:url" content={shareUrl} key="og:url" />
+      <meta property="og:type" content="website" key="og:type" />
+      <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
+      <meta property="og:locale" content="en_US" key="og:locale" />
+
+      <meta name="twitter:card" content="summary_large_image" key="twitter:card" />
+      <meta name="twitter:title" content={fullTitle} key="twitter:title" />
+      <meta name="twitter:description" content={shareDescription} key="twitter:description" />
+      <meta name="twitter:image" content={shareImage} key="twitter:image" />
+      <meta name="twitter:image:alt" content={`${shareTitle} product photo`} key="twitter:image:alt" />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+        key="product-jsonld"
+      />
+    </Head>
+  );
+}
+
 export default function ProductPage({ initialProductId }) {
   const router = useRouter();
   const { id } = router.query;
@@ -167,13 +211,13 @@ export default function ProductPage({ initialProductId }) {
   const productSignal = productSignals[productId];
 
   useEffect(() => {
-    if (!id) return;
+    if (!productId) return;
 
     fetch("/api/get-products")
       .then((res) => res.json())
       .then((data) => {
         const found = Array.isArray(data)
-          ? data.find((p) => String(p.id) === String(id))
+          ? data.find((p) => String(p.id) === String(productId))
           : null;
 
         if (!found) return;
@@ -193,7 +237,7 @@ export default function ProductPage({ initialProductId }) {
         }
       })
       .catch(() => setProduct(null));
-  }, [id]);
+  }, [productId]);
 
   useEffect(() => {
     if (!imageZoomOpen) return;
@@ -383,44 +427,13 @@ export default function ProductPage({ initialProductId }) {
   if (!product) {
     return (
       <div className="product-page">
-        <Head>
-          <title>{shareTitle} | Local Jagoff</title>
-          <meta name="description" content={shareDescription} key="description" />
-          <link rel="canonical" href={shareUrl} key="canonical" />
-
-          <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
-          <meta
-            property="og:description"
-            content={shareDescription}
-            key="og:description"
-          />
-          <meta property="og:image" content={shareImage} key="og:image" />
-          <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
-          <meta property="og:image:width" content="1200" key="og:image:width" />
-          <meta property="og:image:height" content="1200" key="og:image:height" />
-          <meta property="og:image:alt" content={shareTitle} key="og:image:alt" />
-          <meta property="og:url" content={shareUrl} key="og:url" />
-          <meta property="og:type" content="product" key="og:type" />
-          <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
-
-          <meta
-            name="twitter:card"
-            content="summary_large_image"
-            key="twitter:card"
-          />
-          <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
-          <meta name="twitter:description" content={shareDescription} key="twitter:description" />
-          <meta name="twitter:image" content={shareImage} key="twitter:image" />
-          <meta name="twitter:image:alt" content={shareTitle} key="twitter:image:alt" />
-
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
-            }}
-            key="product-jsonld"
-          />
-        </Head>
+        <ProductMeta
+          shareTitle={shareTitle}
+          shareDescription={shareDescription}
+          shareImage={shareImage}
+          shareUrl={shareUrl}
+          productJsonLd={productJsonLd}
+        />
 
         <Navbar />
 
@@ -470,44 +483,13 @@ export default function ProductPage({ initialProductId }) {
 
   return (
     <div className="product-page">
-      <Head>
-        <title>{shareTitle} | Local Jagoff</title>
-        <meta name="description" content={shareDescription} key="description" />
-        <link rel="canonical" href={shareUrl} key="canonical" />
-
-        <meta property="og:title" content={`${shareTitle} | Local Jagoff`} key="og:title" />
-        <meta
-          property="og:description"
-          content={shareDescription}
-          key="og:description"
-        />
-        <meta property="og:image" content={shareImage} key="og:image" />
-        <meta property="og:image:secure_url" content={shareImage} key="og:image:secure_url" />
-        <meta property="og:image:width" content="1200" key="og:image:width" />
-        <meta property="og:image:height" content="1200" key="og:image:height" />
-        <meta property="og:image:alt" content={shareTitle} key="og:image:alt" />
-        <meta property="og:url" content={shareUrl} key="og:url" />
-        <meta property="og:type" content="product" key="og:type" />
-        <meta property="og:site_name" content="Local Jagoff" key="og:site_name" />
-
-        <meta
-          name="twitter:card"
-          content="summary_large_image"
-          key="twitter:card"
-        />
-        <meta name="twitter:title" content={`${shareTitle} | Local Jagoff`} key="twitter:title" />
-        <meta name="twitter:description" content={shareDescription} key="twitter:description" />
-        <meta name="twitter:image" content={shareImage} key="twitter:image" />
-        <meta name="twitter:image:alt" content={shareTitle} key="twitter:image:alt" />
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
-          }}
-          key="product-jsonld"
-        />
-      </Head>
+      <ProductMeta
+        shareTitle={shareTitle}
+        shareDescription={shareDescription}
+        shareImage={shareImage}
+        shareUrl={shareUrl}
+        productJsonLd={productJsonLd}
+      />
 
       <Navbar />
 
@@ -558,220 +540,130 @@ export default function ProductPage({ initialProductId }) {
               <button
                 key={i}
                 type="button"
-                className={(selectedImage || images[0]) === img ? "thumb active" : "thumb"}
+                className={`thumb-button ${selectedImageIndex === i ? "active" : ""}`}
                 onClick={() => setSelectedImage(img)}
-                aria-label={`View image ${i + 1}`}
+                aria-label={`View product image ${i + 1}`}
               >
-                <img src={img} alt={`${product.name} ${i + 1}`} />
+                <img src={img} alt={`${product.name} thumbnail ${i + 1}`} />
               </button>
             ))}
           </div>
         </section>
 
-        <section className="details-panel">
-          <div className="details-top">
-            <p className="eyebrow">{product.category?.toUpperCase() || "PRODUCT"}</p>
-            <h1>{product.name}</h1>
+        <section className="info-panel">
+          <p className="eyebrow">Local Jagoff Gear</p>
+          {productSignal && <p className="product-signal">{productSignal}</p>}
+          <h1>{product.name}</h1>
 
-            <div className="price-row">
-              <p className="price">${displayedPrice}</p>
-              {variantLabel && <span className="selected-pill">{variantLabel}</span>}
-            </div>
+          <p className="price">${displayedPrice}</p>
 
-            {productSignal && (
-              <div className="product-signal">
-                <span className="signal-dot" />
-                <span>{productSignal}</span>
-              </div>
-            )}
+          <p className="description">
+            {productDescriptions[productId] ||
+              "Local gear with Pittsburgh attitude. If you get it, you get it."}
+          </p>
 
-            {product?.category === "tees" ? (
-              <div className="premium-tee-description">
-                <p className="premium-lead">Not your average throwaway tee.</p>
-
-                <p className="premium-copy">
-                  This is a premium, soft-washed shirt made from 100% combed
-                  ring-spun cotton — meaning it actually feels good the second
-                  you put it on and holds up after real wear.
-                </p>
-
-                <p className="premium-punch">
-                  No stiff fabric. No cheap prints. No weird fit.
-                </p>
-
-                <ul className="premium-list">
-                  <li>Ultra-soft feel with a smooth finish</li>
-                  <li>Durable print that won’t crack after a couple washes</li>
-                  <li>True-to-size fit — not boxy, not slim nonsense</li>
-                  <li>
-                    Midweight 5.5 oz fabric — not thin, not heavy, right where
-                    it should be
-                  </li>
-                  <li>Side-seamed construction for a better shape</li>
-                </ul>
-
-                <p className="premium-copy">
-                  Built for everyday wear — not just one good photo.
-                </p>
-
-                <p className="premium-tagline">
-                  Tested by jagoffs. Approved by jagoffs.
-                </p>
-              </div>
-            ) : (
-              <p className="description">
-                {productDescriptions[product.id] || "Local Jagoff merch."}
-              </p>
-            )}
-          </div>
-
-          <div className="divider" />
-
-          {Array.isArray(product.variants) && product.variants.length > 0 && (
-            <div className="field">
-              <div className="label-row">
-                <label htmlFor="variant-select">Size / Option</label>
-                <span>{product.variants.length} options</span>
-              </div>
-
+          {product.variants?.length > 0 && (
+            <label className="variant-label">
+              Size / Style
               <select
-                id="variant-select"
                 value={selectedVariantId}
                 onChange={(e) => setSelectedVariantId(e.target.value)}
               >
                 {product.variants.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {getVariantLabel(product.name, v.name)} - ${v.price}
+                    {getVariantLabel(product.name, v.name)}
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
           )}
 
-          <div className="field">
-            <div className="label-row">
-              <label>Quantity</label>
-              <span>Ready when yinz are</span>
-            </div>
-
-            <div className="purchase-row">
-              <div className="qty-row">
-                <button
-                  type="button"
-                  className="qty-btn"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
-                <span className="qty-value">{quantity}</span>
-                <button
-                  type="button"
-                  className="qty-btn"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
-              </div>
-
-              <div className="mini-total">
-                <span>Item total</span>
-                <strong>${(Number(displayedPrice) * quantity).toFixed(2)}</strong>
-              </div>
-            </div>
+          <div className="qty-row">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <span>{quantity}</span>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => q + 1)}
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
           </div>
 
-          <button type="button" className="primary-btn" onClick={addToCart}>
-            {added ? "ADDED TO CART, N’AT" : "ADD TO CART, N’AT"}
-          </button>
-
-          <button type="button" className="secondary-btn" onClick={handleShare}>
-            {copied ? "COPIED, JAGOFF" : "SEND THIS TO A JAGOFF"}
-          </button>
+          <div className="button-row">
+            <button type="button" className="add-button" onClick={addToCart}>
+              {added ? "Added" : "Add to Cart"}
+            </button>
+            <button type="button" className="share-button" onClick={handleShare}>
+              {copied ? "Copied" : "Share"}
+            </button>
+          </div>
 
           <div className="trust-box">
-            <div>
-              <strong>NO CORPORATE BULLSH*T</strong>
-              <span>This ain’t mass-produced garbage.</span>
-            </div>
-            <div>
-              <strong>MADE WHEN YOU ORDER</strong>
-              <span>Fresh print. No dusty warehouse junk.</span>
-            </div>
-            <div>
-              <strong>PITTSBURGH APPROVED</strong>
-              <span>Tested by jagoffs. Approved by jagoffs.</span>
-            </div>
+            <p>Printed when ordered. Shipped direct. No mall-rack nonsense.</p>
+            <p>Questions? Hit up info@localjagoff.com.</p>
           </div>
         </section>
       </main>
 
       {imageZoomOpen && (
-        <div
-          className="image-lightbox"
-          onClick={() => setImageZoomOpen(false)}
-          role="button"
-          tabIndex={0}
-          aria-label="Close enlarged product image"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+        <div className="image-zoom-backdrop" onClick={() => setImageZoomOpen(false)}>
+          <button
+            type="button"
+            className="image-zoom-close"
+            onClick={(e) => {
+              e.stopPropagation();
               setImageZoomOpen(false);
-            }
-          }}
-        >
+            }}
+            aria-label="Close image preview"
+          >
+            ×
+          </button>
           <img
             src={selectedImage || images[0]}
             alt={product.name}
-            className="image-lightbox-img"
+            className="image-zoom-img"
           />
-          <p className="image-lightbox-hint">Tap image to close</p>
         </div>
       )}
 
       <style jsx>{`
         .product-page {
           min-height: 100vh;
-          color: #fff;
           background: transparent;
-          overflow-x: hidden;
+          color: #fff;
         }
 
         .product-layout {
-          width: 100%;
-          max-width: 1240px;
+          max-width: 1120px;
           margin: 0 auto;
-          padding: 34px 20px 46px;
+          padding: 32px 18px 80px;
           display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
-          gap: 32px;
+          grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+          gap: 28px;
           align-items: start;
         }
 
         .gallery-panel,
-        .details-panel {
-          width: 100%;
-          min-width: 0;
-          background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.045), rgba(255, 230, 0, 0) 24%),
-            rgba(17, 17, 17, 0.96);
-          border: 1px solid #242424;
-          border-radius: 22px;
+        .info-panel {
+          border: 1px solid rgba(255, 230, 0, 0.18);
+          border-radius: 26px;
+          background: rgba(8, 8, 8, 0.82);
+          box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
           padding: 18px;
-          box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
-        }
-
-        .details-panel {
-          position: sticky;
-          top: 92px;
-          padding: 24px;
         }
 
         .badge-row {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 12px;
+          gap: 10px;
+          margin-bottom: 16px;
         }
 
         .badge {
@@ -779,71 +671,58 @@ export default function ProductPage({ initialProductId }) {
           align-items: center;
           border: 1px solid rgba(255, 230, 0, 0.45);
           border-radius: 999px;
-          padding: 7px 10px;
           color: #ffe600;
-          background: rgba(255, 230, 0, 0.06);
           font-size: 11px;
           font-weight: 900;
           letter-spacing: 1px;
+          padding: 7px 10px;
+          text-transform: uppercase;
+          background: rgba(255, 230, 0, 0.08);
         }
 
         .muted-badge {
-          color: #d9d9d9;
-          border-color: #333;
-          background: rgba(255, 255, 255, 0.035);
+          color: #bbb;
+          border-color: rgba(255, 255, 255, 0.16);
+          background: rgba(255, 255, 255, 0.05);
         }
 
         .main-image-wrap {
           position: relative;
-          width: 100%;
-          aspect-ratio: 1 / 1;
-          border-radius: 18px;
-          border: 1px solid #1f1f1f;
-          background:
-            radial-gradient(circle at top, rgba(255, 230, 0, 0.09), transparent 45%),
-            #0b0b0b;
+          border-radius: 22px;
           overflow: hidden;
+          background: #f7f7f7;
+          aspect-ratio: 1 / 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          touch-action: pan-y;
         }
 
         .main-image {
-          width: 100%;
-          height: 100%;
           max-width: 100%;
           max-height: 100%;
+          width: 100%;
+          height: 100%;
           object-fit: contain;
-          object-position: center;
-          display: block;
-          user-select: none;
-          -webkit-user-drag: none;
+          cursor: zoom-in;
         }
 
         .gallery-arrow {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
-          width: 44px;
-          height: 56px;
-          border: 1px solid rgba(255, 230, 0, 0.35);
-          border-radius: 14px;
-          background: rgba(0, 0, 0, 0.58);
+          width: 42px;
+          height: 42px;
+          border-radius: 999px;
+          border: 1px solid rgba(0, 0, 0, 0.2);
+          background: rgba(0, 0, 0, 0.72);
           color: #ffe600;
-          font-size: 44px;
+          font-size: 30px;
           line-height: 1;
           cursor: pointer;
-          z-index: 3;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding-bottom: 6px;
-        }
-
-        .gallery-arrow:hover {
-          background: rgba(0, 0, 0, 0.82);
-          border-color: #ffe600;
+          z-index: 2;
         }
 
         .gallery-arrow-left {
@@ -855,527 +734,238 @@ export default function ProductPage({ initialProductId }) {
         }
 
         .thumb-row {
-          width: 100%;
-          max-width: 100%;
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
           gap: 10px;
-          margin-top: 12px;
-          overflow-x: auto;
-          overflow-y: hidden;
-          padding-bottom: 2px;
-          -webkit-overflow-scrolling: touch;
+          margin-top: 14px;
         }
 
-        .thumb {
-          width: 74px;
-          height: 74px;
-          min-width: 74px;
+        .thumb-button {
+          border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 14px;
-          border: 1px solid #333;
-          background: #0d0d0d;
-          padding: 4px;
+          background: #111;
+          padding: 6px;
           cursor: pointer;
-          flex: 0 0 auto;
-          opacity: 0.78;
+          aspect-ratio: 1 / 1;
         }
 
-        .thumb:hover {
-          opacity: 1;
-          transform: translateY(-1px);
-        }
-
-        .thumb.active {
+        .thumb-button.active {
           border-color: #ffe600;
-          opacity: 1;
+          box-shadow: 0 0 0 2px rgba(255, 230, 0, 0.16);
         }
 
-        .thumb img {
+        .thumb-button img {
           width: 100%;
           height: 100%;
           object-fit: contain;
-          display: block;
           border-radius: 10px;
+          background: #f7f7f7;
         }
 
-        .details-top {
-          margin-bottom: 18px;
+        .info-panel {
+          position: sticky;
+          top: 16px;
         }
 
         .eyebrow {
-          margin: 0 0 10px;
           color: #ffe600;
           font-size: 12px;
+          font-weight: 900;
           letter-spacing: 1.6px;
-          font-weight: 900;
-        }
-
-        h1 {
-          margin: 0;
-          font-size: 38px;
-          line-height: 1.05;
-          word-break: normal;
-          overflow-wrap: anywhere;
-          letter-spacing: 1px;
-        }
-
-        .price-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin: 16px 0 10px;
-        }
-
-        .price {
-          font-size: 34px;
-          font-weight: 900;
-          color: #fff;
-          margin: 0;
-          line-height: 1;
-        }
-
-        .selected-pill {
-          display: inline-flex;
-          border: 1px solid #333;
-          border-radius: 999px;
-          padding: 7px 10px;
-          color: #d8d8d8;
-          background: rgba(255, 255, 255, 0.04);
-          font-size: 12px;
-          font-weight: 800;
+          margin: 0 0 10px;
+          text-transform: uppercase;
         }
 
         .product-signal {
           display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          margin: 0 0 16px;
-          padding: 9px 12px;
+          margin: 0 0 10px;
+          padding: 7px 10px;
           border-radius: 999px;
-          border: 1px solid rgba(255, 230, 0, 0.35);
-          background:
-            radial-gradient(circle at left center, rgba(255, 230, 0, 0.16), transparent 58%),
-            rgba(255, 255, 255, 0.035);
           color: #ffe600;
-          font-size: 13px;
+          background: rgba(255, 230, 0, 0.08);
+          border: 1px solid rgba(255, 230, 0, 0.28);
+          font-size: 12px;
           font-weight: 900;
-          letter-spacing: 0.2px;
-          box-shadow: 0 10px 22px rgba(255, 230, 0, 0.08);
         }
 
-        .signal-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #ffe600;
-          box-shadow: 0 0 14px rgba(255, 230, 0, 0.75);
-          flex: 0 0 auto;
+        .info-panel h1 {
+          font-size: clamp(32px, 4vw, 58px);
+          line-height: 0.95;
+          letter-spacing: 0.5px;
+          margin: 0 0 14px;
+          text-transform: uppercase;
+        }
+
+        .price {
+          color: #ffe600;
+          font-size: 26px;
+          font-weight: 900;
+          margin: 0 0 18px;
         }
 
         .description {
-          color: #cfcfcf;
+          color: #ddd;
+          font-size: 16px;
           line-height: 1.55;
-          margin: 0;
-          font-size: 15px;
+          margin: 0 0 20px;
         }
 
-        .premium-tee-description {
-          margin-top: 16px;
-          padding: 18px;
-          border: 1px solid #252525;
-          border-radius: 18px;
-          background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.05), rgba(255, 230, 0, 0) 32%),
-            rgba(255, 255, 255, 0.025);
-        }
-
-        .premium-lead {
-          margin: 0 0 10px;
-          color: #fff;
-          font-size: 18px;
-          font-weight: 900;
-          line-height: 1.25;
-        }
-
-        .premium-copy {
-          margin: 0 0 12px;
-          color: #cfcfcf;
-          font-size: 15px;
-          line-height: 1.55;
-        }
-
-        .premium-punch {
-          margin: 0 0 14px;
-          color: #fff;
-          font-size: 15px;
-          font-weight: 900;
-          line-height: 1.45;
-        }
-
-        .premium-list {
+        .variant-label {
           display: grid;
-          gap: 9px;
-          margin: 14px 0 14px;
-          padding: 0;
-          list-style: none;
-        }
-
-        .premium-list li {
-          position: relative;
-          padding-left: 20px;
-          color: #e7e7e7;
-          font-size: 14px;
-          line-height: 1.45;
-        }
-
-        .premium-list li::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          top: 0.62em;
-          width: 7px;
-          height: 7px;
-          border-radius: 999px;
-          background: #ffe600;
-          box-shadow: 0 0 12px rgba(255, 230, 0, 0.45);
-        }
-
-        .premium-tagline {
-          margin: 16px 0 0;
+          gap: 8px;
           color: #ffe600;
-          font-size: 15px;
+          font-size: 12px;
           font-weight: 900;
-          line-height: 1.4;
-        }
-
-        .divider {
-          height: 1px;
-          background: linear-gradient(90deg, #2b2b2b, transparent);
-          margin: 20px 0;
-        }
-
-        .field {
+          letter-spacing: 1px;
+          text-transform: uppercase;
           margin-bottom: 18px;
         }
 
-        .label-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 8px;
-        }
-
-        label {
-          display: block;
-          margin: 0;
-          font-size: 14px;
-          font-weight: 900;
-          color: #fff;
-        }
-
-        .label-row span {
-          color: #999;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        select {
+        .variant-label select {
           width: 100%;
-          padding: 15px 14px;
           border-radius: 14px;
           border: 1px solid #333;
-          background: #0e0e0e;
+          background: #050505;
           color: #fff;
+          padding: 13px 14px;
           font-size: 15px;
-          outline: none;
-        }
-
-        select:focus {
-          border-color: rgba(255, 230, 0, 0.65);
-          box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.1);
-        }
-
-        .purchase-row {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 12px;
-          align-items: center;
         }
 
         .qty-row {
-          display: inline-flex;
+          display: inline-grid;
+          grid-template-columns: 44px 52px 44px;
           align-items: center;
-          gap: 10px;
-          background: #0e0e0e;
           border: 1px solid #333;
-          border-radius: 14px;
-          padding: 6px;
+          border-radius: 999px;
+          overflow: hidden;
+          margin-bottom: 18px;
+          background: #050505;
         }
 
-        .qty-btn {
-          width: 40px;
-          height: 40px;
-          border: none;
-          border-radius: 11px;
-          background: #1c1c1c;
-          color: #fff;
-          font-size: 20px;
+        .qty-row button {
+          width: 44px;
+          height: 44px;
+          border: 0;
+          background: #111;
+          color: #ffe600;
+          font-size: 22px;
           cursor: pointer;
         }
 
-        .qty-btn:hover {
-          background: #ffe600;
-          color: #000;
-        }
-
-        .qty-value {
-          min-width: 30px;
+        .qty-row span {
           text-align: center;
           font-weight: 900;
         }
 
-        .mini-total {
-          min-height: 54px;
-          border: 1px solid #292929;
-          background: rgba(255, 255, 255, 0.025);
-          border-radius: 14px;
-          padding: 8px 12px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
+        .button-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 12px;
+          margin-bottom: 18px;
         }
 
-        .mini-total span {
-          color: #999;
-          font-size: 11px;
-          font-weight: 800;
+        .add-button,
+        .share-button {
+          border: 0;
+          border-radius: 16px;
+          font-weight: 900;
+          font-size: 15px;
+          cursor: pointer;
+          padding: 15px 18px;
           text-transform: uppercase;
-          letter-spacing: 0.8px;
         }
 
-        .mini-total strong {
-          font-size: 18px;
-        }
-
-        .primary-btn {
-          width: 100%;
-          border: none;
-          border-radius: 16px;
-          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
+        .add-button {
+          background: #ffe600;
           color: #000;
-          font-weight: 900;
-          font-size: 15px;
-          padding: 17px 18px;
-          cursor: pointer;
-          letter-spacing: 0.7px;
-          box-shadow: 0 12px 26px rgba(255, 230, 0, 0.2);
-          margin-bottom: 10px;
         }
 
-        .primary-btn:hover {
-          transform: translateY(-1px);
-          filter: brightness(1.03);
-          box-shadow: 0 16px 30px rgba(255, 230, 0, 0.25);
-        }
-
-        .secondary-btn {
-          width: 100%;
-          border: 1px solid #333;
-          border-radius: 16px;
-          background: #111;
+        .share-button {
+          background: #1a1a1a;
           color: #fff;
-          font-weight: 900;
-          font-size: 15px;
-          padding: 16px 18px;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-        }
-
-        .secondary-btn:hover {
-          border-color: rgba(255, 230, 0, 0.45);
-          color: #ffe600;
-          background: rgba(255, 230, 0, 0.04);
+          border: 1px solid #333;
         }
 
         .trust-box {
-          display: grid;
-          gap: 10px;
-          margin-top: 18px;
-          padding-top: 18px;
-          border-top: 1px solid #242424;
-        }
-
-        .trust-box div {
-          display: grid;
-          gap: 2px;
-          padding-left: 12px;
-          border-left: 3px solid rgba(255, 230, 0, 0.55);
-        }
-
-        .trust-box strong {
+          border-radius: 18px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.04);
+          padding: 14px;
+          color: #cfcfcf;
           font-size: 13px;
-          color: #fff;
+          line-height: 1.45;
         }
 
-        .trust-box span {
-          font-size: 13px;
-          color: #aaa;
-          line-height: 1.35;
+        .trust-box p {
+          margin: 0;
         }
 
-        .image-lightbox {
+        .trust-box p + p {
+          margin-top: 8px;
+        }
+
+        .image-zoom-backdrop {
           position: fixed;
           inset: 0;
-          z-index: 2000;
-          display: none;
+          z-index: 9999;
+          background: rgba(0, 0, 0, 0.92);
+          display: flex;
           align-items: center;
           justify-content: center;
           padding: 18px;
-          background: rgba(0, 0, 0, 0.88);
-          backdrop-filter: blur(4px);
-          cursor: zoom-out;
         }
 
-        .image-lightbox-img {
-          width: 100%;
-          max-width: 96vw;
-          max-height: 84vh;
+        .image-zoom-img {
+          max-width: 100%;
+          max-height: 86vh;
           object-fit: contain;
           border-radius: 18px;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
-          background: #0b0b0b;
+          background: #f7f7f7;
         }
 
-        .image-lightbox-hint {
+        .image-zoom-close {
           position: fixed;
-          left: 50%;
-          bottom: 22px;
-          transform: translateX(-50%);
-          margin: 0;
-          padding: 8px 12px;
-          border: 1px solid rgba(255, 230, 0, 0.35);
+          top: 18px;
+          right: 18px;
+          width: 44px;
+          height: 44px;
           border-radius: 999px;
-          background: rgba(0, 0, 0, 0.72);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: #111;
           color: #ffe600;
-          font-size: 12px;
-          font-weight: 900;
-          letter-spacing: 0.7px;
-          white-space: nowrap;
+          font-size: 30px;
+          line-height: 1;
+          cursor: pointer;
+          z-index: 10000;
         }
 
-        @media (max-width: 980px) {
+        @media (max-width: 860px) {
           .product-layout {
             grid-template-columns: 1fr;
           }
 
-          .details-panel {
+          .info-panel {
             position: static;
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 560px) {
           .product-layout {
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            padding: 20px 14px 28px;
-            gap: 18px;
-            display: flex;
-            flex-direction: column;
+            padding: 18px 12px 60px;
           }
 
           .gallery-panel,
-          .details-panel {
-            width: 100%;
-            max-width: 100%;
-            padding: 18px;
-            margin: 0;
-            box-sizing: border-box;
+          .info-panel {
             border-radius: 20px;
+            padding: 14px;
           }
 
-          .badge-row {
-            margin-bottom: 10px;
-          }
-
-          .badge {
-            font-size: 10px;
-            padding: 6px 9px;
-          }
-
-          .main-image-wrap {
-            width: 100%;
-            max-width: 100%;
-            aspect-ratio: 1 / 1;
-            border-radius: 16px;
-          }
-
-          .main-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-            cursor: zoom-in;
-          }
-
-          .image-lightbox {
-            display: flex;
-          }
-
-          h1 {
-            font-size: 31px;
-            line-height: 1.08;
-          }
-
-          .price {
-            font-size: 30px;
-          }
-
-          .description {
-            font-size: 15px;
-          }
-
-          .product-signal {
-            margin-bottom: 14px;
-            font-size: 13px;
-            padding: 9px 11px;
-          }
-
-          .purchase-row {
+          .button-row {
             grid-template-columns: 1fr;
           }
 
-          .qty-row {
+          .share-button {
             width: 100%;
-            justify-content: space-between;
-          }
-
-          .qty-btn {
-            width: 46px;
-            height: 42px;
-          }
-
-          .mini-total {
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-          }
-
-          .thumb {
-            width: 64px;
-            height: 64px;
-            min-width: 64px;
-          }
-
-          .gallery-arrow {
-            display: none;
-          }
-
-          .primary-btn,
-          .secondary-btn {
-            border-radius: 15px;
-            padding: 16px;
           }
         }
       `}</style>
