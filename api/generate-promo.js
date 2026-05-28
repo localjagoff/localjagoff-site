@@ -42,12 +42,9 @@ function normalizeProduct(product) {
 }
 
 function extractResponseText(data) {
-  if (typeof data?.output_text === "string") {
-    return data.output_text.trim();
-  }
+  if (typeof data?.output_text === "string") return data.output_text.trim();
 
   const chunks = [];
-
   for (const item of data?.output || []) {
     if (Array.isArray(item?.content)) {
       for (const content of item.content) {
@@ -56,7 +53,6 @@ function extractResponseText(data) {
       }
     }
   }
-
   return chunks.join("\n").trim();
 }
 
@@ -75,9 +71,7 @@ function slugify(value) {
 }
 
 function productUrl(product) {
-  return product?.id
-    ? `https://www.localjagoff.com/product/${product.id}`
-    : "https://www.localjagoff.com";
+  return product?.id ? `https://www.localjagoff.com/product/${product.id}` : "https://www.localjagoff.com";
 }
 
 function trackedUrl(product, source, campaign) {
@@ -87,7 +81,6 @@ function trackedUrl(product, source, campaign) {
     utm_campaign: slugify(campaign || "ai-promo"),
     utm_content: slugify(product?.name || "local-jagoff-product"),
   });
-
   return `${productUrl(product)}?${params.toString()}`;
 }
 
@@ -96,8 +89,6 @@ function postingBundleGuidance() {
     "Posting bundles:",
     "Facebook Bundle: Facebook Post plus Facebook tracked link.",
     "Instagram Bundle: Instagram Caption plus Instagram tracked link.",
-    "Short Video Bundle: Short caption plus tracked link.",
-    "YouTube Shorts Bundle: Shorts title plus description plus tracked link.",
   ].join("\n");
 }
 
@@ -133,13 +124,11 @@ function appendCtaHelper(promo, promptData) {
       `Product link: ${productUrl(product)}`,
       `Facebook tracked link: ${trackedUrl(product, "facebook", campaign)}`,
       `Instagram tracked link: ${trackedUrl(product, "instagram", campaign)}`,
-      `TikTok tracked link: ${trackedUrl(product, "tiktok", campaign)}`,
-      `YouTube Shorts tracked link: ${trackedUrl(product, "youtube_shorts", campaign)}`,
       postingBundleGuidance(),
     ].join("\n"),
     warnings: [
       ...(Array.isArray(promo?.warnings) ? promo.warnings : []),
-      "CTA helper includes direct product link, UTM tracked social links, and posting bundle guidance.",
+      "CTA helper includes direct product link, Facebook/Instagram UTM tracked social links, and posting bundle guidance.",
       ...postingQaChecklist(promptData),
     ],
   };
@@ -152,54 +141,19 @@ const promoSchema = {
     brand_angle: { type: "string" },
     facebook_post: { type: "string" },
     instagram_caption: { type: "string" },
-    tiktok_caption: { type: "string" },
-    youtube_shorts_title: { type: "string" },
-    youtube_shorts_description: { type: "string" },
-    hashtags: {
-      type: "array",
-      items: { type: "string" },
-    },
-    video_hooks: {
-      type: "array",
-      items: { type: "string" },
-    },
-    short_video_script: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          scene: { type: "string" },
-          visual: { type: "string" },
-          on_screen_text: { type: "string" },
-          voiceover: { type: "string" },
-        },
-        required: ["scene", "visual", "on_screen_text", "voiceover"],
-      },
-    },
-    image_overlay_text: {
-      type: "array",
-      items: { type: "string" },
-    },
+    hashtags: { type: "array", items: { type: "string" } },
+    image_overlay_text: { type: "array", items: { type: "string" } },
     alt_text: { type: "string" },
     clean_ad_version: { type: "string" },
     edgy_version: { type: "string" },
     cta: { type: "string" },
-    warnings: {
-      type: "array",
-      items: { type: "string" },
-    },
+    warnings: { type: "array", items: { type: "string" } },
   },
   required: [
     "brand_angle",
     "facebook_post",
     "instagram_caption",
-    "tiktok_caption",
-    "youtube_shorts_title",
-    "youtube_shorts_description",
     "hashtags",
-    "video_hooks",
-    "short_video_script",
     "image_overlay_text",
     "alt_text",
     "clean_ad_version",
@@ -211,11 +165,13 @@ const promoSchema = {
 
 function buildPrompt(body) {
   const product = normalizeProduct(body.product);
+  const requestedPlatform = cleanText(body.platform, "facebook");
+  const platform = requestedPlatform === "instagram" ? "instagram" : "facebook";
 
   return {
     product,
     mode: cleanText(body.mode, "product_drop"),
-    platform: cleanText(body.platform, "full_pack"),
+    platform,
     goal: cleanText(body.goal, "sell_product"),
     toneIntensity: cleanText(body.toneIntensity, "balanced"),
     notes: cleanText(body.notes),
@@ -227,24 +183,18 @@ function buildPrompt(body) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
     const body = await readJson(req);
     const expectedKey = process.env.PROMO_ADMIN_KEY;
 
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        error: "OPENAI_API_KEY is missing in Vercel environment variables.",
-      });
+      return res.status(500).json({ error: "OPENAI_API_KEY is missing in Vercel environment variables." });
     }
 
     if (!expectedKey) {
-      return res.status(500).json({
-        error: "PROMO_ADMIN_KEY is missing in Vercel environment variables.",
-      });
+      return res.status(500).json({ error: "PROMO_ADMIN_KEY is missing in Vercel environment variables." });
     }
 
     if (!safeEqual(body.adminKey, expectedKey)) {
@@ -262,30 +212,26 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         store: false,
-        max_output_tokens: 2600,
+        max_output_tokens: 1800,
         instructions: [
           "You are the private Local Jagoff Promo Generator.",
-          "Create fresh social media promo copy for Local Jagoff products.",
+          "Create fresh Facebook and Instagram promo copy for Local Jagoff products.",
           "Brand voice: Pittsburgh / Western PA, black-and-gold energy, funny, gritty, confident, sarcastic, direct, not corporate.",
           "Use 'jagoff' naturally as brand language, but do not use hateful slurs, protected-class insults, threats, sexual content, or anything that would make ads harder to approve.",
-          "Use emojis naturally but lightly when appropriate: Facebook 1-2 max, Instagram 2-4 max, TikTok 1-3 max, YouTube Shorts 0-2 max. Favor black/gold/energy emojis like 🖤 💛 ⚡ 👀 🔥. Clean Ad tone should use few or no emojis.",
+          "Use emojis naturally but lightly when appropriate: Facebook 1-2 max, Instagram 2-4 max. Favor black/gold/energy emojis like 🖤 💛 ⚡ 👀 🔥. Clean Ad tone should use few or no emojis.",
           "If the product name or category includes 724, keep the copy focused on 724 / Western PA and do not mention 412 unless the user specifically asks for both.",
-          "The CTA field should start with a short public CTA only. The server will append direct product links and UTM tracked social links automatically.",
+          "The CTA field should start with a short public CTA only. The server will append direct product links and Facebook/Instagram UTM tracked social links automatically.",
           "Never mention Printful, fulfillment vendors, supplier setup, internal APIs, production workflow, or private business operations.",
           "Do not claim exact material, weight, shipping time, origin, discounts, or guarantees unless the user supplied it in notes or product data.",
           "Avoid generic ecommerce fluff like elevate your wardrobe, premium quality, must-have, unleash your style, shop now before it is gone.",
           "Avoid overusing Pittsburgh clichés. Make each response feel like a new angle, not a canned sayings bank.",
           "If recentPhrases are supplied, do not reuse them closely.",
-          "Return platform-ready copy. Keep the captions usable without extra editing.",
+          "Return platform-ready Facebook and Instagram copy only.",
         ].join("\n"),
         input: [
           {
             role: "user",
-            content: `Generate a Local Jagoff promo package from this JSON:\n${JSON.stringify(
-              promptData,
-              null,
-              2
-            )}`,
+            content: `Generate a Local Jagoff Facebook/Instagram promo package from this JSON:\n${JSON.stringify(promptData, null, 2)}`,
           },
         ],
         text: {
@@ -302,9 +248,7 @@ export default async function handler(req, res) {
     const data = await openaiRes.json();
 
     if (!openaiRes.ok) {
-      return res.status(openaiRes.status).json({
-        error: data?.error?.message || "OpenAI request failed.",
-      });
+      return res.status(openaiRes.status).json({ error: data?.error?.message || "OpenAI request failed." });
     }
 
     const rawText = extractResponseText(data);
@@ -313,18 +257,12 @@ export default async function handler(req, res) {
     try {
       promo = JSON.parse(stripJsonFence(rawText));
     } catch (err) {
-      return res.status(500).json({
-        error: "The AI response was not valid JSON.",
-        raw: rawText,
-      });
+      return res.status(500).json({ error: "The AI response was not valid JSON.", raw: rawText });
     }
 
     return res.status(200).json({ promo: appendCtaHelper(promo, promptData) });
   } catch (err) {
     console.error("PROMO GENERATOR ERROR:", err);
-    return res.status(500).json({
-      error: "Failed to generate promo content.",
-      message: err.message,
-    });
+    return res.status(500).json({ error: "Failed to generate promo content.", message: err.message });
   }
 }
