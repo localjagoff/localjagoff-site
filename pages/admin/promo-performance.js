@@ -6,207 +6,30 @@ import { formatPlatformBundle } from "../../lib/promoBundleFormatter";
 const QUEUE_KEY = "localJagoffPromoQueue";
 const PERF_KEY = "localJagoffPromoPerformance";
 const BANK_KEY = "localJagoffProductPromoBank";
+const PLATFORM_LABELS = { facebook: "Facebook", instagram: "Instagram" };
+const TABS = [["overview", "Overview"], ["tracker", "Tracker"], ["winners", "Winners"], ["insights", "Insights"], ["meta", "Meta Status"]];
 
-const PLATFORM_LABELS = {
-  facebook: "Facebook",
-  instagram: "Instagram",
-  tiktok: "TikTok",
-  youtube_shorts: "YouTube Shorts",
-  full_pack: "Full Pack",
-};
-
-const TABS = [
-  ["overview", "Overview"],
-  ["tracker", "Tracker"],
-  ["winners", "Winners"],
-  ["insights", "Insights"],
-  ["meta", "Meta Status"],
-];
-
-function readArray(key) {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(key) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeArray(key, value) {
-  if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : []));
-}
-
-function cleanNumber(value) {
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : 0;
-}
-
-function cleanKey(value) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function queuePlatform(item) {
-  return item.scheduledPlatform || item.displayPlatform || item.platform || "facebook";
-}
-
-function queueItemId(item) {
-  return item.queueId || item.id || "";
-}
-
-function destinationName(item) {
-  return item.destinationLabel || item.destination || "No destination saved";
-}
-
-function livePostUrl(item) {
-  return String(item.platformPostUrl || item.postUrl || "").trim();
-}
-
-function bundleText(item) {
-  if (item.promo?.builder_final) return item.promo.builder_final;
-  const platform = queuePlatform(item);
-  const formatted = formatPlatformBundle(item.promo, platform);
-  if (formatted) return formatted;
-  return [
-    item.promo?.facebook_post,
-    item.promo?.instagram_caption,
-    item.promo?.tiktok_caption,
-    item.promo?.youtube_shorts_title,
-    item.promo?.youtube_shorts_description,
-    item.promo?.cta,
-  ].filter(Boolean).join("\n\n");
-}
-
-function niceDate(value) {
-  if (!value) return "No date";
-  try {
-    return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return value;
-  }
-}
-
-function csvEscape(value) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
-}
-
-function downloadFile(filename, content, type = "text/plain") {
-  if (typeof document === "undefined") return;
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function copyText(value) {
-  if (!value || typeof navigator === "undefined") return false;
-  navigator.clipboard.writeText(value);
-  return true;
-}
-
-function score(entry) {
-  return cleanNumber(entry.views) + cleanNumber(entry.likes) * 3 + cleanNumber(entry.comments) * 5 + cleanNumber(entry.shares) * 8 + cleanNumber(entry.clicks) * 10 + cleanNumber(entry.sales) * 25;
-}
-
-function makePerformanceEntry(item) {
-  const postUrl = livePostUrl(item);
-  return {
-    id: `perf-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    queueId: queueItemId(item),
-    createdAt: new Date().toISOString(),
-    postedDate: item.scheduledDate || new Date().toISOString().slice(0, 10),
-    postedAt: item.postedAt || "",
-    platform: queuePlatform(item),
-    destination: item.destination || "",
-    destinationLabel: destinationName(item),
-    productId: String(item.product?.id || ""),
-    productName: item.product?.name || "Queued Promo",
-    productImage: item.product?.thumbnail_url || item.product?.image || "",
-    source: item.source || "Posted Queue Item",
-    copy: bundleText(item),
-    postUrl,
-    platformPostUrl: postUrl,
-    postId: item.postId || item.platformPostId || "",
-    metricsStatus: postUrl ? "Needs Metrics" : "Needs URL",
-    lastMetricsSync: "",
-    views: 0,
-    likes: 0,
-    comments: 0,
-    shares: 0,
-    clicks: 0,
-    sales: 0,
-    notes: "",
-    winner: false,
-  };
-}
-
-function buildCsv(items) {
-  const headers = ["posted_date", "platform", "destination", "product", "views", "likes", "comments", "shares", "clicks", "sales", "score", "winner", "metrics_status", "post_url", "notes", "copy"];
-  const rows = items.map((item) => [item.postedDate, PLATFORM_LABELS[item.platform] || item.platform, destinationName(item), item.productName, item.views, item.likes, item.comments, item.shares, item.clicks, item.sales, score(item), item.winner ? "Yes" : "No", item.metricsStatus || (item.postUrl ? "Needs Metrics" : "Needs URL"), item.postUrl, item.notes, item.copy]);
-  return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
-}
-
-function buildWinnersText(items) {
-  const winners = items.filter((item) => item.winner).sort((a, b) => score(b) - score(a));
-  if (!winners.length) return "No winners marked yet.";
-  return [
-    "Local Jagoff Promo Winners",
-    `Generated: ${new Date().toLocaleString()}`,
-    "",
-    ...winners.map((item, index) => [
-      `${index + 1}. ${item.productName} • ${PLATFORM_LABELS[item.platform] || item.platform} • ${destinationName(item)} • Score ${score(item)}`,
-      item.postUrl ? `Post URL: ${item.postUrl}` : "Post URL: not added",
-      item.metricsStatus ? `Metrics Status: ${item.metricsStatus}` : "Metrics Status: not set",
-      item.notes ? `Notes: ${item.notes}` : "Notes: none",
-      "",
-      item.copy || "No copy saved.",
-    ].join("\n")),
-  ].join("\n\n--------------------\n\n");
-}
-
-function buildBankEntry(entry) {
-  return {
-    id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    createdAt: new Date().toISOString(),
-    productId: String(entry.productId || ""),
-    productName: entry.productName || "Unknown product",
-    productImage: entry.productImage || "",
-    productCategory: "gear",
-    type: "caption",
-    platform: entry.platform || "general",
-    text: entry.copy || "",
-    source: "Performance Winner",
-    tag: `${destinationName(entry)} • Winner score: ${score(entry)}`,
-    status: "Approved",
-  };
-}
-
-function winnerBankKey(entry) {
-  return [cleanKey(entry.productId), cleanKey(entry.productName), cleanKey(entry.platform || "general"), cleanKey(destinationName(entry)), cleanKey(entry.copy || entry.text)].join("|");
-}
-
-function bankItemKey(item) {
-  return [cleanKey(item.productId), cleanKey(item.productName), cleanKey(item.platform || "general"), cleanKey(item.tag), cleanKey(item.text)].join("|");
-}
-
-function groupStats(items, field) {
-  const map = new Map();
-  items.forEach((item) => {
-    const key = field === "destination" ? destinationName(item) : item[field] || "Unknown";
-    const current = map.get(key) || { name: key, count: 0, score: 0, views: 0, clicks: 0, sales: 0, winners: 0 };
-    current.count += 1;
-    current.score += score(item);
-    current.views += cleanNumber(item.views);
-    current.clicks += cleanNumber(item.clicks);
-    current.sales += cleanNumber(item.sales);
-    if (item.winner) current.winners += 1;
-    map.set(key, current);
-  });
-  return Array.from(map.values()).sort((a, b) => b.score - a.score).slice(0, 8);
-}
+function readArray(key) { if (typeof window === "undefined") return []; try { const parsed = JSON.parse(window.localStorage.getItem(key) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+function writeArray(key, value) { if (typeof window !== "undefined") window.localStorage.setItem(key, JSON.stringify(Array.isArray(value) ? value : [])); }
+function cleanNumber(value) { const number = Number(value); return Number.isFinite(number) && number >= 0 ? number : 0; }
+function cleanKey(value) { return String(value || "").trim().toLowerCase().replace(/\s+/g, " "); }
+function platformOf(item) { return item.scheduledPlatform === "instagram" || item.displayPlatform === "instagram" || item.platform === "instagram" ? "instagram" : "facebook"; }
+function queueItemId(item) { return item.queueId || item.id || ""; }
+function destinationName(item) { return item.destinationLabel || item.destination || "No destination saved"; }
+function livePostUrl(item) { return String(item.platformPostUrl || item.postUrl || "").trim(); }
+function bundleText(item) { if (item.promo?.builder_final) return item.promo.builder_final; return formatPlatformBundle(item.promo, platformOf(item)) || [item.promo?.facebook_post, item.promo?.instagram_caption, item.promo?.cta].filter(Boolean).join("\n\n"); }
+function niceDate(value) { if (!value) return "No date"; try { return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); } catch { return value; } }
+function csvEscape(value) { return `"${String(value ?? "").replace(/"/g, '""')}"`; }
+function downloadFile(filename, content, type = "text/plain") { if (typeof document === "undefined") return; const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url); }
+function copyText(value) { if (!value || typeof navigator === "undefined") return false; navigator.clipboard.writeText(value); return true; }
+function score(entry) { return cleanNumber(entry.views) + cleanNumber(entry.likes) * 3 + cleanNumber(entry.comments) * 5 + cleanNumber(entry.shares) * 8 + cleanNumber(entry.clicks) * 10 + cleanNumber(entry.sales) * 25; }
+function entryPlatform(entry) { return entry.platform === "instagram" ? "instagram" : "facebook"; }
+function makePerformanceEntry(item) { const postUrl = livePostUrl(item); const platform = platformOf(item); return { id: `perf-${Date.now()}-${Math.random().toString(16).slice(2)}`, queueId: queueItemId(item), createdAt: new Date().toISOString(), postedDate: item.scheduledDate || new Date().toISOString().slice(0, 10), postedAt: item.postedAt || "", platform, destination: item.destination || "", destinationLabel: destinationName(item), productId: String(item.product?.id || ""), productName: item.product?.name || "Queued Promo", productImage: item.product?.thumbnail_url || item.product?.image || "", source: item.source || "Posted Queue Item", copy: bundleText(item), postUrl, platformPostUrl: postUrl, postId: item.postId || item.platformPostId || "", metricsStatus: postUrl ? "Needs Metrics" : "Needs URL", lastMetricsSync: "", views: 0, likes: 0, comments: 0, shares: 0, clicks: 0, sales: 0, notes: "", winner: false }; }
+function buildCsv(items) { const headers = ["posted_date", "platform", "destination", "product", "views", "likes", "comments", "shares", "clicks", "sales", "score", "winner", "metrics_status", "post_url", "notes", "copy"]; const rows = items.map((item) => [item.postedDate, PLATFORM_LABELS[entryPlatform(item)], destinationName(item), item.productName, item.views, item.likes, item.comments, item.shares, item.clicks, item.sales, score(item), item.winner ? "Yes" : "No", item.metricsStatus || (item.postUrl ? "Needs Metrics" : "Needs URL"), item.postUrl, item.notes, item.copy]); return [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n"); }
+function buildWinnersText(items) { const winners = items.filter((item) => item.winner).sort((a, b) => score(b) - score(a)); if (!winners.length) return "No winners marked yet."; return ["Local Jagoff Promo Winners", `Generated: ${new Date().toLocaleString()}`, "", ...winners.map((item, index) => [`${index + 1}. ${item.productName} • ${PLATFORM_LABELS[entryPlatform(item)]} • ${destinationName(item)} • Score ${score(item)}`, item.postUrl ? `Post URL: ${item.postUrl}` : "Post URL: not added", item.notes ? `Notes: ${item.notes}` : "Notes: none", "", item.copy || "No copy saved."].join("\n"))].join("\n\n--------------------\n\n"); }
+function buildBankEntry(entry) { return { id: `bank-${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt: new Date().toISOString(), productId: String(entry.productId || ""), productName: entry.productName || "Unknown product", productImage: entry.productImage || "", productCategory: "gear", type: "caption", platform: entryPlatform(entry), text: entry.copy || "", source: "Performance Winner", tag: `${destinationName(entry)} • Winner score: ${score(entry)}`, status: "Approved" }; }
+function bankKey(item) { return [cleanKey(item.productId), cleanKey(item.productName), cleanKey(item.platform), cleanKey(item.text || item.copy)].join("|"); }
+function groupStats(items, field) { const map = new Map(); items.forEach((item) => { const key = field === "destination" ? destinationName(item) : field === "platform" ? entryPlatform(item) : item[field] || "Unknown"; const current = map.get(key) || { name: key, count: 0, score: 0, views: 0, clicks: 0, sales: 0, winners: 0 }; current.count += 1; current.score += score(item); current.views += cleanNumber(item.views); current.clicks += cleanNumber(item.clicks); current.sales += cleanNumber(item.sales); if (item.winner) current.winners += 1; map.set(key, current); }); return Array.from(map.values()).sort((a, b) => b.score - a.score).slice(0, 8); }
 
 export default function PromoPerformance() {
   const [queue, setQueue] = useState([]);
@@ -218,288 +41,30 @@ export default function PromoPerformance() {
   const [fetchingId, setFetchingId] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    setQueue(readArray(QUEUE_KEY));
-    setPerformance(readArray(PERF_KEY));
-    const view = new URLSearchParams(window.location.search).get("view");
-    if (view && TABS.some(([value]) => value === view)) setActiveTab(view);
-  }, []);
+  useEffect(() => { setQueue(readArray(QUEUE_KEY)); setPerformance(readArray(PERF_KEY)); const view = new URLSearchParams(window.location.search).get("view"); if (view && TABS.some(([value]) => value === view)) setActiveTab(view); }, []);
 
   const postedQueueItems = useMemo(() => queue.filter((item) => item.status === "Posted"), [queue]);
-  const unsyncedPostedItems = useMemo(() => {
-    const existingIds = new Set(performance.map((item) => item.queueId).filter(Boolean));
-    return postedQueueItems.filter((item) => !existingIds.has(queueItemId(item)));
-  }, [postedQueueItems, performance]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return performance
-      .filter((item) => platformFilter === "all" || item.platform === platformFilter)
-      .filter((item) => !winnerOnly || item.winner)
-      .filter((item) => {
-        if (!q) return true;
-        return [item.productName, item.platform, destinationName(item), item.destination, item.notes, item.copy, item.postUrl, item.metricsStatus, item.postId].join(" ").toLowerCase().includes(q);
-      })
-      .sort((a, b) => score(b) - score(a));
-  }, [performance, platformFilter, winnerOnly, search]);
-
-  const stats = useMemo(() => ({
-    tracked: performance.length,
-    winners: performance.filter((item) => item.winner).length,
-    postedQueue: postedQueueItems.length,
-    unsynced: unsyncedPostedItems.length,
-    needsUrl: performance.filter((item) => !item.postUrl).length,
-    needsMetrics: performance.filter((item) => item.postUrl && item.metricsStatus !== "Synced").length,
-    synced: performance.filter((item) => item.metricsStatus === "Synced").length,
-    totalViews: performance.reduce((sum, item) => sum + cleanNumber(item.views), 0),
-    totalClicks: performance.reduce((sum, item) => sum + cleanNumber(item.clicks), 0),
-    totalSales: performance.reduce((sum, item) => sum + cleanNumber(item.sales), 0),
-    topScore: performance.reduce((max, item) => Math.max(max, score(item)), 0),
-  }), [performance, postedQueueItems, unsyncedPostedItems]);
-
+  const unsyncedPostedItems = useMemo(() => { const existingIds = new Set(performance.map((item) => item.queueId).filter(Boolean)); return postedQueueItems.filter((item) => !existingIds.has(queueItemId(item))); }, [postedQueueItems, performance]);
+  const filtered = useMemo(() => { const q = search.trim().toLowerCase(); return performance.filter((item) => platformFilter === "all" || entryPlatform(item) === platformFilter).filter((item) => !winnerOnly || item.winner).filter((item) => !q || [item.productName, entryPlatform(item), destinationName(item), item.notes, item.copy, item.postUrl, item.metricsStatus, item.postId].join(" ").toLowerCase().includes(q)).sort((a, b) => score(b) - score(a)); }, [performance, platformFilter, winnerOnly, search]);
+  const stats = useMemo(() => ({ tracked: performance.length, winners: performance.filter((item) => item.winner).length, postedQueue: postedQueueItems.length, unsynced: unsyncedPostedItems.length, needsUrl: performance.filter((item) => !item.postUrl).length, needsMetrics: performance.filter((item) => item.postUrl && item.metricsStatus !== "Synced").length, synced: performance.filter((item) => item.metricsStatus === "Synced").length, totalViews: performance.reduce((sum, item) => sum + cleanNumber(item.views), 0), totalClicks: performance.reduce((sum, item) => sum + cleanNumber(item.clicks), 0), totalSales: performance.reduce((sum, item) => sum + cleanNumber(item.sales), 0), topScore: performance.reduce((max, item) => Math.max(max, score(item)), 0) }), [performance, postedQueueItems, unsyncedPostedItems]);
   const platformInsights = useMemo(() => groupStats(performance, "platform"), [performance]);
   const productInsights = useMemo(() => groupStats(performance, "productName"), [performance]);
   const destinationInsights = useMemo(() => groupStats(performance, "destination"), [performance]);
   const topWinners = useMemo(() => performance.filter((item) => item.winner).sort((a, b) => score(b) - score(a)), [performance]);
-
-  const savePerformance = (next) => {
-    setPerformance(next);
-    writeArray(PERF_KEY, next);
-  };
-
-  const syncPosted = () => {
-    const additions = unsyncedPostedItems.map(makePerformanceEntry);
-    if (additions.length === 0) {
-      setMessage("No new posted queue items to sync.");
-      return;
-    }
-    savePerformance([...additions, ...performance].slice(0, 500));
-    setMessage(`${additions.length} posted item${additions.length === 1 ? "" : "s"} added to Performance.`);
-  };
-
-  const updateEntry = (id, field, value) => {
-    const next = performance.map((item) => {
-      if (item.id !== id) return item;
-      const updated = { ...item, [field]: value };
-      if (field === "postUrl") {
-        updated.platformPostUrl = value;
-        updated.metricsStatus = value ? (item.metricsStatus === "Synced" ? "Synced" : "Needs Metrics") : "Needs URL";
-      }
-      return updated;
-    });
-    savePerformance(next);
-  };
-
+  const savePerformance = (next) => { setPerformance(next); writeArray(PERF_KEY, next); };
+  const syncPosted = () => { const additions = unsyncedPostedItems.map(makePerformanceEntry); if (!additions.length) return setMessage("No new posted queue items to sync."); savePerformance([...additions, ...performance].slice(0, 500)); setMessage(`${additions.length} posted item${additions.length === 1 ? "" : "s"} added to Performance.`); };
+  const updateEntry = (id, field, value) => { const next = performance.map((item) => item.id === id ? { ...item, [field]: field === "postUrl" ? String(value || "").trim() : value, ...(field === "postUrl" ? { platformPostUrl: String(value || "").trim(), metricsStatus: value ? (item.metricsStatus === "Synced" ? "Synced" : "Needs Metrics") : "Needs URL" } : {}) } : item); savePerformance(next); };
   const updateNumber = (id, field, value) => updateEntry(id, field, cleanNumber(value));
   const removeEntry = (id) => { savePerformance(performance.filter((item) => item.id !== id)); setMessage("Performance entry removed."); };
-  const exportCsv = () => { downloadFile("local-jagoff-promo-performance.csv", buildCsv(filtered), "text/csv"); setMessage("Performance CSV exported."); };
-  const exportJson = () => { downloadFile("local-jagoff-promo-performance.json", JSON.stringify({ exportedAt: new Date().toISOString(), performance }, null, 2), "application/json"); setMessage("Performance JSON exported."); };
-  const exportWinners = () => { downloadFile("local-jagoff-promo-winners.txt", buildWinnersText(performance)); setMessage("Winners TXT exported."); };
-  const copyWinners = () => { const ok = copyText(buildWinnersText(performance)); setMessage(ok ? "Copied winners summary." : "No winners to copy."); };
+  const clearFilters = () => { setPlatformFilter("all"); setWinnerOnly(false); setSearch(""); };
+  const saveWinnerToBank = (entry) => { if (!entry.copy) return setMessage("No copy found to save as a promo part."); const bank = readArray(BANK_KEY); const existingKeys = new Set(bank.map(bankKey)); const newEntry = buildBankEntry(entry); if (!existingKeys.has(bankKey(newEntry))) writeArray(BANK_KEY, [newEntry, ...bank].slice(0, 800)); updateEntry(entry.id, "winner", true); setMessage("Winner saved as a promo part."); };
+  const applyMetricResult = (entry, data) => { const metrics = data?.metrics || {}; setPerformance((current) => { const next = current.map((item) => item.id === entry.id ? { ...item, views: cleanNumber(metrics.views ?? item.views), likes: cleanNumber(metrics.likes ?? item.likes), comments: cleanNumber(metrics.comments ?? item.comments), shares: cleanNumber(metrics.shares ?? item.shares), clicks: cleanNumber(metrics.clicks ?? item.clicks), postId: data?.postId || item.postId || "", metricsStatus: data?.metricsStatus || item.metricsStatus || "Needs Metrics", lastMetricsSync: new Date().toISOString() } : item); writeArray(PERF_KEY, next); return next; }); };
+  const fetchMetrics = async (entry) => { if (!entry.postUrl) return setMessage("Add a live post URL before fetching metrics."); setFetchingId(entry.id); try { const res = await fetch("/api/meta/fetch-post-metrics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postUrl: entry.postUrl, postId: entry.postId, platform: entryPlatform(entry), destination: entry.destination, destinationLabel: destinationName(entry) }) }); const data = await res.json(); applyMetricResult(entry, data); setMessage(data?.message || "Metrics request finished."); } catch { setMessage("Metrics request failed. Try again after deploy finishes."); } finally { setFetchingId(""); } };
+  const fetchAllNeedsMetrics = async () => { const targets = performance.filter((item) => item.postUrl && item.metricsStatus !== "Synced").slice(0, 25); if (!targets.length) return setMessage("No entries need metrics right now."); for (const item of targets) await fetchMetrics(item); };
 
-  const saveWinnerToBank = (entry) => {
-    if (!entry.copy) {
-      setMessage("No copy found to save as a promo part.");
-      return;
-    }
-    const bank = readArray(BANK_KEY);
-    const existingKeys = new Set(bank.map(bankItemKey));
-    if (existingKeys.has(winnerBankKey(entry))) {
-      updateEntry(entry.id, "winner", true);
-      setMessage("Already saved as a promo part. Marked as winner.");
-      return;
-    }
-    writeArray(BANK_KEY, [buildBankEntry(entry), ...bank].slice(0, 800));
-    updateEntry(entry.id, "winner", true);
-    setMessage("Winner saved as a promo part.");
-  };
-
-  const applyMetricResult = (entry, data) => {
-    const metrics = data?.metrics || {};
-    setPerformance((current) => {
-      const next = current.map((item) => item.id === entry.id ? {
-        ...item,
-        views: cleanNumber(metrics.views ?? item.views),
-        likes: cleanNumber(metrics.likes ?? item.likes),
-        comments: cleanNumber(metrics.comments ?? item.comments),
-        shares: cleanNumber(metrics.shares ?? item.shares),
-        clicks: cleanNumber(metrics.clicks ?? item.clicks),
-        postId: data?.postId || item.postId || "",
-        metricsStatus: data?.metricsStatus || item.metricsStatus || "Needs Metrics",
-        lastMetricsSync: new Date().toISOString(),
-      } : item);
-      writeArray(PERF_KEY, next);
-      return next;
-    });
-  };
-
-  const fetchMetrics = async (entry) => {
-    if (!entry.postUrl) {
-      setMessage("Add a live post URL before fetching metrics.");
-      return;
-    }
-    setFetchingId(entry.id);
-    try {
-      const res = await fetch("/api/meta/fetch-post-metrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postUrl: entry.postUrl,
-          postId: entry.postId,
-          platform: entry.platform,
-          destination: entry.destination,
-          destinationLabel: destinationName(entry),
-        }),
-      });
-      const data = await res.json();
-      applyMetricResult(entry, data);
-      setMessage(data?.message || "Metrics request finished.");
-    } catch {
-      setMessage("Metrics request failed. Try again after deploy finishes.");
-    } finally {
-      setFetchingId("");
-    }
-  };
-
-  const fetchAllNeedsMetrics = async () => {
-    const targets = performance.filter((item) => item.postUrl && item.metricsStatus !== "Synced").slice(0, 25);
-    if (!targets.length) {
-      setMessage("No entries need metrics right now.");
-      return;
-    }
-    for (const item of targets) await fetchMetrics(item);
-  };
-
-  const clearFilters = () => {
-    setPlatformFilter("all");
-    setWinnerOnly(false);
-    setSearch("");
-  };
-
-  return (
-    <div className="page">
-      <Head><title>Local Jagoff Promo Performance</title><meta name="robots" content="noindex,nofollow" /></Head>
-      <PromoAdminNav />
-      <main className="wrap">
-        <header className="hero">
-          <div>
-            <p className="kicker">PRIVATE ADMIN TOOL</p>
-            <h1>Performance</h1>
-            <p>One dashboard for tracking posts, syncing live URLs, fetching Meta metrics, marking winners, and turning strong copy into reusable Promo Parts.</p>
-          </div>
-          <div className="heroActions">
-            <button type="button" className="primary" onClick={syncPosted}>Sync Posted</button>
-            <button type="button" onClick={fetchAllNeedsMetrics}>Fetch Metrics</button>
-          </div>
-        </header>
-
-        <nav className="tabs">
-          {TABS.map(([value, label]) => <button key={value} type="button" className={activeTab === value ? "active" : ""} onClick={() => setActiveTab(value)}>{label}</button>)}
-        </nav>
-
-        <section className="stats">
-          <button type="button" onClick={() => { setActiveTab("tracker"); clearFilters(); }}><strong>{stats.tracked}</strong><span>Tracked</span></button>
-          <button type="button" onClick={() => { setActiveTab("tracker"); setSearch("Needs URL"); }}><strong>{stats.needsUrl}</strong><span>Needs URL</span></button>
-          <button type="button" onClick={() => { setActiveTab("meta"); setSearch("Needs Metrics"); }}><strong>{stats.needsMetrics}</strong><span>Needs Metrics</span></button>
-          <button type="button" onClick={() => { setActiveTab("winners"); setWinnerOnly(true); }}><strong>{stats.winners}</strong><span>Winners</span></button>
-          <div><strong>{stats.totalViews}</strong><span>Views</span></div>
-          <div><strong>{stats.totalClicks}</strong><span>Clicks</span></div>
-          <div><strong>{stats.totalSales}</strong><span>Sales</span></div>
-          <div><strong>{stats.unsynced}</strong><span>Unsynced</span></div>
-        </section>
-
-        {message && <section className="message">{message}</section>}
-
-        {activeTab === "overview" && (
-          <section className="overviewGrid">
-            <article className="panel highlight"><p className="mini">Next action</p><h2>{stats.unsynced > 0 ? "Sync posted items" : stats.needsMetrics > 0 ? "Fetch or enter metrics" : stats.winners === 0 ? "Mark winners" : "Review insights"}</h2><p>{stats.unsynced > 0 ? "You have posted queue items that are not in Performance yet." : stats.needsMetrics > 0 ? "Some live posts still need metrics added or fetched." : stats.winners === 0 ? "No winners marked yet. Use Tracker or Winners to pick what worked." : "Use Insights to see what platforms, products, and destinations are working."}</p><div className="actions"><button type="button" className="primary" onClick={syncPosted}>Sync Posted Items</button><button type="button" onClick={() => setActiveTab("tracker")}>Open Tracker</button></div></article>
-            <article className="panel"><p className="mini">Top score</p><h2>{stats.topScore}</h2><p>Highest weighted post score using views, likes, comments, shares, clicks, and sales.</p></article>
-            <article className="panel"><p className="mini">Meta status</p><h2>{stats.synced}/{stats.tracked}</h2><p>Entries marked Synced after a metrics fetch. The fetch endpoint stays safe until Meta credentials are configured.</p></article>
-            <article className="panel"><p className="mini">Winner bank</p><h2>{stats.winners}</h2><p>Winners can be saved into Promo Parts so Promo Studio can reuse what worked.</p></article>
-          </section>
-        )}
-
-        {(activeTab === "tracker" || activeTab === "meta") && (
-          <>
-            <section className="toolbar">
-              <button type="button" className="primary" onClick={syncPosted}>Sync Posted Items</button>
-              <button type="button" onClick={fetchAllNeedsMetrics}>Fetch All Needs Metrics</button>
-              <button type="button" onClick={exportCsv}>Export CSV</button>
-              <button type="button" onClick={exportJson}>Export JSON</button>
-              <select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option>{Object.entries(PLATFORM_LABELS).filter(([value]) => value !== "full_pack").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search product, destination, URL, status..." />
-              <label className="check"><input type="checkbox" checked={winnerOnly} onChange={(e) => setWinnerOnly(e.target.checked)} /> Winners only</label>
-              <button type="button" onClick={clearFilters}>Clear Filters</button>
-            </section>
-
-            <section className="metaStrip">
-              <div><strong>{stats.unsynced}</strong><span>posted queue items need sync</span></div>
-              <div><strong>{stats.needsUrl}</strong><span>entries need live URLs</span></div>
-              <div><strong>{stats.needsMetrics}</strong><span>entries need metrics</span></div>
-              <div><strong>{stats.synced}</strong><span>entries synced</span></div>
-            </section>
-
-            {filtered.length === 0 && <section className="empty">No performance entries match this view. Mark queue items Posted, then click Sync Posted Items.</section>}
-            <section className="grid">
-              {filtered.map((entry) => (
-                <article key={entry.id} className="card">
-                  <div className="top">
-                    <div><p className="mini">{niceDate(entry.postedDate)} • {PLATFORM_LABELS[entry.platform] || entry.platform}</p><h2>{entry.productName}</h2><span className={`score ${entry.winner ? "winner" : ""}`}>Score {score(entry)}</span><span className="destinationPill">{destinationName(entry)}</span></div>
-                    {entry.productImage && <img src={entry.productImage} alt={entry.productName} />}
-                  </div>
-
-                  <label className="urlLabel">Live Post URL<input value={entry.postUrl || ""} onChange={(e) => updateEntry(entry.id, "postUrl", e.target.value)} placeholder="Paste live post URL..." /></label>
-                  <div className="metricsStatus"><strong>{entry.metricsStatus || (entry.postUrl ? "Needs Metrics" : "Needs URL")}</strong>{entry.lastMetricsSync && <span>Last sync: {new Date(entry.lastMetricsSync).toLocaleString()}</span>}</div>
-
-                  <div className="metricsGrid">
-                    {[["views", "Views"], ["likes", "Likes"], ["comments", "Comments"], ["shares", "Shares"], ["clicks", "Clicks"], ["sales", "Sales"]].map(([field, label]) => <label key={field}>{label}<input type="number" min="0" value={entry[field] || 0} onChange={(e) => updateNumber(entry.id, field, e.target.value)} /></label>)}
-                  </div>
-
-                  <label className="notesLabel">Notes<textarea value={entry.notes || ""} onChange={(e) => updateEntry(entry.id, "notes", e.target.value)} placeholder="What worked, what didn't, visual used, timing, comments..." /></label>
-                  <pre>{entry.copy || "No copy saved."}</pre>
-
-                  <div className="actions">
-                    <button type="button" className="primary" onClick={() => fetchMetrics(entry)} disabled={fetchingId === entry.id}>{fetchingId === entry.id ? "Fetching..." : "Fetch Metrics"}</button>
-                    <button type="button" onClick={() => copyText(entry.copy)}>Copy Copy</button>
-                    <button type="button" className={entry.winner ? "winnerButton" : ""} onClick={() => updateEntry(entry.id, "winner", !entry.winner)}>{entry.winner ? "Winner ✓" : "Mark Winner"}</button>
-                    <button type="button" onClick={() => saveWinnerToBank(entry)}>Save to Promo Parts</button>
-                    {entry.postUrl && <a href={entry.postUrl} target="_blank" rel="noreferrer">Open Post</a>}
-                    <button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button>
-                  </div>
-                </article>
-              ))}
-            </section>
-          </>
-        )}
-
-        {activeTab === "winners" && (
-          <section className="panel">
-            <div className="panelHead"><div><p className="mini">Winners</p><h2>Best performing posts</h2></div><div className="actions"><button type="button" className="primary" onClick={copyWinners}>Copy Winners</button><button type="button" onClick={exportWinners}>Export TXT</button></div></div>
-            {topWinners.length === 0 ? <p className="muted">No winners marked yet.</p> : <div className="winnerList">{topWinners.map((entry, index) => <article key={entry.id}><strong>#{index + 1} {entry.productName}</strong><span>{PLATFORM_LABELS[entry.platform] || entry.platform} • {destinationName(entry)} • Score {score(entry)}</span><p>{entry.notes || "No notes added."}</p><div className="actions"><button type="button" onClick={() => saveWinnerToBank(entry)}>Save to Promo Parts</button>{entry.postUrl && <a href={entry.postUrl} target="_blank" rel="noreferrer">Open Post</a>}</div></article>)}</div>}
-          </section>
-        )}
-
-        {activeTab === "insights" && (
-          <section className="insightGrid">
-            <InsightPanel title="Platform winners" rows={platformInsights} labeler={(name) => PLATFORM_LABELS[name] || name} />
-            <InsightPanel title="Product winners" rows={productInsights} />
-            <InsightPanel title="Destination winners" rows={destinationInsights} />
-            <article className="panel"><p className="mini">Recommendation</p><h2>{platformInsights[0] ? `Lean into ${PLATFORM_LABELS[platformInsights[0].name] || platformInsights[0].name}` : "Need more data"}</h2><p>{platformInsights[0] ? `This platform currently has the strongest weighted score. Keep tracking views, clicks, shares, and sales before making bigger decisions.` : "Post and track more items before trusting the insights."}</p></article>
-          </section>
-        )}
-      </main>
-
-      <style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1220px;margin:0 auto;padding-top:34px}.hero,.stats div,.stats button,.toolbar,.message,.empty,.card,.panel,.metaStrip div{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;padding:24px;margin-bottom:14px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{margin:0;font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.heroActions,.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}.tabs button,.toolbar button,.actions button,.actions a,.heroActions button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;text-decoration:none;cursor:pointer}.tabs button.active,.primary,.winnerButton{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}.stats div,.stats button{padding:16px;text-align:left;color:#fff;cursor:pointer}.stats strong,.metaStrip strong{display:block;color:#ffe600;font-size:30px;line-height:1.1;overflow-wrap:anywhere}.stats span,.metaStrip span{display:block;margin-top:8px;color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.overviewGrid,.insightGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel{padding:20px}.panel.highlight{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.12),rgba(13,13,13,.92))}.panel h2{margin:0 0 10px;color:#ffe600;text-transform:uppercase}.panel p,.muted{color:#ddd;line-height:1.55}.toolbar{display:grid;grid-template-columns:repeat(4,auto) minmax(150px,1fr) minmax(220px,2fr) auto auto;gap:10px;padding:14px;margin-bottom:14px;align-items:center}input,select,textarea{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px;outline:none}textarea{min-height:80px;resize:vertical}.check{display:flex;align-items:center;gap:8px;color:#ddd;font-weight:900;font-size:12px;text-transform:uppercase}.check input{width:auto}.metaStrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.metaStrip div{padding:16px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:12px}.top h2{margin:0 0 8px;color:#fff;text-transform:uppercase}.top img{width:86px;height:86px;object-fit:contain;background:#070707;border-radius:14px}.score,.destinationPill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333;margin:4px 6px 0 0}.score.winner{background:#ffe600;color:#000;border-color:#ffe600}.destinationPill{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.urlLabel,.notesLabel,.metricsGrid label{display:block;margin-top:12px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.urlLabel input,.notesLabel textarea{margin-top:8px}.metricsStatus{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0;padding:10px;border-radius:14px;background:#050505;border:1px solid #242424}.metricsStatus strong{color:#ffe600;text-transform:uppercase}.metricsStatus span{color:#aaa;font-size:12px}.metricsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metricsGrid input{margin-top:6px}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:220px;overflow:auto}.danger{color:#ff9a9a!important}.panelHead{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.winnerList{display:grid;gap:12px}.winnerList article,.insightRows article{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:#050505}.winnerList strong,.winnerList span{display:block}.winnerList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.winnerList p{color:#ddd}.insightRows{display:grid;gap:10px}.insightRows article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}.insightRows strong{display:block;color:#fff}.insightRows span{display:block;margin-top:5px;color:#aaa;font-size:12px;text-transform:uppercase}.insightScore{color:#ffe600;font-weight:900;font-size:22px}@media(max-width:980px){.hero,.toolbar,.grid,.overviewGrid,.insightGrid,.metaStrip{grid-template-columns:1fr}.panelHead{display:grid}.heroActions button,.toolbar button,.actions button,.actions a{width:100%;justify-content:center;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}.metricsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.metricsGrid{grid-template-columns:1fr}}`}</style>
-    </div>
-  );
+  return <div className="page"><Head><title>Local Jagoff Promo Performance</title><meta name="robots" content="noindex,nofollow" /></Head><PromoAdminNav /><main className="wrap"><header className="hero"><div><p className="kicker">PRIVATE ADMIN TOOL</p><h1>Performance</h1><p>Facebook and Instagram tracking dashboard for live URLs, metrics, winners, and reusable Promo Parts.</p></div><div className="heroActions"><button type="button" className="primary" onClick={syncPosted}>Sync Posted</button><button type="button" onClick={fetchAllNeedsMetrics}>Fetch Metrics</button></div></header><nav className="tabs">{TABS.map(([value, label]) => <button key={value} type="button" className={activeTab === value ? "active" : ""} onClick={() => setActiveTab(value)}>{label}</button>)}</nav><section className="stats">{[[stats.tracked,"Tracked"],[stats.needsUrl,"Needs URL"],[stats.needsMetrics,"Needs Metrics"],[stats.winners,"Winners"],[stats.totalViews,"Views"],[stats.totalClicks,"Clicks"],[stats.totalSales,"Sales"],[stats.unsynced,"Unsynced"]].map(([value,label]) => <button key={label} type="button" onClick={() => label === "Winners" ? setActiveTab("winners") : setActiveTab("tracker")}><strong>{value}</strong><span>{label}</span></button>)}</section>{message && <section className="message">{message}</section>}{activeTab === "overview" && <section className="overviewGrid"><article className="panel highlight"><p className="mini">Next action</p><h2>{stats.unsynced > 0 ? "Sync posted items" : stats.needsMetrics > 0 ? "Fetch or enter metrics" : stats.winners === 0 ? "Mark winners" : "Review insights"}</h2><p>{stats.unsynced > 0 ? "You have posted queue items that are not in Performance yet." : stats.needsMetrics > 0 ? "Some live posts still need metrics added or fetched." : stats.winners === 0 ? "No winners marked yet. Use Tracker to pick what worked." : "Use Insights to see what platforms, products, and destinations are working."}</p><div className="actions"><button type="button" className="primary" onClick={syncPosted}>Sync Posted Items</button><button type="button" onClick={() => setActiveTab("tracker")}>Open Tracker</button></div></article><article className="panel"><p className="mini">Top score</p><h2>{stats.topScore}</h2><p>Highest weighted post score using views, likes, comments, shares, clicks, and sales.</p></article><article className="panel"><p className="mini">Meta status</p><h2>{stats.synced}/{stats.tracked}</h2><p>Entries marked Synced after a metrics fetch.</p></article><article className="panel"><p className="mini">Winner bank</p><h2>{stats.winners}</h2><p>Winners can be saved into Promo Parts so strong copy is not lost.</p></article></section>}{(activeTab === "tracker" || activeTab === "meta") && <><section className="toolbar"><button type="button" className="primary" onClick={syncPosted}>Sync Posted Items</button><button type="button" onClick={fetchAllNeedsMetrics}>Fetch All Needs Metrics</button><button type="button" onClick={() => downloadFile("local-jagoff-promo-performance.csv", buildCsv(filtered), "text/csv")}>Export CSV</button><button type="button" onClick={() => downloadFile("local-jagoff-promo-performance.json", JSON.stringify({ exportedAt: new Date().toISOString(), performance }, null, 2), "application/json")}>Export JSON</button><select value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}><option value="all">All Platforms</option><option value="facebook">Facebook</option><option value="instagram">Instagram</option></select><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search product, destination, URL, status..." /><label className="check"><input type="checkbox" checked={winnerOnly} onChange={(e) => setWinnerOnly(e.target.checked)} /> Winners only</label><button type="button" onClick={clearFilters}>Clear Filters</button></section>{filtered.length === 0 && <section className="empty">No performance entries match this view. Mark queue items Posted, then click Sync Posted Items.</section>}<section className="grid">{filtered.map((entry) => <article key={entry.id} className="card"><div className="top"><div><p className="mini">{niceDate(entry.postedDate)} • {PLATFORM_LABELS[entryPlatform(entry)]}</p><h2>{entry.productName}</h2><span className={`score ${entry.winner ? "winner" : ""}`}>Score {score(entry)}</span><span className="destinationPill">{destinationName(entry)}</span></div>{entry.productImage && <img src={entry.productImage} alt={entry.productName} />}</div><label className="urlLabel">Live Post URL<input value={entry.postUrl || ""} onChange={(e) => updateEntry(entry.id, "postUrl", e.target.value)} placeholder="Paste live post URL..." /></label><div className="metricsStatus"><strong>{entry.metricsStatus || (entry.postUrl ? "Needs Metrics" : "Needs URL")}</strong>{entry.lastMetricsSync && <span>Last sync: {new Date(entry.lastMetricsSync).toLocaleString()}</span>}</div><div className="metricsGrid">{[["views","Views"],["likes","Likes"],["comments","Comments"],["shares","Shares"],["clicks","Clicks"],["sales","Sales"]].map(([field,label]) => <label key={field}>{label}<input type="number" min="0" value={entry[field] || 0} onChange={(e) => updateNumber(entry.id, field, e.target.value)} /></label>)}</div><label className="notesLabel">Notes<textarea value={entry.notes || ""} onChange={(e) => updateEntry(entry.id, "notes", e.target.value)} /></label><pre>{entry.copy || "No copy saved."}</pre><div className="actions"><button type="button" className="primary" onClick={() => fetchMetrics(entry)} disabled={fetchingId === entry.id}>{fetchingId === entry.id ? "Fetching..." : "Fetch Metrics"}</button><button type="button" onClick={() => copyText(entry.copy)}>Copy Copy</button><button type="button" className={entry.winner ? "winnerButton" : ""} onClick={() => updateEntry(entry.id, "winner", !entry.winner)}>{entry.winner ? "Winner ✓" : "Mark Winner"}</button><button type="button" onClick={() => saveWinnerToBank(entry)}>Save to Promo Parts</button>{entry.postUrl && <a href={entry.postUrl} target="_blank" rel="noreferrer">Open Post</a>}<button type="button" className="danger" onClick={() => removeEntry(entry.id)}>Remove</button></div></article>)}</section></>}{activeTab === "winners" && <section className="panel"><div className="panelHead"><div><p className="mini">Winners</p><h2>Best performing posts</h2></div><div className="actions"><button type="button" className="primary" onClick={() => copyText(buildWinnersText(performance))}>Copy Winners</button><button type="button" onClick={() => downloadFile("local-jagoff-promo-winners.txt", buildWinnersText(performance))}>Export TXT</button></div></div>{topWinners.length === 0 ? <p className="muted">No winners marked yet.</p> : <div className="winnerList">{topWinners.map((entry, index) => <article key={entry.id}><strong>#{index + 1} {entry.productName}</strong><span>{PLATFORM_LABELS[entryPlatform(entry)]} • {destinationName(entry)} • Score {score(entry)}</span><p>{entry.notes || "No notes added."}</p><div className="actions"><button type="button" onClick={() => saveWinnerToBank(entry)}>Save to Promo Parts</button>{entry.postUrl && <a href={entry.postUrl} target="_blank" rel="noreferrer">Open Post</a>}</div></article>)}</div>}</section>}{activeTab === "insights" && <section className="insightGrid"><InsightPanel title="Platform winners" rows={platformInsights} labeler={(name) => PLATFORM_LABELS[name] || name} /><InsightPanel title="Product winners" rows={productInsights} /><InsightPanel title="Destination winners" rows={destinationInsights} /><article className="panel"><p className="mini">Recommendation</p><h2>{platformInsights[0] ? `Lean into ${PLATFORM_LABELS[platformInsights[0].name] || platformInsights[0].name}` : "Need more data"}</h2><p>{platformInsights[0] ? "This platform currently has the strongest weighted score. Keep tracking before making bigger decisions." : "Post and track more items before trusting the insights."}</p></article></section>}</main><style jsx>{`.page{min-height:100vh;padding:0 16px 80px;color:#fff;background:radial-gradient(circle at top left,rgba(255,230,0,.14),transparent 30%),linear-gradient(180deg,#050505,#000)}.wrap{max-width:1220px;margin:0 auto;padding-top:34px}.hero,.stats button,.toolbar,.message,.empty,.card,.panel{background:rgba(13,13,13,.9);border:1px solid rgba(255,230,0,.18);border-radius:22px;box-shadow:0 20px 70px rgba(0,0,0,.35)}.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;padding:24px;margin-bottom:14px}.kicker,.mini{margin:0 0 8px;color:#ffe600;font-size:12px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase}.hero h1{margin:0;font-size:clamp(44px,8vw,96px);line-height:.9;text-transform:uppercase}.hero p{color:#ddd;line-height:1.55}.heroActions,.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}.tabs button,.toolbar button,.actions button,.actions a,.heroActions button{border:1px solid #333;border-radius:14px;background:#1b1b1b;color:#fff;padding:12px 14px;font-weight:900;text-decoration:none;cursor:pointer}.tabs button.active,.primary,.winnerButton{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}.stats button{padding:16px;text-align:left;color:#fff;cursor:pointer}.stats strong{display:block;color:#ffe600;font-size:30px}.stats span{display:block;margin-top:8px;color:#ccc;font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase}.message,.empty{padding:14px;margin-bottom:14px;color:#ffe600;font-weight:900}.overviewGrid,.insightGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel{padding:20px}.panel.highlight{border-color:#ffe600;background:linear-gradient(135deg,rgba(255,230,0,.12),rgba(13,13,13,.92))}.panel h2{margin:0 0 10px;color:#ffe600;text-transform:uppercase}.panel p,.muted{color:#ddd;line-height:1.55}.toolbar{display:grid;grid-template-columns:repeat(4,auto) minmax(150px,1fr) minmax(220px,2fr) auto auto;gap:10px;padding:14px;margin-bottom:14px;align-items:center}input,select,textarea{width:100%;color:#fff;background:#050505;border:1px solid #333;border-radius:14px;padding:12px;outline:none}textarea{min-height:80px;resize:vertical}.check{display:flex;align-items:center;gap:8px;color:#ddd;font-weight:900;font-size:12px;text-transform:uppercase}.check input{width:auto}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{padding:16px}.top{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:12px}.top h2{margin:0 0 8px;color:#fff;text-transform:uppercase}.top img{width:86px;height:86px;object-fit:contain;background:#070707;border-radius:14px}.score,.destinationPill{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;text-transform:uppercase;background:#191919;color:#ddd;border:1px solid #333;margin:4px 6px 0 0}.score.winner{background:#ffe600;color:#000;border-color:#ffe600}.destinationPill{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.32);color:#ffe600}.urlLabel,.notesLabel,.metricsGrid label{display:block;margin-top:12px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1px}.urlLabel input,.notesLabel textarea{margin-top:8px}.metricsStatus{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0;padding:10px;border-radius:14px;background:#050505;border:1px solid #242424}.metricsStatus strong{color:#ffe600;text-transform:uppercase}.metricsStatus span{color:#aaa;font-size:12px}.metricsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metricsGrid input{margin-top:6px}pre{white-space:pre-wrap;color:#f2f2f2;line-height:1.55;background:#050505;border:1px solid #242424;border-radius:14px;padding:12px;max-height:220px;overflow:auto}.danger{color:#ff9a9a!important}.panelHead{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.winnerList,.insightRows{display:grid;gap:12px}.winnerList article,.insightRows article{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:#050505}.winnerList strong,.winnerList span{display:block}.winnerList span{margin-top:6px;color:#ffe600;font-size:12px;font-weight:900;text-transform:uppercase}.winnerList p{color:#ddd}.insightRows article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}.insightRows strong{display:block;color:#fff}.insightRows span{display:block;margin-top:5px;color:#aaa;font-size:12px;text-transform:uppercase}.insightScore{color:#ffe600;font-weight:900;font-size:22px}@media(max-width:980px){.hero,.toolbar,.grid,.overviewGrid,.insightGrid{grid-template-columns:1fr}.panelHead{display:grid}.heroActions button,.toolbar button,.actions button,.actions a{width:100%;justify-content:center;text-align:center}.top{grid-template-columns:1fr}.top img{width:100%;height:150px}.metricsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.metricsGrid{grid-template-columns:1fr}}`}</style></div>;
 }
 
 function InsightPanel({ title, rows, labeler = (value) => value }) {
-  return (
-    <article className="panel">
-      <p className="mini">Insights</p>
-      <h2>{title}</h2>
-      {!rows.length ? <p className="muted">No data yet.</p> : <div className="insightRows">{rows.map((row) => <article key={row.name}><div><strong>{labeler(row.name)}</strong><span>{row.count} posts • {row.views} views • {row.clicks} clicks • {row.sales} sales • {row.winners} winners</span></div><div className="insightScore">{row.score}</div></article>)}</div>}
-    </article>
-  );
+  return <article className="panel"><p className="mini">Insights</p><h2>{title}</h2>{!rows.length ? <p className="muted">No data yet.</p> : <div className="insightRows">{rows.map((row) => <article key={row.name}><div><strong>{labeler(row.name)}</strong><span>{row.count} posts • {row.views} views • {row.clicks} clicks • {row.sales} sales • {row.winners} winners</span></div><div className="insightScore">{row.score}</div></article>)}</div>}</article>;
 }
