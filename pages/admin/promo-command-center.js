@@ -6,16 +6,16 @@ const BANK_KEY = "localJagoffProductPromoBank";
 const PRESETS_KEY = "localJagoffCampaignPresets";
 
 const DEFAULT_GENERATOR_PRESETS = [
-  { id: "preset-new-drop", name: "New Drop Push", description: "General launch push", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], notes: "New gear is live. Keep it direct, product-focused, and local. Push urgency without sounding desperate. Mention Local Jagoff and make the product feel like part of Pittsburgh-area everyday gear." },
+  { id: "preset-savage-organic", name: "Savage Organic", description: "Sharper organic posts", mode: "funny_pittsburgh", tone: "savage_but_safe", platforms: ["facebook", "instagram", "tiktok"], notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful. Do not default to generic new-drop wording unless the user specifically asks for a launch/new drop post." },
+  { id: "preset-724-local", name: "724 Local Push", description: "Focused 724 campaign", mode: "funny_pittsburgh", tone: "more_jagoff", platforms: ["facebook", "instagram", "tiktok"], notes: "This is for 724-area products. Do not mention 412 unless the product itself is specifically 412. Keep it western PA, local, gritty, and proud. Avoid generic new-drop scripting." },
   { id: "preset-hoodie-weather", name: "Hoodie Weather", description: "Cold-weather push", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], notes: "Lean into hoodie weather, chilly Pittsburgh mornings, and comfort without sounding generic. Make the copy feel local, practical, and a little jagoff." },
-  { id: "preset-724-local", name: "724 Local Push", description: "Focused 724 campaign", mode: "product_drop", tone: "more_jagoff", platforms: ["facebook", "instagram", "tiktok"], notes: "This is for 724-area products. Do not mention 412 unless the product itself is specifically 412. Keep it western PA, local, gritty, and proud." },
-  { id: "preset-weekend-sale", name: "Weekend Sale", description: "Short weekend promo", mode: "sale", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], notes: "Weekend sale push. Mention the promo code if provided. Keep the CTA simple and make the post feel like a limited-time reason to shop, not a clearance dump." },
   { id: "preset-clean-ad-safe", name: "Clean Ad-Safe Campaign", description: "Safer copy", mode: "clean_ad", tone: "clean", platforms: ["facebook", "instagram"], notes: "Keep this ad-safe and clean. Still sound like Local Jagoff, but avoid anything that could be flagged or feel too aggressive." },
-  { id: "preset-savage-organic", name: "Savage Organic", description: "Sharper organic posts", mode: "funny_pittsburgh", tone: "savage_but_safe", platforms: ["facebook", "instagram", "tiktok"], notes: "Organic-only attitude. Be sharper, funnier, and more Pittsburgh, but keep it safe and not hateful." },
+  { id: "preset-weekend-sale", name: "Weekend Sale", description: "Short weekend promo", mode: "sale", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], notes: "Weekend sale push. Mention the promo code if provided. Keep the CTA simple and make the post feel like a limited-time reason to shop, not a clearance dump." },
+  { id: "preset-new-drop", name: "New Drop Push", description: "General launch push", mode: "product_drop", tone: "balanced", platforms: ["facebook", "instagram", "tiktok"], notes: "New gear is live. Keep it direct, product-focused, and local. Push urgency without sounding desperate. Mention Local Jagoff and make the product feel like part of Pittsburgh-area everyday gear." },
 ];
 
 const PLATFORM_LABELS = {
-  full_pack: "Full Pack",
+  full_pack: "Facebook",
   facebook: "Facebook",
   instagram: "Instagram",
   tiktok: "TikTok",
@@ -103,7 +103,7 @@ function inferPlatform(preset) {
 }
 
 function applyCampaignPreset(preset, statusNode) {
-  setSelectByLabel("Mode", clean(preset.mode) || "product_drop");
+  setSelectByLabel("Mode", clean(preset.mode) || "funny_pittsburgh");
   setSelectByLabel("Platform", inferPlatform(preset));
   setSelectByLabel("Tone", clean(preset.tone) || "balanced");
   setFieldByLabel("Extra notes", presetSummary(preset));
@@ -145,7 +145,7 @@ function attachPresetHelper() {
     <div class="helperTop">
       <p class="miniKicker">CAMPAIGN PRESET</p>
       <h3>Apply strategy</h3>
-      <p class="presetHelp">Pick a saved/default campaign setup, then apply it to this Promo Studio pack.</p>
+      <p class="presetHelp">Pick a campaign direction before generating. New Drop is no longer the default.</p>
     </div>
     <div class="presetControls">
       <select aria-label="Campaign preset">${presets.map((preset, index) => `<option value="${index}">${escapeHtml(preset.name)}${preset.description ? ` — ${escapeHtml(preset.description)}` : ""}</option>`).join("")}</select>
@@ -166,6 +166,20 @@ function attachPresetHelper() {
   });
 
   row.prepend(panel);
+}
+
+function defaultAwayFromNewDrop() {
+  if (typeof document === "undefined") return;
+  const mode = fieldControlByLabel("Mode");
+  const notes = fieldControlByLabel("Extra notes");
+  if (!mode || mode.dataset.localJagoffDefaultChecked) return;
+  mode.dataset.localJagoffDefaultChecked = "true";
+  if (mode.value === "product_drop") {
+    setNativeValue(mode, "funny_pittsburgh");
+    if (notes && !clean(notes.value)) {
+      setNativeValue(notes, "Keep it local and useful. Do not default to generic new-drop wording unless I specifically pick a launch/new-drop preset.");
+    }
+  }
 }
 
 function getCurrentProductName() {
@@ -262,59 +276,76 @@ function getBuilderGroups(platform) {
   const cta = blocks.find((item) => optionType(item.title) === "link")?.body || "";
   const link = extractPlatformLink(cta, platform);
   const main = blocks.filter((item) => optionType(item.title) === "main" && fieldMatchesPlatform(item.title, platform));
-  const hashtags = blocks.filter((item) => optionType(item.title) === "hashtags");
-  const overlay = blocks.filter((item) => optionType(item.title) === "overlay");
-  const alt = blocks.filter((item) => optionType(item.title) === "alt");
-  const hooks = blocks.filter((item) => optionType(item.title) === "hook");
-  const script = blocks.filter((item) => optionType(item.title) === "script");
-
   return {
     main: main.length ? main : blocks.filter((item) => optionType(item.title) === "main").slice(0, 3),
-    hashtags,
-    overlay,
-    alt,
-    hooks,
-    script,
+    hashtags: blocks.filter((item) => optionType(item.title) === "hashtags"),
+    overlay: blocks.filter((item) => optionType(item.title) === "overlay"),
+    alt: blocks.filter((item) => optionType(item.title) === "alt"),
+    hooks: blocks.filter((item) => optionType(item.title) === "hook"),
+    script: blocks.filter((item) => optionType(item.title) === "script"),
     link,
   };
 }
 
 function shortPreview(value) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
-  return text.length > 185 ? `${text.slice(0, 185)}...` : text;
+  return text.length > 165 ? `${text.slice(0, 165)}...` : text;
 }
 
-function buildFinalText(groups, choices, platform) {
-  const selectedMain = groups.main[choices.main || 0]?.body || "";
-  const selectedHashtags = groups.hashtags[choices.hashtags || 0]?.body || "";
-  const selectedHook = groups.hooks[choices.hooks || 0]?.body || "";
-  const selectedScript = groups.script[choices.script || 0]?.body || "";
-  const link = groups.link ? `Shop: ${groups.link}` : "";
-
-  if (platform === "tiktok") return [selectedMain, selectedHashtags, link, selectedHook ? `Hook ideas:\n${selectedHook}` : "", selectedScript ? `Script:\n${selectedScript}` : ""].filter(Boolean).join("\n\n");
-  if (platform === "youtube_shorts") return [selectedMain, selectedHashtags, link, selectedHook ? `Hook ideas:\n${selectedHook}` : "", selectedScript ? `Script:\n${selectedScript}` : ""].filter(Boolean).join("\n\n");
-  if (platform === "instagram") return [selectedMain, selectedHashtags, link].filter(Boolean).join("\n\n");
-  return [selectedMain, link].filter(Boolean).join("\n\n");
+function builderFieldValue(builder, key) {
+  return builder.querySelector(`[data-builder-field="${key}"]`)?.value?.trim() || "";
 }
 
-function renderChoiceButtons(title, key, options, choices) {
+function buildFinalTextFromBuilder(builder) {
+  const platform = builder.dataset.platform || "facebook";
+  const opening = builderFieldValue(builder, "opening");
+  const main = builderFieldValue(builder, "main");
+  const extra = builderFieldValue(builder, "extra");
+  const hashtags = builderFieldValue(builder, "hashtags");
+  const link = builderFieldValue(builder, "link");
+  const script = builderFieldValue(builder, "script");
+
+  if (platform === "tiktok" || platform === "youtube_shorts") {
+    return [opening, main, extra, hashtags, link ? `Shop: ${link}` : "", script ? `Script / shot list:\n${script}` : ""].filter(Boolean).join("\n\n");
+  }
+
+  if (platform === "instagram") {
+    return [opening, main, extra, hashtags, link ? `Shop: ${link}` : ""].filter(Boolean).join("\n\n");
+  }
+
+  return [opening, main, extra, link ? `Shop: ${link}` : ""].filter(Boolean).join("\n\n");
+}
+
+function updateFinalPreviewFromBuilder() {
+  const builder = document.querySelector(".postWorkbench");
+  const textarea = document.querySelector(".finalPreview textarea");
+  if (!builder || !textarea) return;
+  textarea.value = buildFinalTextFromBuilder(builder);
+}
+
+function useOption(builder, key, value) {
+  const field = builder.querySelector(`[data-builder-field="${key}"]`);
+  if (!field) return;
+  field.value = value || "";
+  updateFinalPreviewFromBuilder();
+}
+
+function renderUseOptions(title, key, options) {
   if (!options.length) return "";
   return `
-    <section class="builderChoiceGroup" data-choice-group="${key}">
-      <div class="builderGroupHead"><h3>${escapeHtml(title)}</h3><span>${options.length} option${options.length === 1 ? "" : "s"}</span></div>
-      <div class="builderOptions">
-        ${options.map((option, index) => `
-          <button type="button" class="builderOptionButton ${Number(choices[key] || 0) === index ? "selected" : ""}" data-choice-key="${key}" data-choice-index="${index}">
-            <strong>${escapeHtml(option.title)}</strong>
-            <span>${escapeHtml(shortPreview(option.body))}</span>
-          </button>
-        `).join("")}
-      </div>
-    </section>
+    <div class="partOptions">
+      <div class="partHead"><strong>${escapeHtml(title)}</strong><span>${options.length} option${options.length === 1 ? "" : "s"}</span></div>
+      ${options.map((option, index) => `
+        <button type="button" class="usePartButton" data-use-key="${key}" data-use-value="${escapeHtml(option.body)}">
+          <em>Use Option ${index + 1}</em>
+          <span>${escapeHtml(shortPreview(option.body))}</span>
+        </button>
+      `).join("")}
+    </div>
   `;
 }
 
-function ensureSelectableBuilder() {
+function ensurePostWorkbench() {
   if (typeof document === "undefined") return;
   const output = document.querySelector(".studioOutput");
   const preview = document.querySelector(".finalPreview");
@@ -324,60 +355,90 @@ function ensureSelectableBuilder() {
 
   const platform = getActivePlatform();
   const groups = getBuilderGroups(platform);
-  if (!groups.main.length) return;
+  if (!groups.main.length && !groups.script.length) return;
 
-  let builder = document.querySelector(".selectableBuilder");
-  if (!builder) {
-    builder = document.createElement("section");
-    builder.className = "selectableBuilder";
-    output.insertBefore(builder, results);
+  let workbench = document.querySelector(".postWorkbench");
+  if (!workbench) {
+    workbench = document.createElement("section");
+    workbench.className = "postWorkbench";
+    output.insertBefore(workbench, results);
   }
 
   const signature = JSON.stringify({
     platform,
-    main: groups.main.map((item) => item.title + item.body.slice(0, 40)),
-    tags: groups.hashtags.map((item) => item.title + item.body.slice(0, 40)),
-    hooks: groups.hooks.map((item) => item.title + item.body.slice(0, 40)),
-    script: groups.script.map((item) => item.title + item.body.slice(0, 40)),
+    main: groups.main.map((item) => item.title + item.body.slice(0, 80)),
+    hashtags: groups.hashtags.map((item) => item.title + item.body.slice(0, 80)),
+    hooks: groups.hooks.map((item) => item.title + item.body.slice(0, 80)),
+    script: groups.script.map((item) => item.title + item.body.slice(0, 80)),
     link: groups.link,
   });
 
-  if (builder.dataset.signature !== signature) {
-    builder.dataset.signature = signature;
-    builder.dataset.choices = JSON.stringify({ main: 0, hashtags: 0, hooks: 0, script: 0 });
+  if (workbench.dataset.signature === signature) {
+    updateFinalPreviewFromBuilder();
+    return;
   }
 
-  const choices = JSON.parse(builder.dataset.choices || "{}");
-  builder.innerHTML = `
+  workbench.dataset.signature = signature;
+  workbench.dataset.platform = platform;
+
+  const firstMain = groups.main[0]?.body || "";
+  const firstHashtags = groups.hashtags[0]?.body || "";
+  const firstHook = groups.hooks[0]?.body || "";
+  const firstScript = groups.script[0]?.body || "";
+
+  workbench.innerHTML = `
     <div class="builderTitle">
-      <p class="miniKicker">BUILD YOUR FINAL POST</p>
-      <h2>${escapeHtml(PLATFORM_LABELS[platform] || "Facebook")} Options</h2>
-      <p>Pick the version you want. The ready-to-paste preview updates from your selections.</p>
+      <p class="miniKicker">POST BUILDER</p>
+      <h2>Build your own ${escapeHtml(PLATFORM_LABELS[platform] || "post")}</h2>
+      <p>Use generated parts, rewrite any section, add your own line, then copy the final preview.</p>
+      <div class="builderTopActions">
+        <button type="button" class="regenerateAllButton">Regenerate All</button>
+        <button type="button" class="copyBuilderButton">Copy Builder Preview</button>
+      </div>
     </div>
-    ${renderChoiceButtons("Main copy", "main", groups.main, choices)}
-    ${renderChoiceButtons("Hashtags", "hashtags", groups.hashtags, choices)}
-    ${renderChoiceButtons("Video hooks", "hooks", groups.hooks, choices)}
-    ${renderChoiceButtons("Video script", "script", groups.script, choices)}
-    <section class="builderChoiceGroup compact">
-      <div class="builderGroupHead"><h3>Platform link</h3><span>${groups.link ? "ready" : "none"}</span></div>
-      <p>${groups.link ? escapeHtml(groups.link) : "No platform-specific link found."}</p>
+
+    <section class="builderEditor">
+      <label>Opening / hook<textarea data-builder-field="opening" placeholder="Optional opener or hook...">${escapeHtml(firstHook)}</textarea></label>
+      <label>Main copy<textarea data-builder-field="main" placeholder="Write or use one generated main copy option...">${escapeHtml(firstMain)}</textarea></label>
+      <label>Extra line / add-on<textarea data-builder-field="extra" placeholder="Add anything extra you want in the final post..."></textarea></label>
+      <label>Hashtags<textarea data-builder-field="hashtags" placeholder="Hashtags...">${escapeHtml(firstHashtags)}</textarea></label>
+      <label>Platform link<input data-builder-field="link" value="${escapeHtml(groups.link)}" placeholder="Platform/product link..." /></label>
+      <label>Script / shot list<textarea data-builder-field="script" placeholder="Optional TikTok/Shorts script, voiceover, or shot list...">${escapeHtml(firstScript)}</textarea></label>
+    </section>
+
+    <section class="builderSourceParts">
+      ${renderUseOptions("Main copy options", "main", groups.main)}
+      ${renderUseOptions("Hook options", "opening", groups.hooks)}
+      ${renderUseOptions("Hashtag options", "hashtags", groups.hashtags)}
+      ${renderUseOptions("Script options", "script", groups.script)}
     </section>
   `;
 
-  builder.querySelectorAll(".builderOptionButton").forEach((button) => {
-    button.addEventListener("click", () => {
-      const next = JSON.parse(builder.dataset.choices || "{}");
-      next[button.dataset.choiceKey] = Number(button.dataset.choiceIndex || 0);
-      builder.dataset.choices = JSON.stringify(next);
-      builder.dataset.signature = "";
-      ensureSelectableBuilder();
-    });
+  workbench.querySelectorAll("textarea,input").forEach((field) => {
+    field.addEventListener("input", updateFinalPreviewFromBuilder);
   });
 
-  const finalText = buildFinalText(groups, JSON.parse(builder.dataset.choices || "{}"), platform);
-  textarea.value = finalText;
+  workbench.querySelectorAll(".usePartButton").forEach((button) => {
+    button.addEventListener("click", () => useOption(workbench, button.dataset.useKey, button.dataset.useValue));
+  });
+
+  workbench.querySelector(".copyBuilderButton")?.addEventListener("click", () => {
+    navigator.clipboard?.writeText(document.querySelector(".finalPreview textarea")?.value || "");
+  });
+
+  workbench.querySelector(".regenerateAllButton")?.addEventListener("click", () => {
+    const createButton = Array.from(document.querySelectorAll(".dashboardNav button")).find((button) => clean(button.textContent) === "Create");
+    createButton?.click();
+    window.setTimeout(() => {
+      const generateButton = Array.from(document.querySelectorAll("button")).find((button) => clean(button.textContent).includes("Generate With AI"));
+      generateButton?.click();
+    }, 180);
+  });
+
+  updateFinalPreviewFromBuilder();
+
   const heading = preview.querySelector("h2");
-  if (heading) heading.textContent = `${PLATFORM_LABELS[platform] || "Facebook"} preview`;
+  if (heading) heading.textContent = `${PLATFORM_LABELS[platform] || "Post"} final preview`;
 }
 
 function installCopyReadyOverride() {
@@ -421,28 +482,34 @@ function injectStyles() {
     .presetControls .applyPresetButton{color:#000!important;background:#ffe600!important;border-color:#ffe600!important}
     .presetControls.compactOnly{grid-template-columns:1fr!important}
     .presetStatus{grid-column:1/-1;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;min-height:16px!important}
-    .studioOutput{display:grid!important;grid-template-columns:minmax(280px,390px) minmax(300px,1fr)!important;gap:16px!important;align-items:start!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
-    .finalPreview,.selectableBuilder,.results{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+    .studioOutput{display:grid!important;grid-template-columns:minmax(280px,380px) minmax(0,1fr)!important;gap:16px!important;align-items:start!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
+    .finalPreview,.postWorkbench,.results{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
     .finalPreview{position:sticky!important;top:74px!important;align-self:start!important;overflow:hidden!important}
-    .finalPreview textarea{width:100%!important;max-width:100%!important;box-sizing:border-box!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-size:13px!important;line-height:1.45!important;resize:vertical!important}
-    .selectableBuilder{display:grid!important;gap:12px!important}
-    .builderTitle,.builderChoiceGroup{background:rgba(13,13,13,.92)!important;border:1px solid rgba(255,230,0,.2)!important;border-radius:18px!important;padding:16px!important;box-shadow:0 18px 56px rgba(0,0,0,.32)!important;min-width:0!important;overflow:hidden!important}
-    .builderTitle h2,.builderChoiceGroup h3{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;line-height:1.08!important}
-    .builderTitle p:last-child,.builderChoiceGroup p{margin:8px 0 0!important;color:#ddd!important;line-height:1.45!important;overflow-wrap:anywhere!important}
-    .builderGroupHead{display:flex!important;justify-content:space-between!important;gap:12px!important;align-items:center!important;margin-bottom:10px!important}
-    .builderGroupHead span{color:#aaa!important;font-size:11px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;white-space:nowrap!important}
-    .builderOptions{display:grid!important;gap:8px!important}
-    .builderOptionButton{display:grid!important;gap:6px!important;width:100%!important;text-align:left!important;border:1px solid #333!important;border-radius:14px!important;background:#101010!important;color:#fff!important;padding:12px!important;min-width:0!important;box-sizing:border-box!important}
-    .builderOptionButton.selected{background:rgba(255,230,0,.14)!important;border-color:#ffe600!important;box-shadow:0 0 0 2px rgba(255,230,0,.08)!important}
-    .builderOptionButton strong{color:#ffe600!important;text-transform:uppercase!important;font-size:12px!important;letter-spacing:1px!important;overflow-wrap:anywhere!important}
-    .builderOptionButton span{color:#ddd!important;font-size:13px!important;line-height:1.4!important;overflow-wrap:anywhere!important;white-space:normal!important}
-    .results{display:grid!important;grid-template-columns:1fr!important;gap:12px!important;overflow:hidden!important}
-    .resultBlock{min-width:0!important;max-width:100%!important;overflow:hidden!important;padding:16px!important}
-    .resultTop{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important;align-items:start!important}
-    .resultBlock h3,.resultBlock p,.resultBlock pre{max-width:100%!important;overflow-wrap:anywhere!important;word-break:break-word!important;white-space:pre-wrap!important}
-    .resultBlock p,.resultBlock pre{font-size:14px!important;line-height:1.5!important;overflow:auto!important}
-    @media(max-width:1100px){.studioOutput{grid-template-columns:1fr!important}.finalPreview{position:static!important}.selectableBuilder{order:2}.results{order:3}}
-    @media(max-width:980px){.promoSmartRow{grid-template-columns:1fr!important}.presetControls{grid-template-columns:1fr!important}.presetControls button,.presetControls a,.presetControls select{width:100%!important;text-align:center!important}.resultTop{grid-template-columns:1fr!important}.resultTop button{width:100%!important}}
+    .finalPreview textarea{width:100%!important;max-width:100%!important;box-sizing:border-box!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-size:13px!important;line-height:1.45!important;resize:vertical!important;min-height:330px!important}
+    .postWorkbench{display:grid!important;gap:12px!important}
+    .builderTitle,.builderEditor,.builderSourceParts,.partOptions{background:rgba(13,13,13,.92)!important;border:1px solid rgba(255,230,0,.2)!important;border-radius:18px!important;padding:16px!important;box-shadow:0 18px 56px rgba(0,0,0,.32)!important;min-width:0!important;overflow:hidden!important}
+    .builderTitle h2,.partOptions strong{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;line-height:1.08!important}
+    .builderTitle p{margin:8px 0 0!important;color:#ddd!important;line-height:1.45!important;overflow-wrap:anywhere!important}
+    .builderTopActions{display:flex!important;gap:10px!important;flex-wrap:wrap!important;margin-top:14px!important}
+    .builderTopActions button,.usePartButton{border:1px solid #333!important;border-radius:14px!important;background:#1b1b1b!important;color:#fff!important;padding:12px 14px!important;font-weight:900!important;cursor:pointer!important}
+    .builderTopActions .regenerateAllButton{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}
+    .builderEditor{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+    .builderEditor label{display:grid!important;gap:7px!important;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important}
+    .builderEditor label:nth-child(2),.builderEditor label:nth-child(6){grid-column:1/-1!important}
+    .builderEditor textarea,.builderEditor input{width:100%!important;box-sizing:border-box!important;border:1px solid #333!important;border-radius:14px!important;background:#050505!important;color:#fff!important;padding:12px!important;font-size:13px!important;line-height:1.45!important;min-height:74px!important;resize:vertical!important}
+    .builderEditor label:nth-child(2) textarea,.builderEditor label:nth-child(6) textarea{min-height:126px!important}
+    .builderSourceParts{display:grid!important;gap:12px!important}
+    .partHead{display:flex!important;justify-content:space-between!important;gap:12px!important;align-items:center!important;margin-bottom:10px!important}
+    .partHead span{color:#aaa!important;font-size:11px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;white-space:nowrap!important}
+    .partOptions{display:grid!important;gap:8px!important}
+    .usePartButton{display:grid!important;gap:6px!important;width:100%!important;text-align:left!important;background:#101010!important;min-width:0!important;box-sizing:border-box!important}
+    .usePartButton em{font-style:normal!important;color:#ffe600!important;text-transform:uppercase!important;font-size:12px!important;letter-spacing:1px!important}
+    .usePartButton span{color:#ddd!important;font-size:13px!important;line-height:1.4!important;overflow-wrap:anywhere!important;white-space:normal!important}
+    .usePartButton:hover{border-color:#ffe600!important;background:rgba(255,230,0,.12)!important}
+    .results{display:none!important}
+    .previewNote{display:none!important}
+    @media(max-width:1100px){.studioOutput{grid-template-columns:1fr!important}.finalPreview{position:static!important}.postWorkbench{order:2}}
+    @media(max-width:980px){.promoSmartRow{grid-template-columns:1fr!important}.presetControls{grid-template-columns:1fr!important}.presetControls button,.presetControls a,.presetControls select{width:100%!important;text-align:center!important}.builderEditor{grid-template-columns:1fr!important}.builderEditor label{grid-column:1/-1!important}.builderTopActions button{width:100%!important}}
   `;
   document.head.appendChild(style);
 }
@@ -450,8 +517,9 @@ function injectStyles() {
 function refreshPromoStudioEnhancements() {
   attachPresetHelper();
   attachProductBankWinnerHelper();
+  defaultAwayFromNewDrop();
   hideWarningBlocks();
-  ensureSelectableBuilder();
+  ensurePostWorkbench();
 }
 
 export default function PromoCommandCenter() {
@@ -465,7 +533,7 @@ export default function PromoCommandCenter() {
 
     const observer = new MutationObserver(() => {
       window.clearTimeout(window.__localJagoffPromoStudioRefresh);
-      window.__localJagoffPromoStudioRefresh = window.setTimeout(refreshPromoStudioEnhancements, 60);
+      window.__localJagoffPromoStudioRefresh = window.setTimeout(refreshPromoStudioEnhancements, 80);
     });
 
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
