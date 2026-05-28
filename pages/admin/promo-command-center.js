@@ -145,7 +145,7 @@ function attachPresetHelper() {
     <div class="helperTop">
       <p class="miniKicker">CAMPAIGN PRESET</p>
       <h3>Apply strategy</h3>
-      <p class="presetHelp">Pick a campaign direction before generating. New Drop is no longer the default.</p>
+      <p class="presetHelp">Pick a campaign direction before generating. New Drop is not the default.</p>
     </div>
     <div class="presetControls">
       <select aria-label="Campaign preset">${presets.map((preset, index) => `<option value="${index}">${escapeHtml(preset.name)}${preset.description ? ` — ${escapeHtml(preset.description)}` : ""}</option>`).join("")}</select>
@@ -223,33 +223,10 @@ function getActivePlatform() {
   return "facebook";
 }
 
-function platformLinkLabel(platform) {
-  if (platform === "instagram") return "Instagram link";
-  if (platform === "tiktok") return "TikTok link";
-  if (platform === "youtube_shorts") return "YouTube Shorts link";
-  return "Facebook link";
-}
-
-function extractPlatformLink(ctaText, platform) {
-  const text = String(ctaText || "");
-  const label = platformLinkLabel(platform).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = text.match(new RegExp(`${label}:\\s*(https?:\\/\\/\\S+)`, "i"));
-  if (match?.[1]) return match[1].trim();
-  const first = text.match(/https?:\/\/\S+/i);
-  return first?.[0]?.trim() || "";
-}
-
-function getResultBlocks() {
-  if (typeof document === "undefined") return [];
-  return Array.from(document.querySelectorAll(".resultBlock")).map((block, index) => {
-    const title = block.querySelector("h3")?.textContent?.trim() || `Option ${index + 1}`;
-    const body = block.querySelector("pre, p")?.textContent?.trim() || "";
-    return { block, index, title, body };
-  }).filter((item) => item.body);
-}
-
 function optionType(title) {
   const lower = title.toLowerCase();
+  if (lower.includes("bundle")) return "ignore";
+  if (lower.includes("warning") || lower.includes("notes")) return "ignore";
   if (lower.includes("hashtag")) return "hashtags";
   if (lower.includes("overlay")) return "overlay";
   if (lower.includes("alt text")) return "alt";
@@ -260,9 +237,18 @@ function optionType(title) {
   return "support";
 }
 
-function fieldMatchesPlatform(title, platform) {
-  const lower = title.toLowerCase();
-  if (optionType(title) !== "main") return true;
+function getResultBlocks() {
+  if (typeof document === "undefined") return [];
+  return Array.from(document.querySelectorAll(".resultBlock")).map((block, index) => {
+    const title = block.querySelector("h3")?.textContent?.trim() || `Option ${index + 1}`;
+    const body = block.querySelector("pre, p")?.textContent?.trim() || "";
+    return { block, index, title, body, type: optionType(title) };
+  }).filter((item) => item.body && item.type !== "ignore");
+}
+
+function blockMatchesPlatform(item, platform) {
+  const lower = item.title.toLowerCase();
+  if (item.type !== "main") return true;
   if (lower.includes("clean ad") || lower.includes("edgy")) return platform === "facebook" || platform === "instagram";
   if (platform === "facebook") return lower.includes("facebook") || lower.includes("clean ad") || lower.includes("edgy");
   if (platform === "instagram") return lower.includes("instagram") || lower.includes("clean ad") || lower.includes("edgy");
@@ -271,81 +257,102 @@ function fieldMatchesPlatform(title, platform) {
   return true;
 }
 
-function getBuilderGroups(platform) {
+function platformLinkLabel(platform) {
+  if (platform === "instagram") return "Instagram link";
+  if (platform === "tiktok") return "TikTok link";
+  if (platform === "youtube_shorts") return "YouTube Shorts link";
+  return "Facebook link";
+}
+
+function extractLink(platform) {
   const blocks = getResultBlocks();
-  const cta = blocks.find((item) => optionType(item.title) === "link")?.body || "";
-  const link = extractPlatformLink(cta, platform);
-  const main = blocks.filter((item) => optionType(item.title) === "main" && fieldMatchesPlatform(item.title, platform));
+  const linkBlock = blocks.find((item) => item.type === "link")?.body || "";
+  const label = platformLinkLabel(platform);
+  const lines = linkBlock.split(/\n+/);
+  const index = lines.findIndex((line) => line.toLowerCase().includes(label.toLowerCase()));
+  if (index >= 0) {
+    const sameLine = lines[index].match(/https?:\/\/\S+/i)?.[0];
+    const nextLine = lines[index + 1]?.match(/https?:\/\/\S+/i)?.[0];
+    return clean(sameLine || nextLine || "");
+  }
+  return clean(linkBlock.match(/https?:\/\/\S+/i)?.[0] || "");
+}
+
+function getGroups(platform) {
+  const blocks = getResultBlocks();
+  const main = blocks.filter((item) => item.type === "main" && blockMatchesPlatform(item, platform));
   return {
-    main: main.length ? main : blocks.filter((item) => optionType(item.title) === "main").slice(0, 3),
-    hashtags: blocks.filter((item) => optionType(item.title) === "hashtags"),
-    overlay: blocks.filter((item) => optionType(item.title) === "overlay"),
-    alt: blocks.filter((item) => optionType(item.title) === "alt"),
-    hooks: blocks.filter((item) => optionType(item.title) === "hook"),
-    script: blocks.filter((item) => optionType(item.title) === "script"),
-    link,
+    main: main.length ? main : blocks.filter((item) => item.type === "main").slice(0, 4),
+    hashtags: blocks.filter((item) => item.type === "hashtags"),
+    hooks: blocks.filter((item) => item.type === "hook"),
+    script: blocks.filter((item) => item.type === "script"),
+    link: extractLink(platform),
   };
 }
 
 function shortPreview(value) {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  return text.length > 165 ? `${text.slice(0, 165)}...` : text;
+  const text = clean(value).replace(/\s+/g, " ");
+  return text.length > 160 ? `${text.slice(0, 160)}...` : text;
 }
 
-function builderFieldValue(builder, key) {
-  return builder.querySelector(`[data-builder-field="${key}"]`)?.value?.trim() || "";
+function fieldValue(builder, key) {
+  return clean(builder.querySelector(`[data-builder-field="${key}"]`)?.value || "");
 }
 
-function buildFinalTextFromBuilder(builder) {
+function buildFinalText(builder) {
   const platform = builder.dataset.platform || "facebook";
-  const opening = builderFieldValue(builder, "opening");
-  const main = builderFieldValue(builder, "main");
-  const extra = builderFieldValue(builder, "extra");
-  const hashtags = builderFieldValue(builder, "hashtags");
-  const link = builderFieldValue(builder, "link");
-  const script = builderFieldValue(builder, "script");
+  const hook = fieldValue(builder, "hook");
+  const main = fieldValue(builder, "main");
+  const extra = fieldValue(builder, "extra");
+  const hashtags = fieldValue(builder, "hashtags");
+  const link = fieldValue(builder, "link");
+  const script = fieldValue(builder, "script");
+  const linkLine = link ? `Shop: ${link}` : "";
 
   if (platform === "tiktok" || platform === "youtube_shorts") {
-    return [opening, main, extra, hashtags, link ? `Shop: ${link}` : "", script ? `Script / shot list:\n${script}` : ""].filter(Boolean).join("\n\n");
+    return [hook, main, extra, hashtags, linkLine, script ? `Script / shot list:\n${script}` : ""].filter(Boolean).join("\n\n");
   }
 
-  if (platform === "instagram") {
-    return [opening, main, extra, hashtags, link ? `Shop: ${link}` : ""].filter(Boolean).join("\n\n");
-  }
-
-  return [opening, main, extra, link ? `Shop: ${link}` : ""].filter(Boolean).join("\n\n");
+  if (platform === "instagram") return [hook, main, extra, hashtags, linkLine].filter(Boolean).join("\n\n");
+  return [hook, main, extra, linkLine].filter(Boolean).join("\n\n");
 }
 
-function updateFinalPreviewFromBuilder() {
+function updatePreview() {
   const builder = document.querySelector(".postWorkbench");
   const textarea = document.querySelector(".finalPreview textarea");
   if (!builder || !textarea) return;
-  textarea.value = buildFinalTextFromBuilder(builder);
+  textarea.value = buildFinalText(builder);
 }
 
-function useOption(builder, key, value) {
-  const field = builder.querySelector(`[data-builder-field="${key}"]`);
-  if (!field) return;
-  field.value = value || "";
-  updateFinalPreviewFromBuilder();
+function storeOptions(groups) {
+  window.__localJagoffBuilderOptions = {};
+  ["main", "hashtags", "hooks", "script"].forEach((key) => {
+    groups[key]?.forEach((item, index) => {
+      window.__localJagoffBuilderOptions[`${key}-${index}`] = item.body;
+    });
+  });
 }
 
-function renderUseOptions(title, key, options) {
-  if (!options.length) return "";
+function renderOptions(title, targetField, key, options) {
+  if (!options?.length) return "";
   return `
-    <div class="partOptions">
-      <div class="partHead"><strong>${escapeHtml(title)}</strong><span>${options.length} option${options.length === 1 ? "" : "s"}</span></div>
-      ${options.map((option, index) => `
-        <button type="button" class="usePartButton" data-use-key="${key}" data-use-value="${escapeHtml(option.body)}">
-          <em>Use Option ${index + 1}</em>
-          <span>${escapeHtml(shortPreview(option.body))}</span>
-        </button>
-      `).join("")}
-    </div>
+    <section class="partCard">
+      <div class="partHead"><h3>${escapeHtml(title)}</h3><span>${options.length} option${options.length === 1 ? "" : "s"}</span></div>
+      <div class="optionList">
+        ${options.map((option, index) => `
+          <button type="button" class="usePartButton" data-target-field="${targetField}" data-option-id="${key}-${index}">
+            <strong>Use Option ${index + 1}</strong>
+            <em>${escapeHtml(option.title)}</em>
+            <span>${escapeHtml(shortPreview(option.body))}</span>
+          </button>
+        `).join("")}
+      </div>
+      <label>Custom ${escapeHtml(title.toLowerCase())}<textarea data-builder-field="${targetField}" placeholder="Write your own ${escapeHtml(title.toLowerCase())}..."></textarea></label>
+    </section>
   `;
 }
 
-function ensurePostWorkbench() {
+function ensureWorkbench() {
   if (typeof document === "undefined") return;
   const output = document.querySelector(".studioOutput");
   const preview = document.querySelector(".finalPreview");
@@ -354,14 +361,14 @@ function ensurePostWorkbench() {
   if (!output || !preview || !textarea || !results) return;
 
   const platform = getActivePlatform();
-  const groups = getBuilderGroups(platform);
+  const groups = getGroups(platform);
   if (!groups.main.length && !groups.script.length) return;
 
-  let workbench = document.querySelector(".postWorkbench");
-  if (!workbench) {
-    workbench = document.createElement("section");
-    workbench.className = "postWorkbench";
-    output.insertBefore(workbench, results);
+  let builder = document.querySelector(".postWorkbench");
+  if (!builder) {
+    builder = document.createElement("section");
+    builder.className = "postWorkbench";
+    output.insertBefore(builder, results);
   }
 
   const signature = JSON.stringify({
@@ -373,90 +380,107 @@ function ensurePostWorkbench() {
     link: groups.link,
   });
 
-  if (workbench.dataset.signature === signature) {
-    updateFinalPreviewFromBuilder();
+  if (builder.dataset.signature === signature) {
+    updatePreview();
     return;
   }
 
-  workbench.dataset.signature = signature;
-  workbench.dataset.platform = platform;
+  storeOptions(groups);
+  builder.dataset.signature = signature;
+  builder.dataset.platform = platform;
+
+  builder.innerHTML = `
+    <div class="workbenchHead">
+      <div>
+        <p class="miniKicker">PICK YOUR PARTS</p>
+        <h2>${escapeHtml(PLATFORM_LABELS[platform] || "Post")} Builder</h2>
+        <p>Use a generated option or type your own section. The live preview updates from your chosen parts.</p>
+      </div>
+      <button type="button" class="regenerateInlineButton">Regenerate All</button>
+    </div>
+
+    <section class="partCard smallPart">
+      <div class="partHead"><h3>Platform link</h3><span>${groups.link ? "ready" : "empty"}</span></div>
+      <label>Link<input data-builder-field="link" value="${escapeHtml(groups.link)}" placeholder="Paste or edit platform/product link..." /></label>
+    </section>
+
+    ${renderOptions("Main Copy", "main", "main", groups.main)}
+    ${renderOptions("Hook / Opening", "hook", "hooks", groups.hooks)}
+
+    <section class="partCard smallPart">
+      <div class="partHead"><h3>Extra Line</h3><span>optional</span></div>
+      <label>Custom add-on<textarea data-builder-field="extra" placeholder="Add a line, sale note, reminder, or anything else..."></textarea></label>
+    </section>
+
+    ${renderOptions("Hashtags", "hashtags", "hashtags", groups.hashtags)}
+    ${renderOptions("Script / Shot List", "script", "script", groups.script)}
+  `;
 
   const firstMain = groups.main[0]?.body || "";
   const firstHashtags = groups.hashtags[0]?.body || "";
-  const firstHook = groups.hooks[0]?.body || "";
-  const firstScript = groups.script[0]?.body || "";
+  const firstHook = "";
+  const firstScript = platform === "tiktok" || platform === "youtube_shorts" ? groups.script[0]?.body || "" : "";
 
-  workbench.innerHTML = `
-    <div class="builderTitle">
-      <p class="miniKicker">POST BUILDER</p>
-      <h2>Build your own ${escapeHtml(PLATFORM_LABELS[platform] || "post")}</h2>
-      <p>Use generated parts, rewrite any section, add your own line, then copy the final preview.</p>
-      <div class="builderTopActions">
-        <button type="button" class="regenerateAllButton">Regenerate All</button>
-        <button type="button" class="copyBuilderButton">Copy Builder Preview</button>
-      </div>
-    </div>
+  setNativeValue(builder.querySelector('[data-builder-field="main"]'), firstMain);
+  setNativeValue(builder.querySelector('[data-builder-field="hashtags"]'), firstHashtags);
+  setNativeValue(builder.querySelector('[data-builder-field="hook"]'), firstHook);
+  setNativeValue(builder.querySelector('[data-builder-field="script"]'), firstScript);
 
-    <section class="builderEditor">
-      <label>Opening / hook<textarea data-builder-field="opening" placeholder="Optional opener or hook...">${escapeHtml(firstHook)}</textarea></label>
-      <label>Main copy<textarea data-builder-field="main" placeholder="Write or use one generated main copy option...">${escapeHtml(firstMain)}</textarea></label>
-      <label>Extra line / add-on<textarea data-builder-field="extra" placeholder="Add anything extra you want in the final post..."></textarea></label>
-      <label>Hashtags<textarea data-builder-field="hashtags" placeholder="Hashtags...">${escapeHtml(firstHashtags)}</textarea></label>
-      <label>Platform link<input data-builder-field="link" value="${escapeHtml(groups.link)}" placeholder="Platform/product link..." /></label>
-      <label>Script / shot list<textarea data-builder-field="script" placeholder="Optional TikTok/Shorts script, voiceover, or shot list...">${escapeHtml(firstScript)}</textarea></label>
-    </section>
-
-    <section class="builderSourceParts">
-      ${renderUseOptions("Main copy options", "main", groups.main)}
-      ${renderUseOptions("Hook options", "opening", groups.hooks)}
-      ${renderUseOptions("Hashtag options", "hashtags", groups.hashtags)}
-      ${renderUseOptions("Script options", "script", groups.script)}
-    </section>
-  `;
-
-  workbench.querySelectorAll("textarea,input").forEach((field) => {
-    field.addEventListener("input", updateFinalPreviewFromBuilder);
-  });
-
-  workbench.querySelectorAll(".usePartButton").forEach((button) => {
-    button.addEventListener("click", () => useOption(workbench, button.dataset.useKey, button.dataset.useValue));
-  });
-
-  workbench.querySelector(".copyBuilderButton")?.addEventListener("click", () => {
-    navigator.clipboard?.writeText(document.querySelector(".finalPreview textarea")?.value || "");
-  });
-
-  workbench.querySelector(".regenerateAllButton")?.addEventListener("click", () => {
-    const createButton = Array.from(document.querySelectorAll(".dashboardNav button")).find((button) => clean(button.textContent) === "Create");
-    createButton?.click();
-    window.setTimeout(() => {
-      const generateButton = Array.from(document.querySelectorAll("button")).find((button) => clean(button.textContent).includes("Generate With AI"));
-      generateButton?.click();
-    }, 180);
-  });
-
-  updateFinalPreviewFromBuilder();
+  builder.querySelectorAll("textarea,input").forEach((field) => field.addEventListener("input", updatePreview));
 
   const heading = preview.querySelector("h2");
-  if (heading) heading.textContent = `${PLATFORM_LABELS[platform] || "Post"} final preview`;
+  if (heading) heading.textContent = `${PLATFORM_LABELS[platform] || "Post"} live preview`;
+  updatePreview();
 }
 
-function installCopyReadyOverride() {
-  if (typeof document === "undefined" || document.__localJagoffCopyReadyOverride) return;
-  document.__localJagoffCopyReadyOverride = true;
+function installBuilderDelegates() {
+  if (typeof document === "undefined" || document.__localJagoffBuilderDelegates) return;
+  document.__localJagoffBuilderDelegates = true;
+
   document.addEventListener("click", (event) => {
+    const optionButton = event.target?.closest?.(".usePartButton");
+    if (optionButton) {
+      event.preventDefault();
+      const builder = document.querySelector(".postWorkbench");
+      const field = builder?.querySelector(`[data-builder-field="${optionButton.dataset.targetField}"]`);
+      const value = window.__localJagoffBuilderOptions?.[optionButton.dataset.optionId] || "";
+      if (field) {
+        setNativeValue(field, value);
+        optionButton.closest(".partCard")?.querySelectorAll(".usePartButton").forEach((button) => button.classList.remove("selected"));
+        optionButton.classList.add("selected");
+        updatePreview();
+      }
+      return;
+    }
+
+    const regenerateButton = event.target?.closest?.(".regenerateInlineButton");
+    if (regenerateButton) {
+      event.preventDefault();
+      regenerateButton.textContent = "Regenerating...";
+      regenerateButton.disabled = true;
+      const createButton = Array.from(document.querySelectorAll(".dashboardNav button")).find((button) => clean(button.textContent) === "Create");
+      createButton?.click();
+      window.setTimeout(() => {
+        const generateButton = Array.from(document.querySelectorAll("button")).find((button) => clean(button.textContent).includes("Generate With AI"));
+        generateButton?.click();
+      }, 140);
+      return;
+    }
+
     const button = event.target?.closest?.("button");
-    if (!button || clean(button.textContent) !== "Copy Ready Post") return;
-    const text = document.querySelector(".finalPreview textarea")?.value || "";
-    if (!text) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation?.();
-    navigator.clipboard?.writeText(text);
+    if (button && clean(button.textContent) === "Copy Ready Post") {
+      const text = document.querySelector(".finalPreview textarea")?.value || "";
+      if (text) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
+        navigator.clipboard?.writeText(text);
+      }
+    }
   }, true);
 }
 
-function hideWarningBlocks() {
+function hideRawBlocks() {
   if (typeof document === "undefined") return;
   document.querySelectorAll(".resultBlock").forEach((block) => {
     const title = block.querySelector("h3")?.textContent?.trim().toLowerCase() || "";
@@ -482,34 +506,31 @@ function injectStyles() {
     .presetControls .applyPresetButton{color:#000!important;background:#ffe600!important;border-color:#ffe600!important}
     .presetControls.compactOnly{grid-template-columns:1fr!important}
     .presetStatus{grid-column:1/-1;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;min-height:16px!important}
-    .studioOutput{display:grid!important;grid-template-columns:minmax(280px,380px) minmax(0,1fr)!important;gap:16px!important;align-items:start!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
+    .studioOutput{display:grid!important;grid-template-columns:minmax(280px,390px) minmax(0,1fr)!important;gap:16px!important;align-items:start!important;width:100%!important;max-width:100%!important;overflow:hidden!important}
     .finalPreview,.postWorkbench,.results{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
     .finalPreview{position:sticky!important;top:74px!important;align-self:start!important;overflow:hidden!important}
-    .finalPreview textarea{width:100%!important;max-width:100%!important;box-sizing:border-box!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-size:13px!important;line-height:1.45!important;resize:vertical!important;min-height:330px!important}
-    .postWorkbench{display:grid!important;gap:12px!important}
-    .builderTitle,.builderEditor,.builderSourceParts,.partOptions{background:rgba(13,13,13,.92)!important;border:1px solid rgba(255,230,0,.2)!important;border-radius:18px!important;padding:16px!important;box-shadow:0 18px 56px rgba(0,0,0,.32)!important;min-width:0!important;overflow:hidden!important}
-    .builderTitle h2,.partOptions strong{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;line-height:1.08!important}
-    .builderTitle p{margin:8px 0 0!important;color:#ddd!important;line-height:1.45!important;overflow-wrap:anywhere!important}
-    .builderTopActions{display:flex!important;gap:10px!important;flex-wrap:wrap!important;margin-top:14px!important}
-    .builderTopActions button,.usePartButton{border:1px solid #333!important;border-radius:14px!important;background:#1b1b1b!important;color:#fff!important;padding:12px 14px!important;font-weight:900!important;cursor:pointer!important}
-    .builderTopActions .regenerateAllButton{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}
-    .builderEditor{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
-    .builderEditor label{display:grid!important;gap:7px!important;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important}
-    .builderEditor label:nth-child(2),.builderEditor label:nth-child(6){grid-column:1/-1!important}
-    .builderEditor textarea,.builderEditor input{width:100%!important;box-sizing:border-box!important;border:1px solid #333!important;border-radius:14px!important;background:#050505!important;color:#fff!important;padding:12px!important;font-size:13px!important;line-height:1.45!important;min-height:74px!important;resize:vertical!important}
-    .builderEditor label:nth-child(2) textarea,.builderEditor label:nth-child(6) textarea{min-height:126px!important}
-    .builderSourceParts{display:grid!important;gap:12px!important}
-    .partHead{display:flex!important;justify-content:space-between!important;gap:12px!important;align-items:center!important;margin-bottom:10px!important}
+    .finalPreview textarea{width:100%!important;max-width:100%!important;box-sizing:border-box!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-size:13px!important;line-height:1.45!important;resize:vertical!important;min-height:390px!important}
+    .postWorkbench{display:grid!important;gap:12px!important;align-self:start!important}
+    .workbenchHead,.partCard{background:rgba(13,13,13,.92)!important;border:1px solid rgba(255,230,0,.2)!important;border-radius:18px!important;padding:16px!important;box-shadow:0 18px 56px rgba(0,0,0,.32)!important;min-width:0!important;overflow:hidden!important}
+    .workbenchHead{display:flex!important;justify-content:space-between!important;gap:14px!important;align-items:center!important}
+    .workbenchHead h2,.partHead h3{margin:0!important;color:#ffe600!important;text-transform:uppercase!important;line-height:1.08!important}
+    .workbenchHead p{margin:8px 0 0!important;color:#ddd!important;line-height:1.45!important}
+    .regenerateInlineButton{border:1px solid #ffe600!important;border-radius:14px!important;background:#ffe600!important;color:#000!important;padding:12px 14px!important;font-weight:900!important;cursor:pointer!important;white-space:nowrap!important}
+    .partHead{display:flex!important;justify-content:space-between!important;gap:12px!important;align-items:center!important;margin-bottom:12px!important}
     .partHead span{color:#aaa!important;font-size:11px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;white-space:nowrap!important}
-    .partOptions{display:grid!important;gap:8px!important}
-    .usePartButton{display:grid!important;gap:6px!important;width:100%!important;text-align:left!important;background:#101010!important;min-width:0!important;box-sizing:border-box!important}
-    .usePartButton em{font-style:normal!important;color:#ffe600!important;text-transform:uppercase!important;font-size:12px!important;letter-spacing:1px!important}
+    .partCard label{display:grid!important;gap:7px!important;color:#ffe600!important;font-size:12px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:1px!important;margin-top:12px!important}
+    .partCard textarea,.partCard input{width:100%!important;box-sizing:border-box!important;border:1px solid #333!important;border-radius:14px!important;background:#050505!important;color:#fff!important;padding:12px!important;font-size:13px!important;line-height:1.45!important;min-height:84px!important;resize:vertical!important}
+    .partCard input{min-height:44px!important}
+    .optionList{display:grid!important;gap:8px!important}
+    .usePartButton{display:grid!important;grid-template-columns:auto 1fr!important;gap:4px 10px!important;width:100%!important;text-align:left!important;border:1px solid #333!important;border-radius:14px!important;background:#101010!important;color:#fff!important;padding:12px!important;min-width:0!important;box-sizing:border-box!important;cursor:pointer!important}
+    .usePartButton strong{grid-row:1/3!important;color:#000!important;background:#ffe600!important;border-radius:999px!important;padding:7px 9px!important;font-size:11px!important;text-transform:uppercase!important;align-self:start!important;white-space:nowrap!important}
+    .usePartButton em{font-style:normal!important;color:#ffe600!important;text-transform:uppercase!important;font-size:12px!important;letter-spacing:1px!important;overflow-wrap:anywhere!important}
     .usePartButton span{color:#ddd!important;font-size:13px!important;line-height:1.4!important;overflow-wrap:anywhere!important;white-space:normal!important}
-    .usePartButton:hover{border-color:#ffe600!important;background:rgba(255,230,0,.12)!important}
+    .usePartButton:hover,.usePartButton.selected{border-color:#ffe600!important;background:rgba(255,230,0,.12)!important}
     .results{display:none!important}
     .previewNote{display:none!important}
-    @media(max-width:1100px){.studioOutput{grid-template-columns:1fr!important}.finalPreview{position:static!important}.postWorkbench{order:2}}
-    @media(max-width:980px){.promoSmartRow{grid-template-columns:1fr!important}.presetControls{grid-template-columns:1fr!important}.presetControls button,.presetControls a,.presetControls select{width:100%!important;text-align:center!important}.builderEditor{grid-template-columns:1fr!important}.builderEditor label{grid-column:1/-1!important}.builderTopActions button{width:100%!important}}
+    @media(max-width:1120px){.studioOutput{grid-template-columns:1fr!important}.finalPreview{position:static!important}.postWorkbench{order:2}.workbenchHead{display:grid!important}.regenerateInlineButton{width:100%!important}}
+    @media(max-width:980px){.promoSmartRow{grid-template-columns:1fr!important}.presetControls{grid-template-columns:1fr!important}.presetControls button,.presetControls a,.presetControls select{width:100%!important;text-align:center!important}.usePartButton{grid-template-columns:1fr!important}.usePartButton strong{grid-row:auto!important;width:max-content!important}}
   `;
   document.head.appendChild(style);
 }
@@ -518,8 +539,8 @@ function refreshPromoStudioEnhancements() {
   attachPresetHelper();
   attachProductBankWinnerHelper();
   defaultAwayFromNewDrop();
-  hideWarningBlocks();
-  ensurePostWorkbench();
+  hideRawBlocks();
+  ensureWorkbench();
 }
 
 export default function PromoCommandCenter() {
@@ -527,13 +548,13 @@ export default function PromoCommandCenter() {
 
   useEffect(() => {
     injectStyles();
-    installCopyReadyOverride();
+    installBuilderDelegates();
     refreshPromoStudioEnhancements();
     setReady(true);
 
     const observer = new MutationObserver(() => {
       window.clearTimeout(window.__localJagoffPromoStudioRefresh);
-      window.__localJagoffPromoStudioRefresh = window.setTimeout(refreshPromoStudioEnhancements, 80);
+      window.__localJagoffPromoStudioRefresh = window.setTimeout(refreshPromoStudioEnhancements, 90);
     });
 
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
