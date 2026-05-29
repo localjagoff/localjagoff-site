@@ -1,5 +1,6 @@
 import "../styles/global.css";
 import Head from "next/head";
+import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -17,6 +18,33 @@ export default function App({ Component, pageProps }) {
   const isProductPage = router.pathname === "/product/[id]";
   const cleanPath = router.asPath?.split("?")[0] || "/";
   const canonicalUrl = `${SITE_URL}${cleanPath === "/" ? "" : cleanPath}`;
+
+  useEffect(() => {
+    if (!isProductPage || typeof document === "undefined") return undefined;
+
+    const updateProductCareLine = () => {
+      const productTitle =
+        document.querySelector(".info-panel h1")?.textContent?.toLowerCase() || "";
+      const trustLine = document.querySelector(".trust-box p:first-child");
+      if (!trustLine) return;
+
+      const isHat = /\b(hat|cap|trucker)\b/.test(productTitle);
+      trustLine.textContent = isHat
+        ? "Embroidered when ordered. Stitched clean. No mall-rack nonsense."
+        : "Printed when ordered. Shipped direct. No mall-rack nonsense.";
+    };
+
+    updateProductCareLine();
+
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      updateProductCareLine();
+      attempts += 1;
+      if (attempts >= 20) window.clearInterval(timer);
+    }, 120);
+
+    return () => window.clearInterval(timer);
+  }, [isProductPage, router.asPath]);
 
   return (
     <>
