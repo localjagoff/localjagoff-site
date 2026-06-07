@@ -5,14 +5,14 @@
 }
 
 .wrap {
-  width: min(1500px, 100%);
+  width: min(760px, 100%);
   margin: 0 auto;
-  padding: 18px 12px 36px;
+  padding: 14px 10px 34px;
 }
 
 .backLink {
   display: inline-block;
-  margin: 0 0 12px 4px;
+  margin: 0 0 10px 4px;
   color: #cfcfcf;
   font-weight: 900;
 }
@@ -22,10 +22,10 @@
 }
 
 .hero {
-  margin-bottom: 12px;
-  padding: 18px 20px;
+  margin-bottom: 10px;
+  padding: 16px 18px;
   border: 1px solid rgba(255, 230, 0, 0.16);
-  border-radius: 22px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at top left, rgba(255, 230, 0, 0.08), transparent 36%),
     rgba(8, 8, 8, 0.86);
@@ -42,24 +42,24 @@
 
 .hero h1 {
   margin: 0 0 8px;
-  font-size: clamp(38px, 6vw, 74px);
+  font-size: clamp(34px, 8vw, 62px);
   line-height: 0.95;
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
 .hero p {
-  max-width: 980px;
+  max-width: 680px;
   margin: 0;
   color: #dedede;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .gameCard {
-  padding: 8px;
+  padding: 7px;
   border: 1px solid rgba(255, 230, 0, 0.18);
-  border-radius: 24px;
+  border-radius: 22px;
   background:
     radial-gradient(circle at top, rgba(255, 230, 0, 0.08), transparent 42%),
     rgba(3, 3, 3, 0.94);
@@ -71,14 +71,14 @@
 .scoreBar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 7px;
 }
 
 .scoreBar div {
-  padding: 10px 12px;
+  padding: 9px 8px;
   border: 1px solid rgba(255, 230, 0, 0.15);
-  border-radius: 15px;
+  border-radius: 13px;
   background:
     linear-gradient(180deg, rgba(255, 230, 0, 0.04), transparent 70%),
     rgba(255, 255, 255, 0.03);
@@ -88,9 +88,9 @@
   display: block;
   margin-bottom: 3px;
   color: #a9a9a9;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
@@ -98,7 +98,7 @@
   display: block;
   color: #ffe600;
   font-family: "Oswald", sans-serif;
-  font-size: 23px;
+  font-size: 18px;
   line-height: 1;
   text-shadow: 0 0 14px rgba(255, 230, 0, 0.3);
 }
@@ -107,10 +107,9 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  min-height: 620px;
   overflow: hidden;
   border: 1px solid rgba(255, 230, 0, 0.32);
-  border-radius: 22px;
+  border-radius: 18px;
   background: #000;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -122,9 +121,9 @@
 .canvas {
   display: block;
   width: 100% !important;
-  max-width: 1500px;
-  height: 620px !important;
-  object-fit: cover;
+  max-width: 420px;
+  height: auto !important;
+  aspect-ratio: 420 / 680;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -133,18 +132,18 @@
 
 .mobileControls {
   display: none;
-  margin-top: 10px;
+  margin-top: 9px;
 }
 
 .mobileControls button {
   width: 100%;
-  min-height: 60px;
+  min-height: 58px;
   border: none;
   border-radius: 18px;
   background: linear-gradient(180deg, #fff56f 0%, #ffe600 45%, #d7b900 100%);
   color: #000;
   font-family: "Oswald", sans-serif;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 900;
   letter-spacing: 1px;
   cursor: pointer;
@@ -156,10 +155,10 @@
 }
 
 .instructions {
-  margin: 10px 2px 0;
+  margin: 9px 2px 0;
   color: #d5d5d5;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
   text-align: center;
   font-weight: 700;
 }
@@ -176,17 +175,16 @@
 
   .hero {
     margin: 0 8px 10px;
-    padding: 14px 15px;
+    padding: 13px 14px;
     border-radius: 18px;
   }
 
   .hero h1 {
-    font-size: 34px !important;
+    font-size: 32px !important;
   }
 
   .hero p {
     font-size: 13px;
-    line-height: 1.45;
   }
 
   .gameCard {
@@ -196,57 +194,23 @@
     border-radius: 0;
   }
 
-  .scoreBar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
-    margin-bottom: 5px;
-  }
-
-  .scoreBar div {
-    padding: 8px 6px;
-    border-radius: 12px;
-  }
-
-  .scoreBar span {
-    font-size: 8px;
-    letter-spacing: 0.6px;
-  }
-
-  .scoreBar strong {
-    font-size: 16px;
-  }
-
   .canvasWrap {
-    min-height: 62vh;
     border-left: none;
     border-right: none;
     border-radius: 0;
   }
 
   .canvas {
-    height: 62vh !important;
-    min-height: 460px;
-    max-height: 680px;
+    width: min(100vw, 420px) !important;
+    max-width: 100vw;
+    height: auto !important;
+    min-height: 0;
+    max-height: none;
+    object-fit: contain;
   }
 
   .mobileControls {
     display: block;
     padding: 0 8px;
-  }
-
-  .instructions {
-    font-size: 12px;
-    padding: 0 10px;
-  }
-}
-
-@media (max-width: 390px) {
-  .hero h1 {
-    font-size: 32px !important;
-  }
-
-  .mobileControls button {
-    min-height: 56px;
-    font-size: 20px;
   }
 }
