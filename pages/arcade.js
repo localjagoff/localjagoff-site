@@ -50,10 +50,10 @@ const games = [
     title: "Yinzer Invaders",
     status: "Playable now",
     href: "/yinzer-invaders",
-    tag: "Retro shooter",
+    tag: "Street shooter",
     controls: "Move + shoot",
     description:
-      "A black-and-gold retro shooter. Blast incoming chaos before it reaches the bottom.",
+      "A black-and-gold street shooter. Blast incoming chaos before it reaches the bottom.",
   },
   {
     title: "Bridge Rage",
@@ -65,6 +65,30 @@ const games = [
       "Switch lanes through bridge traffic and dodge buses, cones, and bad merges.",
   },
 ];
+
+const playButtonStyle = {
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "10px",
+  minHeight: "64px",
+  width: "100%",
+  marginTop: "auto",
+  borderRadius: "18px",
+  border: "2px solid rgba(0, 0, 0, 0.55)",
+  background: "linear-gradient(180deg, #fff56f 0%, #ffe600 45%, #d7b900 100%)",
+  color: "#000",
+  fontFamily: "Oswald, sans-serif",
+  fontSize: "20px",
+  fontWeight: 900,
+  letterSpacing: "1px",
+  textAlign: "center",
+  textDecoration: "none",
+  boxShadow:
+    "0 14px 30px rgba(255, 230, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.55)",
+  textTransform: "uppercase",
+};
 
 export default function ArcadePage() {
   const arcadeJsonLd = {
@@ -118,8 +142,8 @@ export default function ArcadePage() {
           <p className="kicker">LOCAL JAGOFF PRESENTS</p>
           <h1>Arcade</h1>
           <p>
-            Pick a game below. Every card has its own clear play button so you know exactly
-            what you are opening. Mobile-friendly first, jagoff-approved always.
+            Pick a game below. Each card has a big yellow play button, so there is no guessing
+            which game you are selecting.
           </p>
         </section>
 
@@ -137,9 +161,10 @@ export default function ArcadePage() {
                 <span>Controls</span>
                 <strong>{game.controls}</strong>
               </div>
-              <Link href={game.href} className="playButton" aria-label={`Play ${game.title}`}>
-                PLAY {game.title.toUpperCase()}
-              </Link>
+              <a href={game.href} style={playButtonStyle} aria-label={`Play ${game.title}`}>
+                <span className="playIcon">▶</span>
+                <span>Play {game.title}</span>
+              </a>
             </article>
           ))}
         </section>
@@ -213,7 +238,7 @@ export default function ArcadePage() {
 
         .gameCard {
           position: relative;
-          min-height: 340px;
+          min-height: 370px;
           display: flex;
           flex-direction: column;
           padding: 20px;
@@ -221,7 +246,7 @@ export default function ArcadePage() {
           border: 1px solid rgba(255, 230, 0, 0.18);
           border-radius: 24px;
           background:
-            radial-gradient(circle at top right, rgba(255, 230, 0, 0.14), transparent 34%),
+            radial-gradient(circle at 80% 15%, rgba(255, 230, 0, 0.16), transparent 30%),
             linear-gradient(180deg, rgba(255, 230, 0, 0.055), transparent 42%),
             rgba(12, 12, 12, 0.94);
           box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
@@ -239,10 +264,10 @@ export default function ArcadePage() {
         .cardNumber {
           position: absolute;
           right: 18px;
-          bottom: 14px;
-          color: rgba(255, 230, 0, 0.09);
+          bottom: 82px;
+          color: rgba(255, 230, 0, 0.08);
           font-family: "Oswald", sans-serif;
-          font-size: 78px;
+          font-size: 82px;
           font-weight: 900;
           line-height: 1;
           pointer-events: none;
@@ -325,28 +350,17 @@ export default function ArcadePage() {
           text-align: right;
         }
 
-        .playButton {
-          position: relative;
-          display: flex;
+        .playIcon {
+          width: 28px;
+          height: 28px;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 54px;
-          margin-top: auto;
-          border-radius: 16px;
-          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
-          color: #000;
-          font-family: "Oswald", sans-serif;
-          font-size: 18px;
-          font-weight: 900;
-          letter-spacing: 0.8px;
-          text-align: center;
-          box-shadow: 0 12px 28px rgba(255, 230, 0, 0.18);
-          transition: transform 0.16s ease, filter 0.16s ease;
-        }
-
-        .playButton:hover {
-          transform: translateY(-1px);
-          filter: brightness(1.03);
+          border-radius: 999px;
+          background: #000;
+          color: #ffe600;
+          font-size: 14px;
+          line-height: 1;
         }
 
         @media (max-width: 980px) {
@@ -380,18 +394,13 @@ export default function ArcadePage() {
           }
 
           .gameCard {
-            min-height: 300px;
+            min-height: 330px;
             padding: 17px;
             border-radius: 20px;
           }
 
           .gameCard h2 {
             font-size: 28px !important;
-          }
-
-          .playButton {
-            min-height: 56px;
-            font-size: 17px;
           }
         }
       `}</style>
