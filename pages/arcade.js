@@ -15,48 +15,54 @@ const games = [
     status: "Playable now",
     href: "/jagoff-jump",
     tag: "Endless runner",
+    controls: "Tap to jump",
     description:
-      "Tap to jump over potholes, parking chairs, cones, and fries. Built for mobile first.",
+      "Jump over potholes, parking chairs, cones, and fries. Quick, simple, and built for mobile.",
   },
   {
     title: "Parking Chair Panic",
     status: "Playable now",
     href: "/parking-chair-panic",
     tag: "Lane dodger",
+    controls: "Tap lanes",
     description:
-      "Slide through tight Pittsburgh streets, dodge chairs, cones, and blocks, and protect your spot.",
+      "Pick a lane, dodge chairs and cones, and keep your spot alive as the street speeds up.",
   },
   {
     title: "Pothole Patrol",
     status: "Playable now",
     href: "/pothole-patrol",
     tag: "Tap reflex",
+    controls: "Tap targets",
     description:
-      "Patch potholes before the timer runs out. Faster every round. More chaos every block.",
+      "Patch potholes before their timers run out. More pop up the longer you survive.",
   },
   {
     title: "Fry Catcher",
     status: "Playable now",
     href: "/fry-catcher",
     tag: "Catch game",
+    controls: "Drag basket",
     description:
-      "Catch falling fries, avoid splats, and build the biggest basket in the burgh.",
+      "Move the basket, catch fries, and avoid splats. Miss too many and you are done.",
   },
   {
     title: "Yinzer Invaders",
     status: "Playable now",
     href: "/yinzer-invaders",
     tag: "Retro shooter",
+    controls: "Move + shoot",
     description:
-      "Old-school arcade shooter with black-and-gold energy and nonsense flying at you.",
+      "A black-and-gold retro shooter. Blast incoming chaos before it reaches the bottom.",
   },
   {
     title: "Bridge Rage",
     status: "Playable now",
     href: "/bridge-rage",
     tag: "Traffic survival",
+    controls: "Tap lanes",
     description:
-      "Survive merging traffic, bridges, blockers, and bad lane decisions.",
+      "Switch lanes through bridge traffic and dodge buses, cones, and bad merges.",
   },
 ];
 
@@ -112,27 +118,29 @@ export default function ArcadePage() {
           <p className="kicker">LOCAL JAGOFF PRESENTS</p>
           <h1>Arcade</h1>
           <p>
-            A little corner of the site for dumb, fun, Pittsburgh-style browser games.
-            Mobile-friendly first, jagoff-approved always.
+            Pick a game below. Every card has its own clear play button so you know exactly
+            what you are opening. Mobile-friendly first, jagoff-approved always.
           </p>
-          <div className="heroActions">
-            <Link href="/jagoff-jump" className="primaryBtn">
-              Play Jagoff Jump
-            </Link>
-          </div>
         </section>
 
         <section className="gamesGrid" aria-label="Local Jagoff arcade games">
-          {games.map((game) => (
-            <Link key={game.title} href={game.href} className="gameCard playable">
+          {games.map((game, index) => (
+            <article key={game.title} className="gameCard">
+              <div className="cardNumber">{String(index + 1).padStart(2, "0")}</div>
               <div className="cardTop">
                 <span className="gameTag">{game.tag}</span>
                 <span className="status live">{game.status}</span>
               </div>
               <h2>{game.title}</h2>
               <p>{game.description}</p>
-              <span className="cardAction">Play now →</span>
-            </Link>
+              <div className="metaRow">
+                <span>Controls</span>
+                <strong>{game.controls}</strong>
+              </div>
+              <Link href={game.href} className="playButton" aria-label={`Play ${game.title}`}>
+                PLAY {game.title.toUpperCase()}
+              </Link>
+            </article>
           ))}
         </section>
       </main>
@@ -145,16 +153,16 @@ export default function ArcadePage() {
         }
 
         .arcadeWrap {
-          width: min(1120px, 100%);
+          width: min(1280px, 100%);
           margin: 0 auto;
-          padding: 24px 20px 44px;
+          padding: 24px 18px 44px;
         }
 
         .backLink {
           display: inline-block;
           margin-bottom: 14px;
           color: #cfcfcf;
-          font-weight: 800;
+          font-weight: 900;
         }
 
         .backLink:hover {
@@ -163,14 +171,14 @@ export default function ArcadePage() {
 
         .arcadeHero {
           margin-bottom: 22px;
-          padding: 24px;
-          border: 1px solid #252525;
-          border-radius: 24px;
+          padding: 26px;
+          border: 1px solid rgba(255, 230, 0, 0.2);
+          border-radius: 26px;
           background:
-            radial-gradient(circle at top left, rgba(255, 230, 0, 0.12), transparent 36%),
+            radial-gradient(circle at top left, rgba(255, 230, 0, 0.14), transparent 36%),
             linear-gradient(180deg, rgba(255, 230, 0, 0.06), rgba(255, 230, 0, 0) 44%),
-            rgba(12, 12, 12, 0.9);
-          box-shadow: 0 20px 46px rgba(0, 0, 0, 0.34);
+            rgba(12, 12, 12, 0.92);
+          box-shadow: 0 22px 54px rgba(0, 0, 0, 0.42);
         }
 
         .kicker {
@@ -183,85 +191,78 @@ export default function ArcadePage() {
 
         .arcadeHero h1 {
           margin: 0 0 10px;
-          font-size: clamp(46px, 8vw, 88px);
-          line-height: 0.92;
+          font-size: clamp(52px, 9vw, 104px);
+          line-height: 0.9;
           text-transform: uppercase;
+          text-shadow: 0 0 22px rgba(255, 230, 0, 0.2);
         }
 
         .arcadeHero p {
-          max-width: 780px;
+          max-width: 860px;
           margin: 0;
           color: #dedede;
           font-size: 16px;
           line-height: 1.6;
         }
 
-        .heroActions {
-          margin-top: 18px;
-        }
-
-        .primaryBtn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 48px;
-          padding: 0 20px;
-          border-radius: 14px;
-          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
-          color: #000;
-          font-weight: 900;
-          letter-spacing: 0.4px;
-          box-shadow: 0 12px 26px rgba(255, 230, 0, 0.18);
-        }
-
-        .primaryBtn:hover {
-          transform: translateY(-1px);
-        }
-
         .gamesGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 16px;
+          gap: 18px;
         }
 
         .gameCard {
-          min-height: 240px;
+          position: relative;
+          min-height: 340px;
           display: flex;
           flex-direction: column;
-          padding: 18px;
-          border: 1px solid #252525;
-          border-radius: 22px;
+          padding: 20px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 230, 0, 0.18);
+          border-radius: 24px;
           background:
+            radial-gradient(circle at top right, rgba(255, 230, 0, 0.14), transparent 34%),
             linear-gradient(180deg, rgba(255, 230, 0, 0.055), transparent 42%),
-            rgba(14, 14, 14, 0.92);
-          transition:
-            transform 0.16s ease,
-            border-color 0.16s ease,
-            background 0.16s ease;
+            rgba(12, 12, 12, 0.94);
+          box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
         }
 
-        .gameCard.playable:hover {
-          transform: translateY(-2px);
-          border-color: rgba(255, 230, 0, 0.55);
-          background:
-            linear-gradient(180deg, rgba(255, 230, 0, 0.09), transparent 46%),
-            rgba(18, 18, 18, 0.96);
+        .gameCard::before {
+          content: "";
+          position: absolute;
+          inset: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 18px;
+          pointer-events: none;
+        }
+
+        .cardNumber {
+          position: absolute;
+          right: 18px;
+          bottom: 14px;
+          color: rgba(255, 230, 0, 0.09);
+          font-family: "Oswald", sans-serif;
+          font-size: 78px;
+          font-weight: 900;
+          line-height: 1;
+          pointer-events: none;
         }
 
         .cardTop {
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         .gameTag,
         .status {
           display: inline-flex;
           align-items: center;
-          min-height: 28px;
-          padding: 0 10px;
+          min-height: 30px;
+          padding: 0 11px;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 900;
@@ -278,29 +279,77 @@ export default function ArcadePage() {
         .status.live {
           color: #000;
           background: #ffe600;
+          box-shadow: 0 0 18px rgba(255, 230, 0, 0.18);
         }
 
         .gameCard h2 {
-          margin: 0 0 10px;
-          font-size: 28px;
-          line-height: 1.05;
+          position: relative;
+          margin: 0 0 12px;
+          font-size: 31px;
+          line-height: 1.02;
+          text-transform: uppercase;
         }
 
         .gameCard p {
+          position: relative;
           margin: 0;
-          color: #cacaca;
+          color: #d0d0d0;
           font-size: 14px;
           line-height: 1.55;
         }
 
-        .cardAction {
-          margin-top: auto;
-          padding-top: 18px;
-          color: #ffe600;
-          font-weight: 900;
+        .metaRow {
+          position: relative;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-top: 18px;
+          padding: 11px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.035);
         }
 
-        @media (max-width: 900px) {
+        .metaRow span {
+          color: #9e9e9e;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+
+        .metaRow strong {
+          color: #ffe600;
+          font-size: 13px;
+          text-align: right;
+        }
+
+        .playButton {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 54px;
+          margin-top: auto;
+          border-radius: 16px;
+          background: linear-gradient(180deg, #fff27a 0%, #ffe600 100%);
+          color: #000;
+          font-family: "Oswald", sans-serif;
+          font-size: 18px;
+          font-weight: 900;
+          letter-spacing: 0.8px;
+          text-align: center;
+          box-shadow: 0 12px 28px rgba(255, 230, 0, 0.18);
+          transition: transform 0.16s ease, filter 0.16s ease;
+        }
+
+        .playButton:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.03);
+        }
+
+        @media (max-width: 980px) {
           .gamesGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -308,7 +357,7 @@ export default function ArcadePage() {
 
         @media (max-width: 768px) {
           .arcadeWrap {
-            padding: 18px 12px 30px;
+            padding: 16px 10px 30px;
           }
 
           .arcadeHero {
@@ -317,7 +366,7 @@ export default function ArcadePage() {
           }
 
           .arcadeHero h1 {
-            font-size: 52px !important;
+            font-size: 56px !important;
           }
 
           .arcadeHero p {
@@ -325,24 +374,24 @@ export default function ArcadePage() {
             line-height: 1.55;
           }
 
-          .primaryBtn {
-            width: 100%;
-            min-height: 54px;
-          }
-
           .gamesGrid {
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 14px;
           }
 
           .gameCard {
-            min-height: 205px;
-            padding: 16px;
-            border-radius: 18px;
+            min-height: 300px;
+            padding: 17px;
+            border-radius: 20px;
           }
 
           .gameCard h2 {
-            font-size: 24px !important;
+            font-size: 28px !important;
+          }
+
+          .playButton {
+            min-height: 56px;
+            font-size: 17px;
           }
         }
       `}</style>
