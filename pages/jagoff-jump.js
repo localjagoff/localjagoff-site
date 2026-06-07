@@ -11,6 +11,26 @@ const PAGE_DESCRIPTION =
   "Play Jagoff Jump, a mobile-friendly Pittsburgh endless runner from Local Jagoff. Tap to jump, dodge potholes, parking chairs, cones, and fries.";
 const SHARE_IMAGE = `${SITE_URL}/images/social-share.jpg`;
 
+const W = 420;
+const H = 680;
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function circle(ctx, x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.closePath();
+}
+
 export default function JagoffJumpPage() {
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
@@ -20,71 +40,58 @@ export default function JagoffJumpPage() {
   const [status, setStatus] = useState("Ready");
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
     const savedBest = Number(window.localStorage.getItem("jagoffJumpBestScore") || 0);
     setBestScore(savedBest);
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
     const game = {
-      width: 900,
-      height: 440,
-      groundY: 338,
+      width: W,
+      height: H,
+      groundY: 565,
       running: false,
-      gameOver: false,
+      over: false,
       frame: 0,
       score: 0,
       best: savedBest,
-      speed: 6,
-      obstacleTimer: 0,
-      nextObstacleAt: 70,
-      player: { x: 105, y: 274, w: 50, h: 64, vy: 0, onGround: true },
+      speed: 4.7,
+      gravity: 0.72,
+      spawnTimer: 0,
+      nextSpawn: 70,
+      player: { x: 82, y: 501, w: 46, h: 64, vy: 0, onGround: true },
       obstacles: [],
       particles: [],
     };
 
     const fitCanvas = () => {
-      const wrap = canvas.parentElement;
-      if (!wrap) return;
-      const displayWidth = Math.min(wrap.clientWidth, game.width);
-      canvas.width = game.width;
-      canvas.height = game.height;
-      canvas.style.width = `${displayWidth}px`;
-      canvas.style.height = `${Math.round(displayWidth * (game.height / game.width))}px`;
+      canvas.width = W;
+      canvas.height = H;
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
     };
 
-    const roundedRect = (x, y, w, h, r) => {
-      const radius = Math.min(r, w / 2, h / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.arcTo(x + w, y, x + w, y + h, radius);
-      ctx.arcTo(x + w, y + h, x, y + h, radius);
-      ctx.arcTo(x, y + h, x, y, radius);
-      ctx.arcTo(x, y, x + w, y, radius);
-      ctx.closePath();
-    };
-
-    const dust = (x, y, amount = 7) => {
-      for (let i = 0; i < amount; i += 1) {
+    const addDust = (x, y, count = 8, color = "#ffe600") => {
+      for (let i = 0; i < count; i += 1) {
         game.particles.push({
           x,
           y,
-          vx: -1 - Math.random() * 4,
-          vy: -Math.random() * 3,
-          size: 2 + Math.random() * 4,
-          life: 18 + Math.random() * 18,
+          vx: -2.5 + Math.random() * 5,
+          vy: -3 + Math.random() * 5,
+          r: 2 + Math.random() * 3.5,
+          life: 16 + Math.random() * 18,
+          color,
         });
       }
     };
 
     const resetGame = () => {
       game.running = true;
-      game.gameOver = false;
+      game.over = false;
       game.frame = 0;
       game.score = 0;
-      game.speed = 6;
-      game.obstacleTimer = 0;
-      game.nextObstacleAt = 68;
+      game.speed = 4.7;
+      game.spawnTimer = 0;
+      game.nextSpawn = 62;
       game.player.y = game.groundY - game.player.h;
       game.player.vy = 0;
       game.player.onGround = true;
@@ -92,16 +99,16 @@ export default function JagoffJumpPage() {
       game.particles = [];
       setScore(0);
       setStatus("Running");
-      dust(game.player.x + 12, game.groundY - 4, 8);
+      addDust(game.player.x + 12, game.groundY, 12);
     };
 
     const endGame = () => {
       game.running = false;
-      game.gameOver = true;
+      game.over = true;
       const finalScore = Math.floor(game.score / 10);
       setScore(finalScore);
       setStatus("Wrecked");
-      dust(game.player.x + game.player.w / 2, game.groundY - 6, 20);
+      addDust(game.player.x + game.player.w / 2, game.groundY, 20, "#ffcc33");
 
       if (finalScore > game.best) {
         game.best = finalScore;
@@ -111,63 +118,59 @@ export default function JagoffJumpPage() {
     };
 
     const jump = () => {
-      if (!game.running || game.gameOver) {
+      if (!game.running || game.over) {
         resetGame();
         return;
       }
 
       if (game.player.onGround) {
-        game.player.vy = -16.2;
+        game.player.vy = -14.2;
         game.player.onGround = false;
-        dust(game.player.x + 10, game.groundY - 3, 9);
+        addDust(game.player.x + 10, game.groundY, 9);
       }
     };
 
     jumpRef.current = jump;
 
-    const addObstacle = () => {
+    const spawnObstacle = () => {
       const options = [
-        { type: "pothole", w: 70, h: 24, y: game.groundY - 21 },
+        { type: "pothole", w: 66, h: 24, y: game.groundY - 22 },
         { type: "chair", w: 42, h: 58, y: game.groundY - 58 },
         { type: "cone", w: 44, h: 54, y: game.groundY - 54 },
-        { type: "fries", w: 46, h: 52, y: game.groundY - 52 },
+        { type: "fries", w: 42, h: 50, y: game.groundY - 50 },
       ];
       const obstacle = options[Math.floor(Math.random() * options.length)];
-      game.obstacles.push({ ...obstacle, x: game.width + 40 });
+      game.obstacles.push({ ...obstacle, x: W + 34 });
     };
 
-    const touching = (a, b) => {
-      const padX = 9;
-      const padY = 8;
+    const hit = (a, b) => {
+      const pad = 8;
       return (
-        a.x + padX < b.x + b.w - padX &&
-        a.x + a.w - padX > b.x + padX &&
-        a.y + padY < b.y + b.h - padY &&
-        a.y + a.h - padY > b.y + padY
+        a.x + pad < b.x + b.w - pad &&
+        a.x + a.w - pad > b.x + pad &&
+        a.y + pad < b.y + b.h - pad &&
+        a.y + a.h - pad > b.y + pad
       );
     };
 
     const update = () => {
-      if (!game.running || game.gameOver) return;
+      if (!game.running || game.over) return;
 
       game.frame += 1;
       game.score += 1;
-      game.speed = Math.min(13.5, 6 + game.score / 900);
-      game.obstacleTimer += 1;
+      game.speed = Math.min(10.5, 4.7 + game.score / 650);
+      game.spawnTimer += 1;
 
-      if (game.obstacleTimer >= game.nextObstacleAt) {
-        addObstacle();
-        game.obstacleTimer = 0;
-        game.nextObstacleAt = Math.max(50, 92 - game.score / 140 + Math.random() * 30);
+      if (game.spawnTimer >= game.nextSpawn) {
+        spawnObstacle();
+        game.spawnTimer = 0;
+        game.nextSpawn = Math.max(46, 82 - game.score / 120 + Math.random() * 20);
       }
 
-      game.player.vy += 0.78;
+      game.player.vy += game.gravity;
       game.player.y += game.player.vy;
 
       if (game.player.y + game.player.h >= game.groundY) {
-        if (!game.player.onGround && game.player.vy > 4) {
-          dust(game.player.x + 10, game.groundY - 3, 4);
-        }
         game.player.y = game.groundY - game.player.h;
         game.player.vy = 0;
         game.player.onGround = true;
@@ -178,187 +181,178 @@ export default function JagoffJumpPage() {
         .filter((obstacle) => obstacle.x + obstacle.w > -70);
 
       for (const obstacle of game.obstacles) {
-        if (touching(game.player, obstacle)) {
+        if (hit(game.player, obstacle)) {
           endGame();
           break;
         }
       }
 
       game.particles = game.particles
-        .map((particle) => ({
-          ...particle,
-          x: particle.x + particle.vx,
-          y: particle.y + particle.vy,
-          vy: particle.vy + 0.16,
-          life: particle.life - 1,
-        }))
-        .filter((particle) => particle.life > 0);
+        .map((p) => ({ ...p, x: p.x + p.vx, y: p.y + p.vy, vy: p.vy + 0.15, life: p.life - 1 }))
+        .filter((p) => p.life > 0);
 
       if (game.frame % 6 === 0) setScore(Math.floor(game.score / 10));
     };
 
+    const drawText = (text, x, y, size, color = "#ffe600", align = "center") => {
+      ctx.save();
+      ctx.textAlign = align;
+      ctx.font = `900 ${size}px Oswald, Arial, sans-serif`;
+      ctx.shadowColor = color === "#ffe600" ? "rgba(255, 230, 0, 0.42)" : "transparent";
+      ctx.shadowBlur = color === "#ffe600" ? 10 : 0;
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    };
+
     const drawBackground = () => {
-      const gradient = ctx.createLinearGradient(0, 0, 0, game.height);
-      gradient.addColorStop(0, "#191919");
-      gradient.addColorStop(0.55, "#070707");
+      const gradient = ctx.createLinearGradient(0, 0, 0, H);
+      gradient.addColorStop(0, "#1c1c1c");
+      gradient.addColorStop(0.48, "#070707");
       gradient.addColorStop(1, "#000000");
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, game.width, game.height);
+      ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = "rgba(255, 230, 0, 0.08)";
-      for (let i = 0; i < 8; i += 1) {
-        const x = i * 150 - ((game.frame * 0.45) % 150) - 40;
-        const h = 50 + (i % 4) * 25;
-        ctx.fillRect(x, game.groundY - h - 42, 72, h);
+      ctx.fillStyle = "rgba(255, 230, 0, 0.055)";
+      for (let i = 0; i < 7; i += 1) {
+        const x = i * 70 - ((game.frame * 0.22) % 70);
+        const h = 60 + (i % 4) * 28;
+        ctx.fillRect(x, 125 - h, 42, h);
       }
 
-      ctx.fillStyle = "rgba(255, 230, 0, 0.1)";
-      ctx.font = "900 22px Oswald, Arial, sans-serif";
-      ctx.fillText("412", 56 - ((game.frame * 0.22) % 260), 82);
-      ctx.fillText("724", 354 - ((game.frame * 0.22) % 260), 124);
-      ctx.fillText("YINZ", 642 - ((game.frame * 0.22) % 260), 92);
+      drawText("JAGOFF JUMP", 20, 46, 16, "#ffe600", "left");
+      ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+      ctx.font = "900 28px Oswald, Arial, sans-serif";
+      ctx.fillText("412", 315 - ((game.frame * 0.18) % 130), 96);
+      ctx.fillText("724", 380 - ((game.frame * 0.2) % 150), 135);
     };
 
     const drawGround = () => {
-      ctx.fillStyle = "#ffe600";
-      ctx.fillRect(0, game.groundY, game.width, 5);
-      ctx.fillStyle = "#101010";
-      ctx.fillRect(0, game.groundY + 5, game.width, game.height - game.groundY);
+      ctx.fillStyle = "#0a0a0a";
+      roundRect(ctx, 16, 118, 388, 485, 22);
+      ctx.fill();
       ctx.strokeStyle = "rgba(255, 230, 0, 0.42)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffe600";
+      ctx.fillRect(16, game.groundY, 388, 4);
+
+      ctx.strokeStyle = "rgba(255, 230, 0, 0.33)";
       ctx.lineWidth = 4;
-      ctx.setLineDash([28, 20]);
+      ctx.setLineDash([28, 24]);
       ctx.beginPath();
-      ctx.moveTo(-((game.frame * game.speed) % 48), game.groundY + 48);
-      ctx.lineTo(game.width, game.groundY + 48);
+      ctx.moveTo(-((game.frame * game.speed) % 52), game.groundY + 42);
+      ctx.lineTo(W, game.groundY + 42);
       ctx.stroke();
       ctx.setLineDash([]);
     };
 
     const drawPlayer = () => {
       const p = game.player;
-      const bounce = p.onGround ? Math.sin(game.frame / 6) * 2 : 0;
+      const bounce = p.onGround ? Math.sin(game.frame / 6) * 1.5 : 0;
       ctx.save();
       ctx.translate(p.x, p.y + bounce);
       ctx.fillStyle = "#ffe600";
-      roundedRect(8, 8, p.w - 16, p.h - 10, 10);
+      roundRect(ctx, 5, 12, p.w - 10, p.h - 12, 10);
       ctx.fill();
       ctx.fillStyle = "#0b0b0b";
-      roundedRect(14, 18, p.w - 28, p.h - 30, 5);
+      roundRect(ctx, 11, 23, p.w - 22, p.h - 32, 5);
       ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.font = "900 9px Oswald, Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("LOCAL", p.w / 2, 36);
-      ctx.fillText("JAGOFF", p.w / 2, 47);
+      drawText("LJ", p.w / 2, 48, 14, "#fff");
       ctx.fillStyle = "#ffe600";
-      ctx.beginPath();
-      ctx.arc(p.w / 2, 0, 15, 0, Math.PI * 2);
+      circle(ctx, p.w / 2, 5, 15);
       ctx.fill();
       ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(p.w / 2 - 5, -2, 2, 0, Math.PI * 2);
-      ctx.arc(p.w / 2 + 6, -2, 2, 0, Math.PI * 2);
+      circle(ctx, p.w / 2 - 5, 3, 2);
       ctx.fill();
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(p.w / 2 + 1, 3, 7, 0.15, Math.PI - 0.15);
-      ctx.stroke();
-      ctx.fillStyle = "#050505";
-      ctx.fillRect(5, p.h - 6, 15, 8);
-      ctx.fillRect(p.w - 20, p.h - 6, 15, 8);
+      circle(ctx, p.w / 2 + 6, 3, 2);
+      ctx.fill();
+      ctx.fillRect(4, p.h - 7, 15, 8);
+      ctx.fillRect(p.w - 19, p.h - 7, 15, 8);
       ctx.restore();
-      ctx.textAlign = "start";
     };
 
-    const drawObstacle = (obstacle) => {
-      if (obstacle.type === "pothole") {
-        ctx.fillStyle = "#030303";
+    const drawObstacle = (o) => {
+      if (o.type === "pothole") {
+        ctx.fillStyle = "#020202";
         ctx.beginPath();
-        ctx.ellipse(obstacle.x + obstacle.w / 2, obstacle.y + obstacle.h / 2, obstacle.w / 2, obstacle.h / 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(o.x + o.w / 2, o.y + o.h / 2, o.w / 2, o.h / 2, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(255, 230, 0, 0.4)";
         ctx.stroke();
         return;
       }
 
-      if (obstacle.type === "chair") {
+      if (o.type === "chair") {
         ctx.strokeStyle = "#ffe600";
         ctx.lineWidth = 5;
-        ctx.strokeRect(obstacle.x + 8, obstacle.y + 8, 26, 25);
+        ctx.strokeRect(o.x + 7, o.y + 7, 28, 25);
         ctx.beginPath();
-        ctx.moveTo(obstacle.x + 13, obstacle.y + 33);
-        ctx.lineTo(obstacle.x + 7, obstacle.y + obstacle.h);
-        ctx.moveTo(obstacle.x + 31, obstacle.y + 33);
-        ctx.lineTo(obstacle.x + 37, obstacle.y + obstacle.h);
+        ctx.moveTo(o.x + 13, o.y + 32);
+        ctx.lineTo(o.x + 7, o.y + o.h);
+        ctx.moveTo(o.x + 31, o.y + 32);
+        ctx.lineTo(o.x + 37, o.y + o.h);
         ctx.stroke();
         return;
       }
 
-      if (obstacle.type === "fries") {
+      if (o.type === "fries") {
         ctx.fillStyle = "#b61111";
-        roundedRect(obstacle.x + 6, obstacle.y + 18, 34, 30, 5);
+        roundRect(ctx, o.x + 5, o.y + 17, 32, 30, 6);
         ctx.fill();
         ctx.fillStyle = "#ffe600";
-        for (let i = 0; i < 5; i += 1) ctx.fillRect(obstacle.x + 9 + i * 6, obstacle.y + 2 + (i % 2) * 4, 4, 28);
+        for (let i = 0; i < 5; i += 1) ctx.fillRect(o.x + 8 + i * 6, o.y + 2 + (i % 2) * 4, 4, 28);
         return;
       }
 
       ctx.fillStyle = "#ff8a00";
       ctx.beginPath();
-      ctx.moveTo(obstacle.x + obstacle.w / 2, obstacle.y);
-      ctx.lineTo(obstacle.x + obstacle.w, obstacle.y + obstacle.h);
-      ctx.lineTo(obstacle.x, obstacle.y + obstacle.h);
+      ctx.moveTo(o.x + o.w / 2, o.y);
+      ctx.lineTo(o.x + o.w, o.y + o.h);
+      ctx.lineTo(o.x, o.y + o.h);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = "#fff";
-      ctx.fillRect(obstacle.x + 11, obstacle.y + 30, obstacle.w - 22, 6);
+      ctx.fillRect(o.x + 10, o.y + 31, o.w - 20, 6);
     };
 
     const drawParticles = () => {
-      ctx.fillStyle = "rgba(255, 230, 0, 0.45)";
-      game.particles.forEach((particle) => {
-        ctx.globalAlpha = Math.max(0, particle.life / 32);
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      game.particles.forEach((p) => {
+        ctx.globalAlpha = Math.max(0, p.life / 32);
+        ctx.fillStyle = p.color;
+        circle(ctx, p.x, p.y, p.r);
         ctx.fill();
       });
       ctx.globalAlpha = 1;
     };
 
     const drawHud = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-      roundedRect(24, 22, 176, 60, 14);
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      roundRect(ctx, 15, 14, 165, 54, 14);
       ctx.fill();
-      ctx.fillStyle = "#ffe600";
-      ctx.font = "900 15px Oswald, Arial, sans-serif";
-      ctx.fillText("JAGOFF JUMP", 42, 46);
+      ctx.strokeStyle = "rgba(255,230,0,0.25)";
+      ctx.stroke();
+      drawText("JAGOFF JUMP", 28, 35, 12, "#ffe600", "left");
       ctx.fillStyle = "#fff";
-      ctx.font = "800 18px Inter, Arial, sans-serif";
-      ctx.fillText(`Score: ${Math.floor(game.score / 10)}`, 42, 70);
+      ctx.font = "800 13px Inter, Arial, sans-serif";
+      ctx.fillText(`Score ${Math.floor(game.score / 10)}`, 28, 55);
     };
 
     const drawOverlay = () => {
-      if (game.running && !game.gameOver) return;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.58)";
-      ctx.fillRect(0, 0, game.width, game.height);
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#ffe600";
-      ctx.font = "900 54px Oswald, Arial, sans-serif";
-      ctx.fillText(game.gameOver ? "GAME OVER, YA JAGOFF" : "JAGOFF JUMP", game.width / 2, 160);
+      if (game.running && !game.over) return;
+      ctx.fillStyle = "rgba(0,0,0,0.72)";
+      ctx.fillRect(0, 0, W, H);
+      drawText(game.over ? "GAME OVER" : "JAGOFF JUMP", W / 2, 245, game.over ? 48 : 40);
+      if (game.over) drawText("YA JAGOFF", W / 2, 292, 34);
       ctx.fillStyle = "#fff";
-      ctx.font = "700 22px Inter, Arial, sans-serif";
-      ctx.fillText(game.gameOver ? `Score: ${Math.floor(game.score / 10)}  •  Best: ${game.best}` : "Tap to jump. Dodge the Pittsburgh nonsense.", game.width / 2, 204);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.font = "700 17px Inter, Arial, sans-serif";
-      ctx.fillText(game.gameOver ? "Tap to run it back." : "Mobile: tap anywhere. Desktop: spacebar.", game.width / 2, 238);
+      ctx.font = "800 20px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(game.over ? `Score: ${Math.floor(game.score / 10)}  •  Best: ${game.best}` : "Tap to jump. Dodge the nonsense.", W / 2, game.over ? 334 : 292);
       ctx.fillStyle = "#ffe600";
-      roundedRect(game.width / 2 - 105, 268, 210, 52, 14);
+      roundRect(ctx, W / 2 - 118, game.over ? 370 : 330, 236, 58, 16);
       ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.font = "900 20px Oswald, Arial, sans-serif";
-      ctx.fillText(game.gameOver ? "PLAY AGAIN" : "START GAME", game.width / 2, 301);
+      drawText(game.over ? "PLAY AGAIN" : "START GAME", W / 2, game.over ? 407 : 367, 22, "#000");
       ctx.textAlign = "start";
     };
 
@@ -374,8 +368,7 @@ export default function JagoffJumpPage() {
       frameRef.current = window.requestAnimationFrame(render);
     };
 
-    const handlePointer = (event) => {
-      event.preventDefault();
+    const handlePointer = () => {
       jump();
     };
 
@@ -389,7 +382,7 @@ export default function JagoffJumpPage() {
     fitCanvas();
     window.addEventListener("resize", fitCanvas);
     window.addEventListener("keydown", handleKey);
-    canvas.addEventListener("pointerdown", handlePointer, { passive: false });
+    canvas.addEventListener("pointerdown", handlePointer);
     frameRef.current = window.requestAnimationFrame(render);
 
     return () => {
@@ -438,17 +431,12 @@ export default function JagoffJumpPage() {
       <Navbar />
 
       <main className={styles.wrap}>
-        <Link href="/" className={styles.backLink}>
-          ← Back to shop
-        </Link>
+        <Link href="/arcade" className={styles.backLink}>← Back to Arcade</Link>
 
         <section className={styles.hero}>
           <p className={styles.kicker}>LOCAL JAGOFF PRESENTS</p>
           <h1>Jagoff Jump</h1>
-          <p>
-            Tap to jump. Dodge potholes, parking chairs, cones, and flying fries.
-            Survive as long as you can, ya jagoff.
-          </p>
+          <p>Tap to jump. Dodge potholes, parking chairs, cones, and flying fries.</p>
         </section>
 
         <section className={styles.gameCard} aria-label="Jagoff Jump game">
@@ -463,14 +451,10 @@ export default function JagoffJumpPage() {
           </div>
 
           <div className={styles.mobileControls}>
-            <button type="button" onClick={() => jumpRef.current?.()}>
-              TAP TO JUMP
-            </button>
+            <button type="button" onClick={() => jumpRef.current?.()}>TAP TO JUMP</button>
           </div>
 
-          <p className={styles.instructions}>
-            Mobile: tap the game or the big button. Desktop: spacebar, enter, arrow up, click, or tap.
-          </p>
+          <p className={styles.instructions}>Mobile: tap the game or the big button. Desktop: spacebar, enter, arrow up, click, or tap.</p>
         </section>
       </main>
     </div>
