@@ -118,6 +118,8 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
+  const closeMobileMenu = () => setMenuOpen(false);
+
   return (
     <>
       <div className="navSpacer" />
@@ -137,10 +139,11 @@ export default function Navbar() {
           </button>
         </div>
 
-        <nav className="desktopLinks">
+        <nav className="desktopLinks" aria-label="Main navigation">
           <Link href="/tees">TEES</Link>
           <Link href="/hoodies">HOODIES</Link>
           <Link href="/hats">HATS</Link>
+          <Link href="/arcade" className="arcadeNavLink">ARCADE</Link>
         </nav>
 
         <button className="cartTrigger" onClick={() => setOpen(true)}>
@@ -152,17 +155,20 @@ export default function Navbar() {
         ref={menuRef}
         className={`mobileMenu ${menuOpen ? "menuOpen" : ""}`}
       >
-        <Link href="/" onClick={() => setMenuOpen(false)}>
+        <Link href="/" onClick={closeMobileMenu}>
           HOME
         </Link>
-        <Link href="/tees" onClick={() => setMenuOpen(false)}>
+        <Link href="/tees" onClick={closeMobileMenu}>
           TEES
         </Link>
-        <Link href="/hoodies" onClick={() => setMenuOpen(false)}>
+        <Link href="/hoodies" onClick={closeMobileMenu}>
           HOODIES
         </Link>
-        <Link href="/hats" onClick={() => setMenuOpen(false)}>
+        <Link href="/hats" onClick={closeMobileMenu}>
           HATS
+        </Link>
+        <Link href="/arcade" onClick={closeMobileMenu} className="mobileArcadeLink">
+          ARCADE
         </Link>
       </div>
 
@@ -357,9 +363,10 @@ export default function Navbar() {
         .desktopLinks {
           display: flex;
           justify-content: center;
-          gap: 28px;
+          gap: 24px;
           font-family: "Oswald", sans-serif;
           letter-spacing: 1px;
+          align-items: center;
         }
 
         .desktopLinks :global(a) {
@@ -368,6 +375,19 @@ export default function Navbar() {
 
         .desktopLinks :global(a:hover) {
           color: #ffe600;
+        }
+
+        .desktopLinks :global(.arcadeNavLink) {
+          color: #ffe600;
+          border: 1px solid rgba(255, 230, 0, 0.4);
+          border-radius: 999px;
+          padding: 6px 12px;
+          background: rgba(255, 230, 0, 0.06);
+        }
+
+        .desktopLinks :global(.arcadeNavLink:hover) {
+          color: #000;
+          background: #ffe600;
         }
 
         .cartTrigger {
@@ -420,6 +440,11 @@ export default function Navbar() {
         }
 
         .mobileMenu :global(a:hover) {
+          color: #ffe600;
+          background: rgba(255, 230, 0, 0.05);
+        }
+
+        .mobileMenu :global(.mobileArcadeLink) {
           color: #ffe600;
           background: rgba(255, 230, 0, 0.05);
         }
