@@ -6,7 +6,7 @@ const SITE_URL = "https://www.localjagoff.com";
 const PAGE_URL = `${SITE_URL}/arcade`;
 const PAGE_TITLE = "Local Jagoff Arcade | Pittsburgh Browser Games";
 const PAGE_DESCRIPTION =
-  "Play Local Jagoff Arcade games, starting with Jagoff Jump, a mobile-friendly Pittsburgh endless runner.";
+  "Play Local Jagoff Arcade games, including Jagoff Jump, Parking Chair Panic, Pothole Patrol, Fry Catcher, Yinzer Invaders, and Bridge Rage.";
 const SHARE_IMAGE = `${SITE_URL}/images/social-share.jpg`;
 
 const games = [
@@ -20,38 +20,43 @@ const games = [
   },
   {
     title: "Parking Chair Panic",
-    status: "Coming soon",
+    status: "Playable now",
+    href: "/parking-chair-panic",
     tag: "Lane dodger",
     description:
-      "Slide through tight Pittsburgh streets, dodge chairs, and protect your parking spot.",
+      "Slide through tight Pittsburgh streets, dodge chairs, cones, and blocks, and protect your spot.",
   },
   {
     title: "Pothole Patrol",
-    status: "Coming soon",
-    tag: "Reflex game",
+    status: "Playable now",
+    href: "/pothole-patrol",
+    tag: "Tap reflex",
     description:
-      "Patch potholes before cars hit them. Faster every round. More chaos every block.",
+      "Patch potholes before the timer runs out. Faster every round. More chaos every block.",
   },
   {
     title: "Fry Catcher",
-    status: "Coming soon",
+    status: "Playable now",
+    href: "/fry-catcher",
     tag: "Catch game",
     description:
-      "Catch falling fries, dodge ketchup bombs, and build the biggest basket in the burgh.",
+      "Catch falling fries, avoid splats, and build the biggest basket in the burgh.",
   },
   {
     title: "Yinzer Invaders",
-    status: "Coming soon",
+    status: "Playable now",
+    href: "/yinzer-invaders",
     tag: "Retro shooter",
     description:
-      "Old-school arcade shooter with black-and-gold energy and jagoff nonsense flying at you.",
+      "Old-school arcade shooter with black-and-gold energy and nonsense flying at you.",
   },
   {
     title: "Bridge Rage",
-    status: "Coming soon",
+    status: "Playable now",
+    href: "/bridge-rage",
     tag: "Traffic survival",
     description:
-      "Survive merging traffic, tunnels, bridges, and that one guy who forgot how lanes work.",
+      "Survive merging traffic, bridges, blockers, and bad lane decisions.",
   },
 ];
 
@@ -118,31 +123,17 @@ export default function ArcadePage() {
         </section>
 
         <section className="gamesGrid" aria-label="Local Jagoff arcade games">
-          {games.map((game) => {
-            const playable = Boolean(game.href);
-            const CardTag = playable ? Link : "div";
-            const cardProps = playable ? { href: game.href } : {};
-
-            return (
-              <CardTag
-                key={game.title}
-                {...cardProps}
-                className={`gameCard ${playable ? "playable" : "locked"}`}
-              >
-                <div className="cardTop">
-                  <span className="gameTag">{game.tag}</span>
-                  <span className={playable ? "status live" : "status soon"}>
-                    {game.status}
-                  </span>
-                </div>
-                <h2>{game.title}</h2>
-                <p>{game.description}</p>
-                <span className="cardAction">
-                  {playable ? "Play now →" : "Coming soon"}
-                </span>
-              </CardTag>
-            );
-          })}
+          {games.map((game) => (
+            <Link key={game.title} href={game.href} className="gameCard playable">
+              <div className="cardTop">
+                <span className="gameTag">{game.tag}</span>
+                <span className="status live">{game.status}</span>
+              </div>
+              <h2>{game.title}</h2>
+              <p>{game.description}</p>
+              <span className="cardAction">Play now →</span>
+            </Link>
+          ))}
         </section>
       </main>
 
@@ -257,10 +248,6 @@ export default function ArcadePage() {
             rgba(18, 18, 18, 0.96);
         }
 
-        .gameCard.locked {
-          opacity: 0.72;
-        }
-
         .cardTop {
           display: flex;
           align-items: center;
@@ -291,12 +278,6 @@ export default function ArcadePage() {
         .status.live {
           color: #000;
           background: #ffe600;
-        }
-
-        .status.soon {
-          color: #ffe600;
-          border: 1px solid rgba(255, 230, 0, 0.34);
-          background: rgba(255, 230, 0, 0.06);
         }
 
         .gameCard h2 {
