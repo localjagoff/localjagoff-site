@@ -1,12 +1,12 @@
 .wrap {
-  width: min(1380px, 100%);
+  width: min(1500px, 100%);
   margin: 0 auto;
-  padding: 24px 18px 44px;
+  padding: 18px 12px 36px;
 }
 
 .backLink {
   display: inline-block;
-  margin-bottom: 14px;
+  margin: 0 0 12px 4px;
   color: #cfcfcf;
   font-weight: 900;
 }
@@ -16,19 +16,18 @@
 }
 
 .hero {
-  margin-bottom: 16px;
-  padding: 22px;
-  border: 1px solid rgba(255, 230, 0, 0.18);
+  margin-bottom: 12px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 230, 0, 0.16);
   border-radius: 22px;
   background:
-    radial-gradient(circle at top left, rgba(255, 230, 0, 0.1), transparent 36%),
-    linear-gradient(180deg, rgba(255, 230, 0, 0.06), rgba(255, 230, 0, 0) 44%),
-    rgba(11, 11, 11, 0.92);
+    radial-gradient(circle at top left, rgba(255, 230, 0, 0.08), transparent 36%),
+    rgba(8, 8, 8, 0.86);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
 }
 
 .kicker {
-  margin: 0 0 8px;
+  margin: 0 0 7px;
   color: #ffe600;
   font-size: 12px;
   font-weight: 900;
@@ -36,57 +35,56 @@
 }
 
 .hero h1 {
-  margin: 0 0 10px;
-  font-size: clamp(42px, 7vw, 82px);
+  margin: 0 0 8px;
+  font-size: clamp(38px, 6vw, 74px);
   line-height: 0.95;
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
 .hero p {
-  max-width: 930px;
+  max-width: 980px;
   margin: 0;
   color: #dedede;
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .gameCabinet {
-  padding: 18px;
-  border: 1px solid rgba(255, 230, 0, 0.2);
-  border-radius: 28px;
+  padding: 8px;
+  border: 1px solid rgba(255, 230, 0, 0.18);
+  border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 230, 0, 0.07), rgba(255, 230, 0, 0) 28%),
-    radial-gradient(circle at top, rgba(255, 230, 0, 0.1), transparent 42%),
-    #080808;
+    radial-gradient(circle at top, rgba(255, 230, 0, 0.08), transparent 42%),
+    rgba(3, 3, 3, 0.94);
   box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.52),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 28px 80px rgba(0, 0, 0, 0.58),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
 .scoreBar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .scoreBar div {
-  padding: 13px 15px;
-  border: 1px solid rgba(255, 230, 0, 0.18);
-  border-radius: 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 230, 0, 0.15);
+  border-radius: 15px;
   background:
-    linear-gradient(180deg, rgba(255, 230, 0, 0.05), transparent 70%),
-    rgba(255, 255, 255, 0.035);
+    linear-gradient(180deg, rgba(255, 230, 0, 0.04), transparent 70%),
+    rgba(255, 255, 255, 0.03);
 }
 
 .scoreBar span {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   color: #a9a9a9;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -94,31 +92,33 @@
   display: block;
   color: #ffe600;
   font-family: "Oswald", sans-serif;
-  font-size: 26px;
+  font-size: 23px;
   line-height: 1;
-  text-shadow: 0 0 14px rgba(255, 230, 0, 0.35);
+  text-shadow: 0 0 14px rgba(255, 230, 0, 0.3);
 }
 
 .canvasWrap {
   display: flex;
   justify-content: center;
   width: 100%;
+  min-height: 620px;
   overflow: hidden;
-  border: 2px solid rgba(255, 230, 0, 0.42);
-  border-radius: 26px;
+  border: 1px solid rgba(255, 230, 0, 0.32);
+  border-radius: 22px;
   background: #000;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-shadow:
-    inset 0 0 24px rgba(255, 230, 0, 0.08),
-    0 0 32px rgba(255, 230, 0, 0.1);
+    inset 0 0 22px rgba(255, 230, 0, 0.06),
+    0 0 28px rgba(255, 230, 0, 0.06);
 }
 
 .canvas {
   display: block;
   width: 100% !important;
-  max-width: 1280px;
-  height: auto;
+  max-width: 1500px;
+  height: 620px !important;
+  object-fit: cover;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -126,70 +126,81 @@
 }
 
 .instructions {
-  margin: 14px 2px 0;
+  margin: 10px 2px 0;
   color: #d5d5d5;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
   text-align: center;
   font-weight: 700;
 }
 
 @media (max-width: 768px) {
   .wrap {
-    padding: 14px 8px 28px;
+    padding: 10px 0 24px;
   }
 
   .backLink {
-    margin-left: 4px;
+    margin-left: 10px;
     font-size: 14px;
   }
 
   .hero {
-    padding: 16px;
+    margin: 0 8px 10px;
+    padding: 14px 15px;
     border-radius: 18px;
   }
 
   .hero h1 {
-    font-size: 38px !important;
+    font-size: 34px !important;
   }
 
   .hero p {
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .gameCabinet {
-    padding: 8px;
-    border-radius: 20px;
+    padding: 5px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
   }
 
   .scoreBar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 5px;
   }
 
   .scoreBar div {
-    padding: 9px 7px;
-    border-radius: 13px;
+    padding: 8px 6px;
+    border-radius: 12px;
   }
 
   .scoreBar span {
-    font-size: 9px;
-    letter-spacing: 0.7px;
+    font-size: 8px;
+    letter-spacing: 0.6px;
   }
 
   .scoreBar strong {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .canvasWrap {
-    border-radius: 16px;
-    border-width: 1px;
+    min-height: 62vh;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .canvas {
+    height: 62vh !important;
+    min-height: 460px;
+    max-height: 680px;
   }
 
   .instructions {
     font-size: 12px;
-    padding: 0 4px;
+    padding: 0 10px;
   }
 }
