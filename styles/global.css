@@ -183,7 +183,6 @@ select {
   min-height: 100vh;
   position: relative;
   isolation: isolate;
-  perspective: 1200px;
 }
 
 .experience-content {
