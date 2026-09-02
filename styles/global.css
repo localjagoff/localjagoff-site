@@ -157,3 +157,519 @@ select {
     padding: 16px;
   }
 }
+
+/* Local Jagoff dimensional experience — mobile-first, progressively enhanced. */
+:root {
+  --pointer-x: 50%;
+  --pointer-y: 18%;
+  --scene-rx: 0deg;
+  --scene-ry: 0deg;
+  --scene-ry-soft: 0deg;
+  --scroll-depth: 0px;
+  --scroll-ambient: 0px;
+  --scroll-background: 0px;
+  --scroll-banner: 0px;
+  --jagoff-yellow: #ffe600;
+  --jagoff-yellow-hot: #fff58c;
+  --steel-edge: rgba(255, 255, 255, 0.1);
+  --steel-dark: #090909;
+  --surface-depth:
+    0 5px 0 #030303,
+    0 18px 42px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.experience-root {
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate;
+  perspective: 1200px;
+}
+
+.experience-content {
+  min-height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+.ambient-scene,
+.ambient-glow,
+.ambient-grid,
+.ambient-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ambient-scene {
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ambient-glow {
+  inset: -20%;
+  background:
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 230, 0, 0.13), transparent 23%),
+    radial-gradient(circle at 16% 65%, rgba(255, 230, 0, 0.05), transparent 25%);
+  transform: translate3d(0, var(--scroll-ambient), 0);
+  transition: background-position 90ms linear;
+}
+
+.ambient-grid {
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 230, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 230, 0, 0.045) 1px, transparent 1px);
+  background-size: 52px 52px;
+  transform: perspective(600px) rotateX(63deg) scale(1.8) translateY(calc(35% + var(--scroll-depth)));
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to bottom, transparent 30%, #000 82%);
+}
+
+.ambient-vignette {
+  background: radial-gradient(ellipse at center, transparent 38%, rgba(0, 0, 0, 0.68) 100%);
+}
+
+body::before {
+  transform: translate3d(0, var(--scroll-background), 0) scale(1.045);
+  will-change: transform;
+}
+
+.experience-root .navSpacer {
+  height: 82px !important;
+}
+
+.experience-root .nav {
+  top: 8px !important;
+  left: 8px !important;
+  right: 8px !important;
+  padding: 13px 14px !important;
+  border: 1px solid rgba(255, 230, 0, 0.16) !important;
+  border-radius: 17px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), transparent 45%),
+    rgba(5, 5, 5, 0.89) !important;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.92),
+    0 15px 34px rgba(0, 0, 0, 0.54),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  backdrop-filter: blur(18px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.2) !important;
+  transform: translateZ(34px);
+}
+
+.experience-root .brand {
+  font-weight: 900 !important;
+  letter-spacing: 0.8px;
+  text-shadow:
+    0 1px 0 #777,
+    0 2px 0 #333,
+    0 4px 8px rgba(0, 0, 0, 0.9);
+}
+
+.experience-root .cartTrigger {
+  border-color: rgba(255, 230, 0, 0.28) !important;
+  background: linear-gradient(180deg, rgba(255, 230, 0, 0.13), rgba(255, 230, 0, 0.035)) !important;
+  box-shadow: 0 3px 0 #050505, inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--jagoff-yellow) !important;
+}
+
+.experience-root .mobileMenu {
+  top: 75px !important;
+  left: 8px !important;
+  right: 8px !important;
+  border: 1px solid rgba(255, 230, 0, 0.16) !important;
+  border-radius: 0 0 17px 17px !important;
+  background: rgba(6, 6, 6, 0.97) !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.58) !important;
+  overflow: hidden;
+}
+
+.experience-root .sideCart {
+  border-left-color: rgba(255, 230, 0, 0.22) !important;
+  background:
+    radial-gradient(circle at top right, rgba(255, 230, 0, 0.13), transparent 28%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035), transparent 20%),
+    #080808 !important;
+  box-shadow: -12px 0 0 rgba(0, 0, 0, 0.45), -30px 0 80px rgba(0, 0, 0, 0.72) !important;
+}
+
+.experience-root .banner-shell {
+  width: auto !important;
+  margin: 8px 8px 0 !important;
+  border: 1px solid rgba(255, 230, 0, 0.2);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 230, 0, 0.07), rgba(0, 0, 0, 0.35)) !important;
+  box-shadow:
+    0 7px 0 #050505,
+    0 24px 54px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+
+.experience-root .banner-shell::before {
+  z-index: 3 !important;
+  background:
+    radial-gradient(circle at var(--pointer-x) 12%, rgba(255, 250, 195, 0.16), transparent 24%),
+    linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%) !important;
+}
+
+.experience-root .banner-shell::after {
+  bottom: 0 !important;
+  height: 9px !important;
+  z-index: 4 !important;
+  background: linear-gradient(180deg, rgba(255, 230, 0, 0.5), rgba(84, 72, 0, 0.6)) !important;
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.22), 0 -10px 24px rgba(255, 230, 0, 0.08);
+}
+
+.experience-root .banner-shell img {
+  transform: translate3d(0, var(--scroll-banner), 18px) scale(1.02);
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.58)) contrast(1.035) !important;
+  will-change: transform;
+}
+
+.experience-root .seo-intro,
+.experience-root .category-hero,
+.experience-root .arcadeHero,
+.experience-root .jagoffPage .hero,
+.experience-root .loading-card,
+.experience-root .legal-card,
+.experience-root .success-card {
+  border: 1px solid rgba(255, 230, 0, 0.2) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at var(--pointer-x) 0%, rgba(255, 230, 0, 0.1), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.055), transparent 42%),
+    rgba(9, 9, 9, 0.88) !important;
+  box-shadow: var(--surface-depth) !important;
+  transform-style: preserve-3d;
+}
+
+.experience-root .seo-intro {
+  margin: 20px 10px 6px !important;
+  padding: 21px 18px !important;
+}
+
+.experience-root .seo-intro h1,
+.experience-root .category-hero h1,
+.experience-root .arcadeHero h1,
+.experience-root .jagoffPage .hero h1,
+.experience-root .cart-head h1,
+.experience-root .legal-card h1,
+.experience-root .success-card h1 {
+  text-shadow:
+    0 1px 0 #888,
+    0 2px 0 #555,
+    0 3px 0 #333,
+    0 6px 18px rgba(0, 0, 0, 0.75),
+    0 0 24px rgba(255, 230, 0, 0.08);
+}
+
+.experience-root .featured-wrap,
+.experience-root .section-wrap,
+.experience-root .category-wrap,
+.experience-root .arcadeWrap,
+.experience-root .product-layout,
+.experience-root .cart-wrap,
+.experience-root .jagoffPage .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.experience-root .section-head,
+.experience-root .category-section > h2,
+.experience-root .faqSection > h2,
+.experience-root .examples > h2 {
+  text-shadow: 0 3px 0 #181818, 0 7px 18px rgba(0, 0, 0, 0.62);
+}
+
+.experience-root .quick-links a,
+.experience-root .jagoffMeaningLink,
+.experience-root .continue-link,
+.experience-root .secondary-link,
+.experience-root .heroActions a {
+  box-shadow: 0 4px 0 #050505, 0 10px 22px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(0);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.experience-root .quick-links a:active,
+.experience-root .jagoffMeaningLink:active,
+.experience-root .continue-link:active,
+.experience-root .secondary-link:active,
+.experience-root .heroActions a:active,
+.experience-root button:active {
+  transform: translateY(2px) scale(0.985);
+}
+
+.experience-root .category-hero {
+  padding: 20px !important;
+  transform: perspective(900px) rotateX(0.6deg);
+}
+
+.experience-root .gallery-panel,
+.experience-root .info-panel,
+.experience-root .cart-item,
+.experience-root .summary-card,
+.experience-root .empty-card,
+.experience-root .answerCard,
+.experience-root .contentGrid article,
+.experience-root .examples,
+.experience-root .faqSection,
+.experience-root .shopCallout {
+  border-color: rgba(255, 230, 0, 0.18) !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.05), transparent 38%),
+    radial-gradient(circle at 85% 0%, rgba(255, 230, 0, 0.08), transparent 28%),
+    rgba(8, 8, 8, 0.9) !important;
+  box-shadow: var(--surface-depth) !important;
+}
+
+.experience-root .gallery-panel,
+.experience-root .info-panel {
+  transform-style: preserve-3d;
+}
+
+.experience-root .main-image-wrap {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.72),
+    0 20px 38px rgba(0, 0, 0, 0.45),
+    inset 0 0 35px rgba(0, 0, 0, 0.08);
+  transform: translateZ(20px);
+}
+
+.experience-root .main-image {
+  filter: drop-shadow(0 18px 16px rgba(0, 0, 0, 0.22));
+}
+
+.experience-root .add-button,
+.experience-root .checkout-btn,
+.experience-root .checkoutBtn,
+.experience-root .primary-link,
+.experience-root .btn,
+.experience-root .mobileControls button {
+  background: linear-gradient(180deg, var(--jagoff-yellow-hot) 0%, var(--jagoff-yellow) 48%, #c9ad00 100%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.65) !important;
+  box-shadow:
+    0 5px 0 #7c6a00,
+    0 14px 28px rgba(255, 230, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+  transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+}
+
+.experience-root .arcadeHero {
+  transform: perspective(900px) rotateX(0.8deg);
+}
+
+.experience-root .gameCard {
+  border-width: 1px 1px 6px !important;
+  border-color: rgba(255, 230, 0, 0.22) rgba(255, 230, 0, 0.14) #050505 !important;
+  box-shadow:
+    0 8px 0 #020202,
+    0 24px 46px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+  transform: perspective(900px) rotateX(0.9deg);
+  transform-style: preserve-3d;
+}
+
+.experience-root .gameCard .cardTop,
+.experience-root .gameCard h2,
+.experience-root .gameCard p,
+.experience-root .gameCard .metaRow,
+.experience-root .gameCard > a {
+  transform: translateZ(16px);
+}
+
+.experience-root .gameCard > a {
+  box-shadow:
+    0 5px 0 #7c6a00,
+    0 16px 28px rgba(255, 230, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+.experience-root .exampleList p {
+  border-bottom: 4px solid #050505 !important;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: rotate(-0.4deg);
+}
+
+.experience-root .exampleList p:nth-child(even) {
+  transform: rotate(0.45deg);
+}
+
+.experience-root .legal-page,
+.experience-root .success-page {
+  min-height: 100vh;
+  color: #fff;
+  padding: 18px 12px 52px;
+}
+
+.experience-root .legal-card {
+  max-width: 800px;
+  margin: 14px auto 0;
+  padding: 24px 20px;
+  line-height: 1.68;
+}
+
+.experience-root .legal-card h1 {
+  color: #fff;
+  font-size: clamp(36px, 9vw, 62px);
+  text-transform: uppercase;
+}
+
+.experience-root .legal-card h3 {
+  margin-top: 28px;
+  color: var(--jagoff-yellow);
+  text-transform: uppercase;
+}
+
+.experience-root .legal-card p {
+  color: #d4d4d4;
+}
+
+.experience-root .success-page {
+  display: grid;
+  place-items: center;
+}
+
+.experience-root .success-card {
+  width: min(520px, 100%);
+  padding: 34px 22px;
+  text-align: center;
+}
+
+.experience-root .success-card .success-subtitle {
+  color: var(--jagoff-yellow);
+  font-weight: 900;
+}
+
+.experience-root .success-card .success-text {
+  color: #d0d0d0;
+  line-height: 1.6;
+}
+
+.experience-root .success-card .success-note {
+  color: #929292;
+  font-size: 14px;
+}
+
+.experience-root .success-card .success-button {
+  display: inline-block;
+  margin-top: 22px;
+  padding: 14px 22px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--jagoff-yellow-hot), var(--jagoff-yellow));
+  color: #000;
+  font-weight: 900;
+  box-shadow: 0 5px 0 #7c6a00, 0 14px 26px rgba(255, 230, 0, 0.16);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .experience-root .nav {
+    transform: perspective(1200px) rotateX(var(--scene-rx)) rotateY(var(--scene-ry)) translateZ(34px);
+  }
+
+  .experience-root .banner-shell {
+    transform: perspective(1300px) rotateX(var(--scene-rx)) rotateY(var(--scene-ry)) translateZ(0);
+  }
+
+  .experience-root .quick-links a:hover,
+  .experience-root .jagoffMeaningLink:hover,
+  .experience-root .continue-link:hover,
+  .experience-root .secondary-link:hover,
+  .experience-root .heroActions a:hover {
+    transform: translateY(-3px) translateZ(8px);
+    box-shadow: 0 7px 0 #050505, 0 16px 28px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .experience-root .gameCard {
+    transition: transform 190ms ease, border-color 190ms ease, box-shadow 190ms ease;
+  }
+
+  .experience-root .gameCard:hover {
+    transform: perspective(900px) rotateX(1.8deg) rotateY(-1.4deg) translateY(-8px) translateZ(18px);
+    border-color: rgba(255, 230, 0, 0.48) rgba(255, 230, 0, 0.24) #050505 !important;
+    box-shadow:
+      0 11px 0 #020202,
+      0 34px 62px rgba(0, 0, 0, 0.65),
+      0 0 38px rgba(255, 230, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .experience-root .navSpacer {
+    height: 92px !important;
+  }
+
+  .experience-root .nav {
+    top: 12px !important;
+    left: 16px !important;
+    right: 16px !important;
+    padding: 15px 22px !important;
+    border-radius: 19px !important;
+  }
+
+  .experience-root .banner-shell {
+    margin: 12px 20px 0 !important;
+    border-radius: 28px;
+  }
+
+  .experience-root .seo-intro {
+    max-width: 980px;
+    margin: 30px auto 6px !important;
+    padding: 28px 30px !important;
+    text-align: center;
+  }
+
+  .experience-root .featured-wrap,
+  .experience-root .section-wrap {
+    max-width: 1480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .experience-root .category-hero {
+    transform: perspective(1000px) rotateX(var(--scene-rx)) rotateY(var(--scene-ry-soft));
+  }
+
+  .experience-root .gallery-panel {
+    transform: perspective(1100px) rotateY(0.8deg) translateZ(0);
+  }
+
+  .experience-root .info-panel {
+    transform: perspective(1100px) rotateY(-0.8deg) translateZ(0);
+  }
+
+  .experience-root .legal-page {
+    padding-top: 28px;
+  }
+
+  .experience-root .legal-card {
+    padding: 38px 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  body::before,
+  .ambient-glow,
+  .ambient-grid,
+  .experience-root .nav,
+  .experience-root .banner-shell,
+  .experience-root .banner-shell img,
+  .experience-root .category-hero,
+  .experience-root .arcadeHero,
+  .experience-root .gameCard,
+  .experience-root .gallery-panel,
+  .experience-root .info-panel,
+  .experience-root .exampleList p {
+    transform: none !important;
+    transition: none !important;
+  }
+}
