@@ -2,10 +2,10 @@ import Navbar from "../components/Navbar";
 
 export default function Terms() {
   return (
-    <div style={styles.page}>
+    <div className="legal-page">
       <Navbar />
 
-      <div style={styles.container}>
+      <main className="legal-card">
         <h1>Terms & Conditions</h1>
 
         <p>
@@ -59,17 +59,7 @@ export default function Terms() {
         <p>
           For any concerns, please use the contact page.
         </p>
-      </div>
+      </main>
     </div>
   );
 }
-
-const styles = {
-  page: { background: "transparent", minHeight: "100vh" },
-  container: {
-    maxWidth: "800px",
-    margin: "0 auto",
-    padding: "40px 20px",
-    lineHeight: "1.6",
-  },
-};

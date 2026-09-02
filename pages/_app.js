@@ -3,6 +3,7 @@ import Head from "next/head";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { Analytics } from "@vercel/analytics/next";
+import DepthExperience from "../components/DepthExperience";
 
 const SITE_URL = "https://www.localjagoff.com";
 const SOCIAL_IMAGE = `${SITE_URL}/images/social-share.jpg`;
@@ -118,7 +119,9 @@ export default function App({ Component, pageProps }) {
         <link rel="apple-touch-icon" href="/images/icon.png" />
       </Head>
 
-      <Component {...pageProps} />
+      <DepthExperience>
+        <Component {...pageProps} />
+      </DepthExperience>
       <Analytics />
     </>
   );
