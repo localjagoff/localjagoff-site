@@ -1,5 +1,7 @@
 const STORE_ID = 18032822;
 
+const HIDDEN_PRODUCT_IDS = new Set([430925200]);
+
 const PRODUCT_NAME_OVERRIDES = {
   428550417: "Certified Jagoff T-Shirt",
   428821578: "Pittsburgh Local Jagoff Keystone Hoodie",
@@ -15,7 +17,6 @@ const PRODUCT_NAME_OVERRIDES = {
   429728777: "Local Jagoff Stamp Tee",
   429821634: "Local Jagoff Tee",
   430697388: "Local Jagoff PGH OG Tee",
-  430925200: "Local Jagoff Diagonal Tee",
   430964873: "Local Jagoff Keystone 724 Tee",
 };
 
@@ -106,8 +107,12 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
+    const visibleProducts = productData.result.filter(
+      (product) => !HIDDEN_PRODUCT_IDS.has(Number(product?.id))
+    );
+
     const products = await Promise.all(
-      productData.result.map(async (product) => {
+      visibleProducts.map(async (product) => {
         const displayName = getDisplayProductName(product);
         let basePrice = "0.00";
         let formattedVariants = [];
