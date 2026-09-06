@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import crypto from "crypto";
+import fulfillment from "../lib/fulfillment.cjs";
 
 export const config = {
   api: {
@@ -9,7 +9,7 @@ export const config = {
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-const STORE_ID = "18032822";
+const { fulfillEvent } = fulfillment;
 
 async function buffer(readable) {
   const chunks = [];
@@ -19,61 +19,6 @@ async function buffer(readable) {
   }
 
   return Buffer.concat(chunks);
-}
-
-function getShippingDetails(session) {
-  return (
-    session.collected_information?.shipping_details ||
-    session.shipping_details ||
-    null
-  );
-}
-
-function getRecipientFromSession(session) {
-  const customer = session.customer_details || {};
-  const shippingDetails = getShippingDetails(session);
-  const shippingAddress = shippingDetails?.address || null;
-  const billingAddress = customer.address || null;
-
-  const address = shippingAddress || billingAddress;
-
-  if (
-    !address ||
-    !address.line1 ||
-    !address.city ||
-    !address.state ||
-    !address.country ||
-    !address.postal_code
-  ) {
-    throw new Error(
-      `Missing customer shipping address fields: ${JSON.stringify({
-        shippingDetails,
-        customerDetails: customer,
-      })}`
-    );
-  }
-
-  return {
-    name: shippingDetails?.name || customer.name || "Local Jagoff Customer",
-    address1: address.line1,
-    address2: address.line2 || "",
-    city: address.city,
-    state_code: address.state,
-    country_code: address.country,
-    zip: address.postal_code,
-    email: customer.email || session.customer_email || "",
-    phone: customer.phone || "",
-  };
-}
-
-function getPrintfulExternalId(session) {
-  const source = session.id || session.payment_intent || Date.now().toString();
-
-  return `LJ${crypto
-    .createHash("sha256")
-    .update(source)
-    .digest("hex")
-    .slice(0, 24)}`;
 }
 
 function escapeHtml(value) {
@@ -92,26 +37,6 @@ function formatMoney(amount, currency) {
     style: "currency",
     currency: (currency || "usd").toUpperCase(),
   }).format(amount / 100);
-}
-
-async function getStripeLineItems(sessionId) {
-  if (!sessionId) return [];
-
-  try {
-    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, {
-      limit: 100,
-    });
-
-    return lineItems.data.map((item) => ({
-      name: item.description || "Local Jagoff item",
-      quantity: item.quantity || 1,
-      amount_total: item.amount_total,
-      currency: item.currency || "usd",
-    }));
-  } catch (err) {
-    console.error("⚠️ Could not fetch Stripe line items:", err.message);
-    return [];
-  }
 }
 
 function buildOrderEmailHtml({ session, recipient, orderId, lineItems }) {
@@ -256,12 +181,12 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
 
   if (!to) {
     console.warn("⚠️ Skipping order email: no customer email found");
-    return;
+    return false;
   }
 
   if (!process.env.RESEND_API_KEY) {
     console.warn("⚠️ Skipping order email: missing RESEND_API_KEY");
-    return;
+    return false;
   }
 
   const from =
@@ -276,7 +201,9 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
       "User-Agent": "local-jagoff-store/1.0",
+      "Idempotency-Key": `order-received/${orderId}`,
     },
+    signal: AbortSignal.timeout(10000),
     body: JSON.stringify({
       from,
       to: [to],
@@ -289,10 +216,11 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
   const emailData = await emailRes.json().catch(() => null);
 
   if (!emailRes.ok) {
-    throw new Error(`Order email failed: ${JSON.stringify(emailData)}`);
+    throw new Error("Order email provider failed");
   }
 
-  console.log("✅ ORDER EMAIL SENT:", JSON.stringify(emailData, null, 2));
+  console.log("Order email sent", { session_id: session.id, email_id: emailData?.id });
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -300,92 +228,27 @@ export default async function handler(req, res) {
     return res.status(405).send("Method not allowed");
   }
 
-  const buf = await buffer(req);
   const sig = req.headers["stripe-signature"];
 
   let event;
 
   try {
+    const buf = await buffer(req);
     event = stripe.webhooks.constructEvent(
       buf,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("❌ Webhook signature error:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error("Webhook signature verification failed");
+    return res.status(400).send("Invalid webhook signature");
   }
-
-  if (event.type !== "checkout.session.completed") {
-    return res.status(200).json({ received: true });
-  }
-
-  const session = event.data.object;
-
-  console.log("💰 PAYMENT SUCCESS:", session.id);
 
   try {
-    const metadataItems = JSON.parse(session.metadata?.items || "[]");
-
-    if (!Array.isArray(metadataItems) || metadataItems.length === 0) {
-      throw new Error("Missing Printful metadata items");
-    }
-
-    const printfulItems = metadataItems.map((item) => ({
-      sync_variant_id: Number(item.sync_variant_id),
-      quantity: Number(item.quantity || 1),
-    }));
-
-    const orderId = getPrintfulExternalId(session);
-    const recipient = getRecipientFromSession(session);
-
-    const orderPayload = {
-      external_id: orderId,
-
-      recipient,
-
-      items: printfulItems,
-
-      confirm: false,
-    };
-
-    console.log("📦 SENDING TO PRINTFUL:", JSON.stringify(orderPayload, null, 2));
-
-    const pfRes = await fetch(
-      `https://api.printful.com/orders?store_id=${STORE_ID}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderPayload),
-      }
-    );
-
-    const pfData = await pfRes.json();
-
-    console.log("🧾 PRINTFUL RESPONSE:", JSON.stringify(pfData, null, 2));
-
-    if (!pfRes.ok) {
-      throw new Error(`Printful order failed: ${JSON.stringify(pfData)}`);
-    }
-
-    try {
-      const lineItems = await getStripeLineItems(session.id);
-      await sendOrderReceivedEmail({
-        session,
-        recipient,
-        orderId,
-        lineItems,
-      });
-    } catch (emailErr) {
-      console.error("❌ ORDER EMAIL ERROR:", emailErr.message);
-    }
-
-    return res.status(200).json({ received: true, printful: pfData });
+    const result = await fulfillEvent(event, { stripe, sendEmail: sendOrderReceivedEmail });
+    return res.status(200).json(result);
   } catch (err) {
-    console.error("❌ PRINTFUL ORDER ERROR:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error("Webhook processing failed", { event_id: event.id });
+    return res.status(500).json({ error: "Fulfillment pending; retry required" });
   }
 }

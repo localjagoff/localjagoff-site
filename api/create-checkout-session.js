@@ -1,8 +1,8 @@
 const Stripe = require("stripe");
+const { STORE_ID } = require("../lib/commerce-policy.cjs");
+const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const STORE_ID = "18032822";
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,13 +10,10 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { items } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Invalid items" });
-    }
-
-    const siteUrl = req.headers.origin || "https://www.localjagoff.com";
+    assertCheckoutEnvironment(process.env);
+    const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
+    const metadataItems = encodeItems(items);
+    const siteUrl = siteOrigin(process.env);
 
     const makeAbsoluteImageUrl = (image) => {
       if (!image || typeof image !== "string") return null;
@@ -48,17 +45,11 @@ module.exports = async function handler(req, res) {
               : `Quantity: ${quantity}`,
             images: imageUrl ? [imageUrl] : [],
           },
-          unit_amount: Math.round(parseFloat(item.price) * 100),
+          unit_amount: item.unit_amount,
         },
         quantity,
       };
     });
-
-    const printfulMetadataItems = items.map((item) => ({
-      product_id: item.id,
-      sync_variant_id: item.variant_id,
-      quantity: item.quantity || 1,
-    }));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -93,7 +84,8 @@ module.exports = async function handler(req, res) {
 
       metadata: {
         store_id: STORE_ID,
-        items: JSON.stringify(printfulMetadataItems),
+        items: metadataItems,
+        commerce_version: "2",
       },
 
       success_url: `${siteUrl}/success`,
@@ -102,10 +94,9 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("Stripe checkout error:", err);
-    return res.status(500).json({
-      error: "Checkout failed",
-      message: err.message,
+    console.error("Checkout failed", { code: err instanceof CommerceError ? err.message : "stripe_request_failed" });
+    return res.status(err instanceof CommerceError ? err.status : 503).json({
+      error: err instanceof CommerceError ? err.message : "Checkout unavailable; please try again",
     });
   }
 };
