@@ -10,6 +10,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    if (process.env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
     assertCheckoutEnvironment(process.env);
     const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
     const metadataItems = encodeItems(items);

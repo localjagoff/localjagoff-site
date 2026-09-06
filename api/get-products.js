@@ -124,7 +124,7 @@ export default async function handler(req, res) {
             basePrice = formattedVariants[0]?.price || "0.00";
           }
         } catch (err) {
-          console.error("DETAIL ERROR:", product.id, err.message);
+          console.error("catalog_detail_failed", { product_id: product.id });
         }
 
         return {
@@ -141,10 +141,9 @@ export default async function handler(req, res) {
 
     return res.status(200).json(products);
   } catch (err) {
-    console.error("FATAL ERROR:", err);
+    console.error("catalog_request_failed");
     return res.status(500).json({
       error: "Failed to load products",
-      message: err.message,
     });
   }
 }

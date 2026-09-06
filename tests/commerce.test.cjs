@@ -30,7 +30,7 @@ function checkoutFixture(product = detail(), status = 200) {
       return { ...commerce, resolveCart: (items, options) => commerce.resolveCart(items, { ...options, fetchImpl }) };
     } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/create-checkout-session.js"), "utf8"), sandbox);
-  return { sessions, calls, async run(items = [item], overrides = {}) {
+  return { sessions, calls, env: sandbox.process.env, async run(items = [item], overrides = {}) {
     const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
     await sandbox.module.exports({ method: "POST", headers: { origin: "https://attacker.test" }, body: { items }, ...overrides }, res);
     return res;
@@ -301,13 +301,83 @@ test("actual webhook route verifies raw signatures and rejects altered bodies wi
   }
 });
 
-test("retired public order diagnostic returns no customer data", async () => {
-  const { default: handler } = await import("../api/get-order.js");
+test("all retired public diagnostics return no provider or customer data", async () => {
+  for (const name of ["get-order", "get-stores", "get-product"]) {
+  const { default: handler } = await import(`../api/${name}.js`);
   const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; },
     status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
   await handler({}, res);
   assert.equal(res.code, 404); assert.deepEqual(res.body, { error: "Not found" });
   assert.equal(res.headers["Cache-Control"], "no-store");
+  }
+});
+
+test("linked legacy replay survives catalog outage and missing historical shipping", async () => {
+  const f = fulfillmentFixture();
+  await f.run();
+  delete f.session.metadata.commerce_version;
+  f.session.metadata.items = JSON.stringify([{ product_id: item.id, sync_variant_id: item.variant_id, quantity: 2 }]);
+  delete f.session.shipping_details;
+  const originalFetch = f.options.fetchImpl;
+  f.options.fetchImpl = async (url, options) => {
+    assert.ok(!url.includes("/sync/products/"), "linked replay must not reprice the catalog");
+    return originalFetch(url, options);
+  };
+  await f.run();
+  assert.equal(f.state.posts.length, 1);
+  assert.equal(f.state.logs.at(-1)[1].outcome, "duplicate_suppressed");
+});
+
+test("a conflicting persisted provider ID fails closed", async () => {
+  const f = fulfillmentFixture();
+  await f.run();
+  f.session.metadata.printful_order_id = "999";
+  await assert.rejects(f.run());
+  assert.equal(f.state.posts.length, 1);
+});
+
+test("structured recovery logs include IDs, state and distinct outcomes, without PII", async () => {
+  const f = fulfillmentFixture(); f.state.losePostResponse = true;
+  await f.run(); await f.run();
+  assert.deepEqual(f.state.logs.filter(l => l[0] === "fulfillment_order_linked").map(l => l[1].outcome),
+    ["create_response_recovered", "duplicate_suppressed"]);
+  for (const [, log] of f.state.logs) {
+    assert.equal(log.event_id, f.event.id);
+    assert.equal(log.session_id, f.session.id);
+    assert.equal(log.external_id, externalId(f.session.id));
+    assert.equal(log.printful_order_id, 100);
+    assert.equal(log.fulfillment_state, "order_linked");
+  }
+  assert.doesNotMatch(JSON.stringify(f.state.logs), /Test Street|customer@example|5550100/);
+});
+
+test("checkout pause rejects before any provider access", async () => {
+  const f = checkoutFixture(); f.env.CHECKOUT_PAUSED = "true";
+  assert.equal((await f.run()).code, 503);
+  assert.equal(f.calls.length, 0); assert.equal(f.sessions.length, 0);
+});
+
+test("signed paid fixture traverses the actual webhook route with simulated providers, retry and replay", async () => {
+  const Stripe = require("stripe");
+  const { createWebhookHandler } = await import("../api/webhook.js");
+  const f = fulfillmentFixture();
+  f.options.stripe.webhooks = Stripe.webhooks;
+  f.options.env.STRIPE_WEBHOOK_SECRET = "whsec_local_fixture";
+  const handler = createWebhookHandler(f.options);
+  const body = JSON.stringify(f.event);
+  const signature = Stripe.webhooks.generateTestHeaderString({ payload: body, secret: f.options.env.STRIPE_WEBHOOK_SECRET });
+  const deliver = async () => {
+    const req = Readable.from([Buffer.from(body)]); req.method = "POST"; req.headers = { "stripe-signature": signature };
+    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; }, send() {} };
+    await handler(req, res); return res;
+  };
+  f.state.postStatus = 500;
+  assert.equal((await deliver()).code, 500);
+  f.state.postStatus = 200; f.state.losePostResponse = true;
+  assert.equal((await deliver()).code, 200);
+  assert.equal((await deliver()).code, 200);
+  assert.equal(f.state.orders.size, 1);
+  assert.equal(f.session.metadata.fulfillment_state, "order_linked");
 });
 
 test("live checkout is blocked in previews; server-controlled test return origins remain available", () => {
@@ -316,4 +386,37 @@ test("live checkout is blocked in previews; server-controlled test return origin
   assert.doesNotThrow(() => commerce.assertCheckoutEnvironment({ VERCEL_ENV: "preview", STRIPE_SECRET_KEY: "sk_test_fixture" }));
   assert.equal(commerce.siteOrigin({ SITE_URL: "http://localhost:3000/cart" }), "http://localhost:3000");
   assert.throws(() => commerce.siteOrigin({ SITE_URL: "http://attacker.test" }));
+});
+
+test("public catalog preserves curated name, exclusion and retail price", async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async url => url.includes("/sync/products?")
+      ? response(200, [{ id: item.id, name: "Raw tee" }, { id: 430925200, name: "Hidden" }])
+      : response(200, detail());
+    const { default: handler } = await import("../api/get-products.js");
+    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
+    await handler({}, res);
+    assert.equal(res.code, 200);
+    assert.equal(res.body.length, 1);
+    assert.equal(res.body[0].name, "Local Jagoff PGH OG Tee");
+    assert.equal(res.body[0].retail_price, "30.00");
+    assert.deepEqual(res.body[0].variants, [{ id: item.variant_id, name: "XL", price: "30.00" }]);
+  } finally { global.fetch = originalFetch; }
+});
+
+test("public catalog failures do not expose upstream exception content", async () => {
+  const originalFetch = global.fetch;
+  const originalError = console.error;
+  const logs = [];
+  try {
+    console.error = (...args) => logs.push(args);
+    global.fetch = async () => { throw new Error("PRIVATE_PROVIDER_DETAIL"); };
+    const { default: handler } = await import("../api/get-products.js");
+    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
+    await handler({}, res);
+    assert.equal(res.code, 500);
+    assert.deepEqual(res.body, { error: "Failed to load products" });
+    assert.doesNotMatch(JSON.stringify(logs), /PRIVATE_PROVIDER_DETAIL/);
+  } finally { global.fetch = originalFetch; console.error = originalError; }
 });

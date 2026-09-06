@@ -223,32 +223,38 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
   return true;
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method not allowed");
-  }
+export function createWebhookHandler(options = {}) {
+  const client = options.stripe || stripe;
+  const env = options.env || process.env;
+  return async function handler(req, res) {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method not allowed");
+    }
 
-  const sig = req.headers["stripe-signature"];
+    const sig = req.headers["stripe-signature"];
 
-  let event;
+    let event;
 
-  try {
-    const buf = await buffer(req);
-    event = stripe.webhooks.constructEvent(
-      buf,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error("Webhook signature verification failed");
-    return res.status(400).send("Invalid webhook signature");
-  }
+    try {
+      const buf = await buffer(req);
+      event = client.webhooks.constructEvent(
+        buf,
+        sig,
+        env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("Webhook signature verification failed");
+      return res.status(400).send("Invalid webhook signature");
+    }
 
-  try {
-    const result = await fulfillEvent(event, { stripe, sendEmail: sendOrderReceivedEmail });
-    return res.status(200).json(result);
-  } catch (err) {
-    console.error("Webhook processing failed", { event_id: event.id });
-    return res.status(500).json({ error: "Fulfillment pending; retry required" });
-  }
+    try {
+      const result = await fulfillEvent(event, { sendEmail: sendOrderReceivedEmail, ...options, stripe: client, env });
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error("Webhook processing failed", { event_id: event.id });
+      return res.status(500).json({ error: "Fulfillment pending; retry required" });
+    }
+  };
 }
+
+export default createWebhookHandler();

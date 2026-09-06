@@ -39,9 +39,10 @@ Order email is best-effort and does not reverse a paid draft. A Resend idempoten
 Use Node 24 for the local Node test runner (the repository already mixes ESM and CommonJS API files).
 
 ```sh
-npm install --ignore-scripts --package-lock=false
+npm ci --ignore-scripts
 npm test
 npm run build
+npm run test:smoke
 ```
 
 Tests use synthetic fixtures and mocked Stripe/Printful providers, plus the real Stripe SDK to check raw-body signatures. They do not create real Stripe Sessions, charges, Printful drafts, fulfillment requests or emails. `next build` verifies the Pages Router application, not deployment of the separate root `api/` Vercel functions; route and helper tests supplement it. The existing mixed module style can emit a Node module-type warning.
@@ -50,7 +51,49 @@ Before production rollout, verify the deployed runtime, API function packaging, 
 
 Deploy checkout and webhook changes together; the old webhook cannot interpret version 2 metadata. After new sessions exist, do not roll back only the webhook to the old parser. A safe rollback must retain version 2 parsing and server-side pricing or pause new checkout while reconciling outstanding sessions.
 
-The hardcoded public `/api/get-order` diagnostic is retired with a no-store 404 response. It is not an authenticated customer order-status page. No storefront callers were found.
+The public `/api/get-order`, `/api/get-stores` and `/api/get-product` diagnostics are retired with no-store 404 responses. No storefront callers were found. The curated `/api/get-products` remains available; it no longer returns raw exception text.
+
+## Pre-Merge Review - 2026-09-06
+
+**C. NOT READY TO MERGE.** Source/test hardening is complete to the accessible boundary, not verified production readiness. Private facebook-creator-ops commerce/premerge_production_readiness_2026-09-06.md is the workstream source of truth.
+
+- 28 commerce/route tests, 9 built-server smoke tests, and production build (21 static pages) pass. No configured standalone lint/typecheck. Mixed API module warning remains.
+- Next 14.2.6 -> 14.2.35; committed lockfile. PostCSS 8.4.31 remains. npm audit: 2 high packages, 25 advisory records, exit 1. Pages architecture excludes many affected paths, not all vulnerabilities.
+- Root next.config.js disables unused image optimization, verified 404 locally. The pre-existing api/next.config.js is not Next root configuration.
+- Maintainer advisories GHSA-2xp9-vwfh-vxw4 (AVIF optimizer) and GHSA-p293-qw3h-jr36 / CVE-2026-75604 (Windows-hosted RCE) are not included in that npm audit result. No 14.x fix was listed. Verify disabled optimization and non-Windows hosting before rollout; never expose this Windows review server publicly. No forced major migration.
+- Existing linked orders are recovered before catalog/price/shipping reconstruction, so replay of an old session is independent of later catalog drift. Persisted Printful IDs must match provider lookup.
+- Structured order logs now include event/session/external/order IDs, fulfillment_state and draft_created / duplicate_suppressed / create_response_recovered outcomes. Failure records include known order IDs. No customer payload logging added.
+- No provider credentials available in this workspace/environment. Signed fixture tests use the real Stripe signature implementation with fake provider boundaries, not real Stripe sandbox payments.
+
+### Blocking Verification
+
+1. Verify a single staging build contains BOTH root API handlers and bundled CJS libraries; test raw-body signature delivery and runtime/timeouts. Next build alone does not prove Vercel root api/ deployment. Confirm server-only credentials, endpoint secret, subscriptions and deployed non-Windows runtime. Verify /_next/image is disabled there.
+2. Obtain isolated Stripe test access and run server-priced test checkout without live keys. Production test events intentionally stop before Printful. Validate Printful store/variant/currency fields and scoped permissions using authenticated read-only calls first. No sandbox was established; a draft-only API probe is not a payment sandbox and must never confirm/pay. No real provider draft was created in this review.
+3. Assign a human to failed-event monitoring, daily paid-session/draft reconciliation and manual draft review before traffic growth. Agree to the rollback procedure below before approving the coupled change.
+
+### Coordinated Release And Safe Rollback
+
+This is a contingency runbook, NOT deployment authorization.
+
+1. Before any future rollout, snapshot deployed build/config names (not secrets), confirm both handlers are packaged together, enumerate outstanding legacy sessions, and retain the reviewed source artifact. Complete the blocking checks first.
+2. Deploy ONE complete checkout+webhook artifact with CHECKOUT_PAUSED=true; do not deploy either handler separately. The pause returns 503 before provider access, but the compatible webhook continues handling existing payments.
+3. Verify runtime, route packaging/signatures, diagnostics 404, optimizer 404, store/credential modes and monitoring. Only then enable checkout on the SAME paired artifact through the normal hosting config/redeploy process. No live purchase is required or authorized by this runbook.
+4. Pause immediately for price discrepancies, mode/store mismatch, duplicate/non-draft creation, repeated 5xx without recovery, or correlated orders missing. Do not tell paid customers to pay again.
+5. For rollback, deploy/retain the COMPLETE reviewed pair with CHECKOUT_PAUSED=true. Do NOT restore the old webhook OR old client-priced checkout. Preserve v2 parsing, authoritative pricing and deterministic IDs. Fix forward as a complete pair.
+6. If UI rollback is essential, prepare and validate a full compatibility artifact with the prior UI plus BOTH hardened commerce handlers. Do not swap a handler independently. Merely promoting the old production build is unsafe once any v2 sessions have been issued.
+7. Inventory open, paid and pending legacy/v2 sessions, including sessions created before the pause; they can complete later. Reconcile by session/external/order IDs, allow retries, and have the owner handle unresolved payments. Expiration/refund/cancellation requires separate approval. Never erase metadata or clone a draft to clear an error.
+
+### Minimum Operations
+
+Use existing Stripe delivery history and hosting logs, not a new paid service. At minimum, owner checks failed deliveries each business day and immediately after deployment/traffic spikes; reconcile every paid session to one Printful external/order ID daily, including sessions with missing or needs_retry_or_review metadata. Before growth, assign a backup and a response target. No queue, alert integration, scheduled job or status UI was added.
+
+Stripe metadata is an observation, not an atomic ledger: concurrent failure writes can briefly leave needs_retry_or_review after another worker links an order. Inspect the provider by external ID, then replay; do not create again manually. Unique IDs protect drafts, not exactly-once HTTP POSTs or emails. Email can repeat after its provider idempotency window if its sent marker was lost.
+
+The static success page cannot prove a draft exists. Customer errors remain generic. Sequential catalog resolution, provider rate limits and serverless duration limits need staging measurement. No inventory reservation occurs between checkout and payment; owner may need to resolve stock changes on a paid draft.
+
+### Availability Gate
+
+Public get-products does not yet expose active/synced/ignored eligibility, can return zero-price/empty fallback data after detail failure, and stops at 100 products without pagination. Product JSON-LD hardcodes InStock. A Meta feed must wait for a shared curated sellability view, variant-level regional availability/freshness, accurate schema, pagination and failure handling. Do not create a feed from current display data. These are separate feed prerequisites, not a reason to automate Printful payment.
 
 ## References
 

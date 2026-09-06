@@ -1,15 +1,5 @@
 export default async function handler(req, res) {
-  try {
-    const response = await fetch('https://api.printful.com/stores', {
-      headers: {
-        'Authorization': `Bearer ${process.env.PRINTFUL_API_KEY}`,
-      },
-    });
-
-    const data = await response.json();
-    res.status(200).json(data);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  // Retired diagnostic; get-products remains the public curated catalog.
+  res.setHeader("Cache-Control", "no-store");
+  return res.status(404).json({ error: "Not found" });
 }
