@@ -74,3 +74,15 @@ test('Netlify background worker authenticates before work and never treats a tra
   assert.equal(calls,1);
   await assert.rejects(work(req,{env:preview,run:async()=>{throw new Error('private provider detail');},logger}),/communications_worker_incomplete/);
 });
+
+test('native worker uses the fixed owner scheduler check only after authentication in explicitly enabled review',async()=>{
+  const env={...preview,OWNER_SCHEDULER_VERIFICATION_ENABLED:'true'};
+  await work(new Request(preview.URL,{method:'POST'}),{env,run:forbidden,verifyOwner:forbidden,logger});
+  const req=new Request(preview.URL,{method:'POST',headers:{authorization:`Bearer ${preview.CRON_SECRET}`}});
+  let calls=0;
+  await work(req,{env,run:forbidden,logger,verifyOwner:async(request,options)=>{calls++;assert.equal(request,req);assert.equal(options.mode,'scheduler');assert.equal(options.env,env);return Response.json({outcome:'already_queued_or_completed'});}});
+  assert.equal(calls,1);
+  await work(req,{env:{...env,OWNER_SCHEDULER_VERIFICATION_ENABLED:'false'},run:async()=>({outcome:'sending_disabled'}),verifyOwner:forbidden,logger});
+  await work(req,{env:{...env,COMMERCE_ENV:'production'},run:async()=>({outcome:'sending_disabled'}),verifyOwner:forbidden,logger});
+  await assert.rejects(work(req,{env,run:forbidden,logger,verifyOwner:async()=>Response.json({outcome:'provider_rejected'},{status:502})}),/communications_worker_incomplete/);
+});

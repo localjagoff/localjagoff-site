@@ -107,6 +107,23 @@ their mailbox; the agent must not access it. After the test, set the verificatio
 flag false and redeploy. Never activate ordinary preview/customer sending to run
 this probe, reset a sent job or change its idempotency key for a retry.
 
+### Native Scheduler Verification
+
+The same authenticated background worker can exercise a separate fixed owner
+test job when `OWNER_SCHEDULER_VERIFICATION_ENABLED=true` in the isolated review
+site. `OWNER_SCHEDULER_VERIFICATION_UNTIL` must be a future ISO timestamp no more
+than one hour away. The matching review site pin, paused checkout, preview role
+and disabled ordinary customer mail are still mandatory. The original direct
+probe remains disabled and its completed job is never reused or reset.
+
+Wait for the real native timer; do not substitute a manual invocation as proof.
+Correlate tick and worker logs, the one durable sent row and provider delivery.
+A second tick must retain the same completed job without another send. This
+proves the scheduled transport/claim/send path with an owner-only fixture, not
+live order reconciliation. Restore the scheduler verification flag to false and
+redeploy afterward; preserve the send record. No customer, Stripe or Printful
+work is enabled by this verification mode.
+
 Official references: [Next.js](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/),
 [function runtime environment](https://docs.netlify.com/build/functions/environment-variables/),
 [scheduled functions](https://docs.netlify.com/build/functions/scheduled-functions/),

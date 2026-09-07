@@ -47,3 +47,23 @@ test('ambiguous or expired owner test sends cannot get a new idempotency identit
   assert.equal((await verify(request(),{env,storeFactory:()=>store,fetchImpl:forbidden})).status,409);
   assert.equal(statuses.at(-1),'held');
 });
+
+test('scheduled owner test has a bounded enable window and its own fixed send identity', async () => {
+  const now=Date.now(),schedulerEnv={...env,OWNER_MAIL_VERIFICATION_ENABLED:'false',OWNER_SCHEDULER_VERIFICATION_ENABLED:'true',
+    OWNER_SCHEDULER_VERIFICATION_UNTIL:new Date(now+1800000).toISOString()};
+  for(const change of [{OWNER_SCHEDULER_VERIFICATION_ENABLED:'false'},{OWNER_SCHEDULER_VERIFICATION_UNTIL:''},
+    {OWNER_SCHEDULER_VERIFICATION_UNTIL:new Date(now-1).toISOString()},
+    {OWNER_SCHEDULER_VERIFICATION_UNTIL:new Date(now+3600001).toISOString()},
+    {COMMERCE_ENV:'production'},{CUSTOMER_EMAIL_ENABLED:'true'},{CHECKOUT_PAUSED:'false'},
+    {OWNER_MAIL_VERIFICATION_SITE_ID:'other-site'}]) {
+    assert.equal((await verify(request(),{env:{...schedulerEnv,...change},mode:'scheduler',now,storeFactory:forbidden,fetchImpl:forbidden})).status,404);
+  }
+  assert.equal((await verify(request(),{env:schedulerEnv,now,storeFactory:forbidden,fetchImpl:forbidden})).status,404);
+  const mail=payload('scheduler');let job,sent=false,calls=0;
+  const store={async enqueue(key,kind,reference,p){assert.equal(key,'verification/owner-netlify-scheduler-v1/review-fixture');assert.equal(kind,'contact');assert.equal(reference,null);assert.deepEqual(p,mail);job||={key,payload:p,payload_hash:hash(p)};},
+    async claim(){return sent?undefined:job;},async mailQuota(){return true;},async markAttempt(){},async finish(_job,status){sent=status==='sent';}};
+  const fetchImpl=async(_url,options)=>{calls++;assert.deepEqual(JSON.parse(options.body).to,['hello@localjagoff.com']);assert.match(mail.subject,/scheduled delivery test/);return Response.json({id:'12345678-1234-1234-1234-123456789abc'});};
+  assert.equal((await (await verify(request(),{env:schedulerEnv,mode:'scheduler',now,storeFactory:()=>store,fetchImpl})).json()).outcome,'provider_accepted');
+  assert.equal((await (await verify(request(),{env:schedulerEnv,mode:'scheduler',now,storeFactory:()=>store,fetchImpl})).json()).outcome,'already_queued_or_completed');
+  assert.equal(calls,1);
+});
