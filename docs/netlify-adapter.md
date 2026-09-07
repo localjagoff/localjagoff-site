@@ -52,6 +52,32 @@ test-configured artifact without rebuilding.
 
 ## Verification Required Before Cutover
 
+### CLI Artifact Boundary
+
+Prefer the complete `netlify deploy` build lifecycle. When deliberately separating
+build and upload, publish the adapter's static output, **never raw `.next`**:
+
+```powershell
+netlify build --context production
+netlify deploy --no-build --dir .netlify/static --prod --site <isolated-review-site-id>
+```
+
+The adapter temporarily swaps its static output into the publish directory during
+its build/deploy hooks, then restores the raw Next build after completion. A later
+standalone `deploy --no-build` using the configured `.next` path can upload server
+artifacts and omit the proper public paths. Build success does not detect this.
+Before calling a deployment healthy, verify every referenced CSS/JS/image URL and
+the site's file inventory: no `server/`, `standalone/`, cache, trace or environment
+files may be published. Remove superseded malformed test deployments, not only
+their branch alias. Preserve safe production rollback artifacts separately.
+
+`scripts/verify-netlify-review.cjs` requires explicitly isolated database/mode/origin
+environment variables. It verifies static assets and server-file exclusion, paused
+checkout, bad Stripe signatures, durable contact/replay/rate/CSRF behavior, host IP
+header replacement, synthetic Printful signatures and runner/review guards. It
+removes only its own contact/outbox fixtures; sending remains disabled. Genuine
+Stripe delivery, actual scheduler logs and email delivery are separate gates.
+
 - Actual hosted Stripe TEST Checkout, authoritative pricing, return origin,
   genuine delivery, raw signature verification, tamper/replay/pause tests.
 - Deployed Printful signed endpoint, provider/mail exclusions and read-only token.
