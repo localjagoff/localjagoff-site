@@ -240,9 +240,9 @@ export function createWebhookHandler(options = {}) {
     let event;
 
     try {
-      client = options.stripe || new Stripe(env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:1});
+      client = options.stripe || new Stripe(env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()});
       const buf = await buffer(req);
-      event = client.webhooks.constructEvent(
+      event = await client.webhooks.constructEventAsync(
         buf,
         sig,
         env.STRIPE_WEBHOOK_SECRET

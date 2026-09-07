@@ -74,6 +74,14 @@ test("catalog excludes ignored products and duplicate variant IDs fail closed", 
   assert.throws(() => curateProduct(duplicate, id), /Duplicate/);
 });
 
+test('unapproved Printful products stay absent from storefront, checkout and feeds', async()=>{
+  const unknown=fixture(987654321);
+  assert.equal(curateProduct(unknown,987654321),null);
+  assert.equal(await loadProduct(987654321,{fetchImpl:()=>assert.fail('Unapproved provider read')}),null);
+  await assert.rejects(resolveCart([{id:987654321,variant_id:variantId,quantity:1}],
+    {apiKey:'fixture',fetchImpl:async()=>response({result:unknown})}));
+});
+
 test("temporary verification surface is absent and curated asset map contains no broken paths", () => {
   assert.equal(fs.existsSync(path.join(__dirname, "../api/review-verification.js")), false);
   const images = require("../lib/product-images.cjs");

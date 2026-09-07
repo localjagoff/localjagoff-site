@@ -2,6 +2,11 @@ node_modules/
 .next/
 .vercel/
 .netlify/
+.open-next/
+.cloudflare-dry-run/
+.wrangler/
+.dev.vars*
+*.cpuprofile
 .env
 .env.*
 !.env.example

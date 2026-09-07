@@ -1,4 +1,14 @@
 User-agent: *
+User-agent: OAI-SearchBot
 Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /customer
+Disallow: /account
+Disallow: /private
+Disallow: /cart
+Disallow: /checkout
+Disallow: /success
+Disallow: /review
 
 Sitemap: https://www.localjagoff.com/sitemap.xml

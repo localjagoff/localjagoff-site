@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
   try {
     if (process.env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
     assertCheckoutEnvironment(process.env);
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:1});
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()});
     const coupon = couponCode(req.body?.coupon);
     const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
     const metadataItems = encodeItems(items);

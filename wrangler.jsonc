@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "localjagoff-review",
+  "account_id": "3ba52abcb44be302ce5b6d5f695474d8",
+  "main": ".open-next/prewarm-worker.js",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {"directory": ".open-next/assets", "binding": "ASSETS"},
+  "services": [{"binding": "WORKER_SELF_REFERENCE", "service": "localjagoff-review"}],
+  "vars": {
+    "CLOUDFLARE_WORKER_NAME": "localjagoff-review",
+    "COMMERCE_ENV": "preview",
+    "SITE_URL": "https://localjagoff-review.localjagoff-site.workers.dev",
+    "CHECKOUT_PAUSED": "true",
+    "CUSTOMER_EMAIL_ENABLED": "false",
+    "COMMUNICATIONS_ENABLED": "false"
+  },
+  "triggers": {"crons": ["*/5 * * * *", "2 * * * *", "17 4 * * *"]},
+  "observability": {"enabled":true,"head_sampling_rate":1}
+}

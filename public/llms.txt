@@ -1,0 +1,24 @@
+# Local Jagoff
+
+> Pittsburgh and Western Pennsylvania apparel. Made-to-order products with prices in USD.
+
+## Shop
+- [Store](https://www.localjagoff.com/)
+- [Tees and 724 gear](https://www.localjagoff.com/tees)
+- [Hoodies](https://www.localjagoff.com/hoodies)
+- [Hats](https://www.localjagoff.com/hats)
+- [About the name](https://www.localjagoff.com/whats-a-jagoff)
+
+## Shipping, Returns, and Sizing
+- [Shipping and delivery questions](https://www.localjagoff.com/contact): Ask about your product and destination. No universal shipping price or delivery date is published here.
+- [Returns and order terms](https://www.localjagoff.com/terms): Made-to-order returns or exchanges are limited to damaged, defective, incorrect, or misprinted items. Contact the store within 14 days of delivery with your order number and photos. This is not an unconditional 14-day return policy.
+- [Sizing and fit questions](https://www.localjagoff.com/contact): Available size/style labels appear on each product page. Ask for product-specific measurements before ordering; no universal size chart is published here.
+- [Contact](https://www.localjagoff.com/contact): hello@localjagoff.com
+- [Privacy](https://www.localjagoff.com/privacy)
+
+## Public Catalog
+- [Canonical sitemap](https://www.localjagoff.com/sitemap.xml)
+- [Google-format product feed](https://www.localjagoff.com/feeds/products.tsv)
+- [OpenAI discovery product feed](https://www.localjagoff.com/feeds/openai-products.jsonl)
+
+Product pages and feeds use the same catalog. Each feed item links to its selected variant; prices and availability can change. Shipping charges, delivery estimates, ratings, and product measurements are not inferred from missing data. Checkout takes place on the website.

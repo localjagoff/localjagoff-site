@@ -8,6 +8,8 @@ export default async function handler(req,res){
   if(!auth.equal(supplied,process.env.CRON_SECRET))return res.status(401).json({error:'Unauthorized'});
   // Netlify uses its authenticated background worker, not a 60-second API request.
   if(process.env.SITE_ID)return res.status(409).json({error:'Use the scheduled background worker'});
-  try{return res.status(200).json(await runner.runCommunications());}
+  const mode=req.query?.mode||'fast';
+  if(!['fast','fallback','cleanup'].includes(mode))return res.status(400).json({error:'Invalid mode'});
+  try{return res.status(200).json(await runner.runCommunications({mode}));}
   catch{return res.status(503).json({error:'Communications check incomplete'});}
 }

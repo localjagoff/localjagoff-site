@@ -1,3 +1,4 @@
 {
+  "git": {"deploymentEnabled": {"fix/cloudflare-platform": false}},
   "crons": [{"path": "/api/communications/run", "schedule": "0 8 * * *"}]
 }

@@ -24,7 +24,7 @@ function checkoutFixture(product = detail(), status = 200) {
   const fetchImpl = async (url) => { calls.push(url); return response(status, product); };
   const sandbox = { module: { exports: {} }, process: { env: { PRINTFUL_API_KEY: "fixture" } }, console: quiet,
     require: (name) => {
-      if (name === "stripe") return class { checkout = { sessions: {
+      if (name === "stripe") return class { static createFetchHttpClient() { return {}; } checkout = { sessions: {
         create: async (params) => { sessions.push(params); return { url: "https://checkout.test/session" }; },
       } }; promotionCodes = { list: async () => promotions }; };
       if (name.endsWith("commerce-policy.cjs")) return require("../lib/commerce-policy.cjs");

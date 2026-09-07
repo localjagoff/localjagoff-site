@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 import ProductReviews from "../../components/ProductReviews";
 import { getProductImages } from "../../lib/getProductImages";
+import { productJsonLd as buildProductJsonLd } from "../../lib/discovery.cjs";
 
 const SITE_URL = "https://www.localjagoff.com";
 
@@ -100,13 +101,7 @@ const productFallbackNames = {
   430964873: "Local Jagoff Keystone 724 Tee",
 };
 
-const productSignals = {
-  // Hoodie example:
-  "428821578": "⚡ Moving fast",
-
-  // T-shirt example:
-  "428982889": "People keep grabbing this one.",
-};
+const productSignals = {};
 
 function absoluteImageUrl(path) {
   if (!path) return `${SITE_URL}/images/social-share.jpg`;
@@ -166,13 +161,13 @@ function ProductMeta({ shareTitle, shareDescription, shareImage, shareUrl, produ
       <meta name="twitter:image" content={shareImage} key="twitter:image" />
       <meta name="twitter:image:alt" content={`${shareTitle} product photo`} key="twitter:image:alt" />
 
-      <script
+      {productJsonLd && <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
         }}
         key="product-jsonld"
-      />
+      />}
     </Head>
   );
 }
@@ -259,35 +254,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
   const displayedPrice =
     selectedVariant?.price || product?.retail_price || "0.00";
 
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: shareTitle,
-    description: shareDescription,
-    image: [shareImage],
-    brand: {
-      "@type": "Brand",
-      name: "Local Jagoff",
-    },
-    url: shareUrl,
-    ...(product && selectedVariant
-      ? {
-          offers: {
-            "@type": "Offer",
-            priceCurrency: "USD",
-            price: String(displayedPrice),
-            availability: selectedVariant.availability === "in stock"
-              ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-            itemCondition: "https://schema.org/NewCondition",
-            url: `${shareUrl}?variant=${selectedVariant.id}`,
-            seller: {
-              "@type": "Organization",
-              name: "Local Jagoff",
-            },
-          },
-        }
-      : {}),
-  };
+  const productJsonLd = buildProductJsonLd(product);
 
   const variantLabel = selectedVariant
     ? getVariantLabel(product?.name, selectedVariant.name)

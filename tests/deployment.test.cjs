@@ -12,6 +12,39 @@ const logger={info(){},error(){}};
 const preview={SITE_ID:'review-site',SITE_NAME:'review',URL:'https://review.netlify.app',
   SITE_URL:'https://review.netlify.app',COMMERCE_ENV:'preview',CRON_SECRET:'fixture-only'.repeat(4)};
 
+test('Cloudflare production requires every pinned setting; blank worker markers never fall through to another host',()=>{
+  const live={CLOUDFLARE_WORKER_NAME:'localjagoff-production',COMMERCE_PRODUCTION_WORKER:'localjagoff-production',
+    COMMERCE_ENV:'production',SITE_URL:'https://www.localjagoff.com'};
+  assert.equal(isProduction(live),true);
+  for(const change of [{CLOUDFLARE_WORKER_NAME:''},{CLOUDFLARE_WORKER_NAME:'localjagoff-review'},
+    {COMMERCE_PRODUCTION_WORKER:''},{COMMERCE_PRODUCTION_WORKER:'other'},{COMMERCE_ENV:'preview'},
+    {SITE_URL:'https://attacker.test'},{SITE_URL:'http://www.localjagoff.com'}]){
+    assert.equal(isProduction({...live,...change,VERCEL_ENV:'production',SITE_ID:'review-site',COMMERCE_PRODUCTION_SITE_ID:'review-site'}),false);
+  }
+  assert.equal(isProduction({CLOUDFLARE_WORKER_NAME:'',VERCEL_ENV:'production'}),false);
+  assert.equal(isProduction({COMMERCE_PRODUCTION_WORKER:'localjagoff-production',VERCEL_ENV:'production'}),false);
+});
+
+test('Cloudflare contact trusts only CF connecting IP and a configured HTTPS origin',()=>{
+  const env={CLOUDFLARE_WORKER_NAME:'localjagoff-review',SITE_URL:'https://review.example.test'};
+  assert.deepEqual(allowedOrigins(env),['https://review.example.test']);
+  for(const site of ['', 'http://review.example.test','https://user:pass@review.example.test','https://review.example.test/path','https://review.example.test?query=1']){
+    assert.deepEqual(allowedOrigins({...env,SITE_URL:site}),[]);
+  }
+  const req={headers:{'x-forwarded-for':'192.0.2.1','x-nf-client-connection-ip':'192.0.2.2',
+    'x-vercel-forwarded-for':'192.0.2.3'},socket:{remoteAddress:'127.0.0.1'}};
+  assert.equal(trustedIP(req,env),null);assert.equal(trustedIP(req,{...env,CLOUDFLARE_WORKER_NAME:''}),null);
+  req.headers['cf-connecting-ip']='2001:db8::1';assert.equal(trustedIP(req,env),'2001:db8::1');
+  req.headers['cf-connecting-ip']='192.0.2.1,192.0.2.2';assert.equal(trustedIP(req,env),null);
+});
+
+test('Cloudflare Preview cannot enter normal mail or communications work even with inherited live flags',async()=>{
+  const env={CLOUDFLARE_WORKER_NAME:'localjagoff-review',COMMERCE_ENV:'preview',VERCEL_ENV:'production',
+    CUSTOMER_EMAIL_ENABLED:'true',COMMUNICATIONS_ENABLED:'true'};
+  assert.equal((await deliver({claim:forbidden},{env,send:forbidden})).outcome,'sending_disabled');
+  assert.equal((await runCommunications({env,storeFactory:forbidden,serviceFactory:forbidden})).outcome,'sending_disabled');
+});
+
 test('only an explicitly configured review build receives search exclusion headers',async()=>{
   const original=process.env.COMMERCE_ENV;
   const config=require('../next.config.js');

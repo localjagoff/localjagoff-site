@@ -102,20 +102,6 @@ export default function Home() {
         </picture>
       </div>
 
-      <section className="seo-intro" aria-label="About Local Jagoff">
-        <p className="seo-kicker">PITTSBURGH CLOTHING WITH YINZER ATTITUDE</p>
-        <h1>Local Jagoff Pittsburgh Shirts, Hoodies & Gear</h1>
-        <p>
-          Local Jagoff is a Pittsburgh clothing brand built for jagoffs, yinzers,
-          and Western PA locals who rep black and gold attitude. Shop Pittsburgh
-          jagoff shirts, hoodies, hats, 412 gear, 724 gear, and everyday streetwear
-          made for the people who get it.
-        </p>
-        <Link href="/whats-a-jagoff" className="jagoffMeaningLink">
-          What’s a jagoff?
-        </Link>
-      </section>
-
       {featured.length > 0 && (
         <section className="featured-wrap">
           <div className="section-head">

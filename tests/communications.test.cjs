@@ -57,7 +57,7 @@ function queueFixture(changes={}){
   const payload={subject:'Fixture',nested:{z:1,a:2}};
   const job={key:'receipt/LJfixture',kind:'receipt',payload,payload_hash:hash(payload),attempts:1,claim_token:'fixture',...changes};
   const finishes=[];let marked=0;
-  return {job,finishes,get marked(){return marked;},store:{claim:async()=>job,finish:async(...args)=>finishes.push(args),mailQuota:async()=>true,markAttempt:async()=>{marked++;}},options:{env:{VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true'},logger:quiet,send:async()=>({id:'00000000-0000-4000-8000-000000000001'})}};
+  return {job,finishes,get marked(){return marked;},store:{claim:async()=>job,finish:async(...args)=>finishes.push(args),enqueue:async()=>{},mailQuota:async()=>true,markAttempt:async()=>{marked++;}},options:{env:{VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true'},logger:quiet,send:async()=>({id:'00000000-0000-4000-8000-000000000001'})}};
 }
 test('outbox integrity hash survives JSONB key ordering and sends with one stable identity',async()=>{
   const f=queueFixture();f.job.payload={nested:{a:2,z:1},subject:'Fixture'};let key;
@@ -126,20 +126,20 @@ test('raw signed Printful Preview fixture succeeds without database, email or fu
 });
 function serviceFixture(){
   const reference='LJ'+'b'.repeat(24),queued=new Map(),dispatched=[],queries=[],gets=[];
-  const saved={reference,session_id:'cs_live_fixture',printful_id:123,customer:{email:'fixture@example.com'},items:[{productId:430697388,name:'Fixture'}],unresolved:false,suppress_reviews:false};
+  const saved={reference,session_id:'cs_live_fixture',printful_id:123,customer:{email:'fixture@example.com'},items:[{productId:430697388,name:'Fixture'}],unresolved:false,suppress_reviews:false,reconcile_generation:0};
   const session={id:saved.session_id,livemode:true,metadata:{store_id:STORE_ID},payment_status:'paid',payment_intent:{latest_charge:{refunded:false,amount_refunded:0,disputed:false}}};
   const order={id:123,store_id:Number(STORE_ID),external_id:reference,status:'fulfilled'};
   const shipment=id=>({id,shipment_status:'shipped',delivery_status:'delivered',shipped_at:new Date(Date.now()-20*86400000).toISOString(),delivered_at:new Date(Date.now()-10*86400000).toISOString(),shipment_items:[{order_item_id:1,quantity:1,order_item_name:'Fixture'}]});
   const shipments=[shipment(1),shipment(2)];
-  const store={order:async()=>saved,enqueue:async(k,kind,ref,payload)=>{if(!queued.has(k))queued.set(k,{kind,payload});},query:async(sql,args)=>{queries.push({sql,args});return [];}};
+  const store={order:async()=>saved,enqueue:async(k,kind,ref,payload)=>{if(!queued.has(k))queued.set(k,{kind,payload});},query:async(sql,args)=>{queries.push({sql,args});if(sql.includes('jsonb_to_recordset'))for(const m of JSON.parse(args[1]))if(!queued.has(m.key))queued.set(m.key,m);return sql.startsWith('UPDATE comm_orders')?[{reference}]:[];}};
   const service=createService({env:{VERCEL_ENV:'production',STRIPE_SECRET_KEY:'sk_live_fixture',PRINTFUL_API_KEY:'fixture'},store,stripe:{checkout:{sessions:{retrieve:async()=>session}}},dispatch:async(s,{key})=>dispatched.push(key),fetchImpl:async(url,options)=>{
     assert.equal(options.method,'GET');gets.push(url);return {ok:true,json:async()=>({data:url.endsWith('/order-items')?[{id:1,quantity:2}]:url.endsWith('/shipments')?shipments:order,_links:{}})};
   }});
   return {service,reference,queued,dispatched,queries,gets,session,order,shipments,saved};
 }
-test('split shipment reconciliation is GET-only, queues per package and attempts immediate delivery with stable keys',async()=>{
+test('split shipment reconciliation is GET-only and bulk-queues packages with stable keys without inline sends',async()=>{
   const f=serviceFixture();await f.service.reconcile(f.reference);await f.service.reconcile(f.reference);
-  assert.equal(f.queued.size,2);assert.equal(f.dispatched.length,4);assert.equal(new Set(f.dispatched).size,2);
+  assert.equal(f.queued.size,2);assert.equal(f.dispatched.length,0);
   for(const {payload} of f.queued.values())assert.match(payload.text,/package only/);
   assert.equal(f.gets.length,6);assert.ok(f.queries.some(q=>q.sql.includes('WITH queued')));
 });
