@@ -61,6 +61,24 @@ test("hidden product does not reach a provider or expose an offer", async () => 
   assert.equal((await fetch(origin + "/product/430925200")).status, 404);
 });
 
+test("Meta checkout renders a safe error for malformed/hidden carts before provider access", async () => {
+  for (const products of ["invalid", "lj_430925200_1:1", "lj_430964873_5292830954:100"]) {
+    const response = await fetch(origin + "/checkout?products=" + encodeURIComponent(products));
+    assert.equal(response.status, 400);
+    assert.match(response.headers.get("cache-control"), /no-store/);
+    assert.match(response.headers.get("x-robots-tag"), /noindex/);
+    const html = await response.text();
+    assert.match(html, /Cart unavailable/);
+    assert.doesNotMatch(html, /PRIVATE_PROVIDER|PRINTFUL_API_KEY|STRIPE_SECRET_KEY/);
+  }
+});
+
+test("Meta checkout provider failure is not an empty purchasable cart", async () => {
+  const response = await fetch(origin + "/checkout?products=lj_430964873_5292830954%3A1");
+  assert.equal(response.status, 503);
+  assert.match(await response.text(), /Checkout is temporarily unavailable/);
+});
+
 test("unused image optimization endpoint is disabled", async () => {
   const response = await fetch(origin + "/_next/image?url=%2Ffavicon.ico&w=64&q=75");
   assert.equal(response.status, 404);

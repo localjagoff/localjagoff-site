@@ -38,9 +38,35 @@ items missing from a successful full feed. Do not import raw Printful products.
   does not silently substitute a different item and cannot be added until the
   customer explicitly selects an available variant.
 - Browser cart values never control the Stripe amount. These links implement
-  product-level website handoff. If Shop onboarding requires a separate multi-item
-  cart-transfer URL, validate that contract separately before claiming Shop
-  checkout readiness; do not substitute a generic localStorage-only cart URL.
+  product-level website handoff; the multi-item handoff is described below.
+
+## Meta Cart Transfer
+
+The Shop checkout URL is `/checkout`. Per Meta's official
+[checkout URL contract](https://developers.facebook.com/docs/commerce-platform/setup-checkout-url),
+it accepts `products=lj_<product>_<variant>:<quantity>,...` and optional `coupon`.
+Percent-encoding is decoded once by Next; repeated query parameters, malformed
+IDs, hidden products and invalid quantities fail closed. Duplicate identical
+variants combine with a maximum of 99 per line and existing metadata-size limits.
+
+The page server-resolves current identities, prices and availability before
+rendering. It displays only the incoming cart and replaces local cart state on a
+successful handoff rather than appending duplicates. Failed handoffs do not erase
+an existing cart. GET performs product reads only: no Stripe session, payment,
+email or Printful order. The page is private/no-store and noindex; existing query
+tracking parameters remain in the landing URL. No new tracking integration is added.
+
+The normal checkout button revalidates prices on the server and opens hosted
+Stripe Checkout as a guest. An optional promo code is looked up through Stripe;
+only an active matching promotion ID is supplied as a discount. Stripe enforces
+final eligibility and displays the actual discount at secure checkout. The cart
+does not pretend an unvalidated discount has already reduced its subtotal. No
+Meta offers or discounts are created automatically. Invalid codes create no
+session and report a safe error. No incoming discount amount is trusted.
+
+`CHECKOUT_PAUSED=true` rejects both the transfer page and checkout API before
+provider access. Deploy this page and the existing v2-compatible checkout/webhook
+as one artifact; do not roll back individual handlers.
 
 A failed feed import can leave Meta's last successful inventory in place. Monitor
 scheduled feed failures and inventory age; pause the catalog if failures persist.

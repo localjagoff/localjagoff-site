@@ -20,17 +20,19 @@ const quiet = { info() {}, error() {}, log() {} };
 function checkoutFixture(product = detail(), status = 200) {
   const sessions = [];
   const calls = [];
+  const promotions = { data: [] };
   const fetchImpl = async (url) => { calls.push(url); return response(status, product); };
   const sandbox = { module: { exports: {} }, process: { env: { PRINTFUL_API_KEY: "fixture" } }, console: quiet,
     require: (name) => {
       if (name === "stripe") return class { checkout = { sessions: {
         create: async (params) => { sessions.push(params); return { url: "https://checkout.test/session" }; },
-      } }; };
+      } }; promotionCodes = { list: async () => promotions }; };
       if (name.endsWith("commerce-policy.cjs")) return require("../lib/commerce-policy.cjs");
+      if (name.endsWith("meta-checkout.cjs")) return require("../lib/meta-checkout.cjs");
       return { ...commerce, resolveCart: (items, options) => commerce.resolveCart(items, { ...options, fetchImpl }) };
     } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/create-checkout-session.js"), "utf8"), sandbox);
-  return { sessions, calls, env: sandbox.process.env, async run(items = [item], overrides = {}) {
+  return { sessions, calls, promotions, env: sandbox.process.env, async run(items = [item], overrides = {}) {
     const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
     await sandbox.module.exports({ method: "POST", headers: { origin: "https://attacker.test" }, body: { items }, ...overrides }, res);
     return res;
@@ -66,6 +68,22 @@ test("checkout rejects malformed product, variant and quantity without creating 
   for (const items of [[], null, {}, [{ ...item, quantity: 100 }], Array(101).fill(item)]) {
     assert.equal((await checkoutFixture().run(items)).code, 400);
   }
+});
+
+test("Meta coupon is validated through Stripe and applied without trusting a client discount", async () => {
+  const f = checkoutFixture();
+  f.promotions.data = [{ id: "promo_fixture", active: true, coupon: { valid: true } }];
+  assert.equal((await f.run([item], { body: { items: [item], coupon: "VALID10", discount: 99999 } })).code, 200);
+  assert.equal(f.sessions[0].discounts[0].promotion_code, "promo_fixture");
+  assert.equal(f.sessions[0].allow_promotion_codes, undefined);
+  assert.equal(f.sessions[0].line_items[0].price_data.unit_amount, 3000);
+  const invalid = checkoutFixture();
+  assert.equal((await invalid.run([item], { body: { items: [item], coupon: "DOESNOTEXIST" } })).code, 400);
+  assert.equal(invalid.sessions.length, 0);
+  const malformed = checkoutFixture();
+  assert.equal((await malformed.run([item], { body: { items: [item], coupon: ["ONE", "TWO"] } })).code, 400);
+  assert.equal(malformed.calls.length, 0);
+  assert.equal(malformed.sessions.length, 0);
 });
 
 test("checkout rejects removed, hidden, ignored, unsynced, inactive and wrong-parent variants", async () => {

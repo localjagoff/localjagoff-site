@@ -1,6 +1,7 @@
 const Stripe = require("stripe");
 const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
+const { couponCode } = require("../lib/meta-checkout.cjs");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -12,9 +13,19 @@ module.exports = async function handler(req, res) {
   try {
     if (process.env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
     assertCheckoutEnvironment(process.env);
+    const coupon = couponCode(req.body?.coupon);
     const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
     const metadataItems = encodeItems(items);
     const siteUrl = siteOrigin(process.env);
+    let promotionId;
+    if (coupon) {
+      const promotions = await stripe.promotionCodes.list({ code: coupon, active: true, limit: 2 });
+      if (promotions.data.length !== 1 || !promotions.data[0].active ||
+          promotions.data[0].coupon?.valid === false) {
+        throw new CommerceError("Promo code is invalid or unavailable");
+      }
+      promotionId = promotions.data[0].id;
+    }
 
     const makeAbsoluteImageUrl = (image) => {
       if (!image || typeof image !== "string") return null;
@@ -56,7 +67,7 @@ module.exports = async function handler(req, res) {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
-      allow_promotion_codes: true,
+      ...(promotionId ? { discounts: [{ promotion_code: promotionId }] } : { allow_promotion_codes: true }),
 
       shipping_address_collection: {
         allowed_countries: ["US"],

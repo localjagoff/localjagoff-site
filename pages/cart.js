@@ -3,13 +3,22 @@ import Link from "next/link";
 import Navbar from "../components/Navbar";
 import { startCheckout } from "../lib/checkout";
 
-export default function CartPage() {
-  const [cart, setCart] = useState([]);
+export default function CartPage({ transfer = null, transferError = null }) {
+  const [cart, setCart] = useState(transfer?.items || []);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(stored);
-  }, []);
+    if (transferError) return;
+    if (transfer) {
+      setCart(transfer.items);
+      try { localStorage.setItem("cart", JSON.stringify(transfer.items)); } catch {}
+      window.dispatchEvent(new Event("cartUpdated"));
+      return;
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem("cart"));
+      setCart(Array.isArray(stored) ? stored : []);
+    } catch { setCart([]); }
+  }, [transfer, transferError]);
 
   const updateCart = (updated) => {
     setCart(updated);
@@ -52,7 +61,7 @@ export default function CartPage() {
   );
 
   const checkout = () => {
-    startCheckout(cart);
+    startCheckout(cart, transfer?.coupon);
   };
 
   return (
@@ -71,7 +80,13 @@ export default function CartPage() {
           </Link>
         </div>
 
-        {cart.length === 0 ? (
+        {transferError ? (
+          <section className="empty-card" role="alert">
+            <h2>Cart unavailable</h2>
+            <p>{transferError}</p>
+            <Link href="/" className="primary-link">Return to the store</Link>
+          </section>
+        ) : cart.length === 0 ? (
           <section className="empty-card">
             <h2>Cart’s empty.</h2>
             <p>Fix it, jagoff.</p>
@@ -141,6 +156,10 @@ export default function CartPage() {
               <p className="summary-note">
                 Shipping and taxes are calculated at checkout.
               </p>
+              {transfer?.coupon && <p className="summary-note">
+                Promo code: <strong>{transfer.coupon}</strong>. Eligibility and final discount
+                are confirmed at secure checkout.
+              </p>}
 
               <button
                 type="button"
