@@ -89,6 +89,24 @@ Free commercial use and quotas must be checked against current account terms.
 No paid upgrades, production secrets, DNS switch or production merge are implied
 by a successful local adapter build.
 
+## Owner-Only Delivery Probe
+
+`owner-mail-verification` is a separately authenticated, disabled-by-default
+verification function, not a customer-email bypass. It requires explicit
+`OWNER_MAIL_VERIFICATION_ENABLED=true`, a matching `OWNER_MAIL_VERIFICATION_SITE_ID`,
+application preview mode, paused checkout and normal customer email disabled.
+The existing cron secret authenticates an empty POST. The recipient, sender,
+Reply-To, subject and clearly labeled test message are fixed in code; no request
+payload may choose mail content. The isolated database retains one deterministic
+outbox job with normal claim/hash/quota/23-hour ambiguity protections.
+
+Use it only after owner approval of the domain-restricted Resend sending key and
+the fixed owner-only test. Provider acceptance is not proof of inbox delivery or
+SPF/DKIM/DMARC results. Check provider delivery evidence and have the owner check
+their mailbox; the agent must not access it. After the test, set the verification
+flag false and redeploy. Never activate ordinary preview/customer sending to run
+this probe, reset a sent job or change its idempotency key for a retry.
+
 Official references: [Next.js](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/),
 [function runtime environment](https://docs.netlify.com/build/functions/environment-variables/),
 [scheduled functions](https://docs.netlify.com/build/functions/scheduled-functions/),
