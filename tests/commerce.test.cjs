@@ -223,6 +223,29 @@ test("modern shipping schema works; missing shipping never silently uses billing
   await assert.rejects(bad.run()); assert.equal(bad.state.posts.length, 0);
 });
 
+test("test completion events log only sanitized IDs and exit before any provider or email access", async () => {
+  for (const type of ["checkout.session.completed", "checkout.session.async_payment_succeeded"]) {
+    for (const invalidIds of [false, true]) {
+      const logs = [];
+      const forbidden = () => { assert.fail("Test event accessed a provider or email"); };
+      const event = { type, livemode: false,
+        id: invalidIds ? "evt_bad\ncustomer@example.test" : "evt_Test123",
+        data: { object: { id: invalidIds ? "cs_test_bad\nsecret" : "cs_test_Test123",
+          customer_email: "customer@example.test", metadata: { secret: "never-log-this" } } } };
+      const result = await fulfillEvent(event, {
+        stripe: new Proxy({}, { get: forbidden }), fetchImpl: forbidden, sendEmail: forbidden,
+        env: new Proxy({}, { get: forbidden }), logger: { info: (...args) => logs.push(args) },
+      });
+      assert.deepEqual(result, { received: true, skipped: "test_mode_no_printful" });
+      assert.deepEqual(logs, [["fulfillment_test_skipped", {
+        event_id: invalidIds ? null : "evt_Test123", session_id: invalidIds ? null : "cs_test_Test123",
+        outcome: "test_mode_no_printful_or_email",
+      }]]);
+      assert.doesNotMatch(JSON.stringify(logs), /customer@example|secret|never-log/);
+    }
+  }
+});
+
 test("test mode, unrelated and unpaid events cannot create drafts", async () => {
   for (const mutate of [(f) => { f.event.livemode = false; }, (f) => { f.event.type = "other"; },
     (f) => { f.session.payment_status = "unpaid"; }]) {
