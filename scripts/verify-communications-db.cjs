@@ -16,6 +16,28 @@ async function main(){
     const job=claims.find(Boolean);assert.equal(hash(job.payload),job.payload_hash);
     await store.markAttempt(job);await store.finish(job,'sent',{providerId:'synthetic'});
     assert.equal(await store.claim(job.key),undefined);
+    const retryKey='retry-fixture/'+reference;
+    await store.enqueue(retryKey,'contact',reference,payload);
+    const first=await createStore().claim(retryKey);
+    const attemptedAt=await store.markAttempt(first);
+    await store.finish(first,'pending',{error:'synthetic_transport_retry',delay:1});
+    assert.equal(await createStore().claim(retryKey),undefined);
+    await new Promise(resolve=>setTimeout(resolve,1200));
+    const retries=await Promise.all([createStore().claim(retryKey),createStore().claim(retryKey)]);
+    assert.equal(retries.filter(Boolean).length,1);
+    const retry=retries.find(Boolean);
+    assert.equal(Date.parse(retry.first_attempt_at),Date.parse(attemptedAt));
+    assert.equal(retry.payload_hash,first.payload_hash);
+    // Expire only this fixture's lease to model a terminated worker, never a real send.
+    await store.query("UPDATE comm_outbox SET lease_until=now()-interval '1 second' WHERE key=$1 AND order_ref=$2",[retryKey,reference]);
+    const recovered=await createStore().claim(retryKey);
+    assert.equal(recovered.attempts,3);
+    assert.equal(Date.parse(recovered.first_attempt_at),Date.parse(attemptedAt));
+    assert.equal(recovered.payload_hash,first.payload_hash);
+    await assert.rejects(store.finish(retry,'sent',{providerId:'synthetic-stale'}),/outbox_claim_lost/);
+    await store.finish(recovered,'sent',{providerId:'synthetic-recovered'});
+    assert.equal(await createStore().claim(retryKey),undefined);
+    console.log('PASS: durable retry due-time, single concurrent claim, expired-lease recovery and stale-worker rejection across fresh connections; original send identity/payload/first-attempt preserved. Synthetic fixture only.');
     await store.link(reference,1);
     const owner={...paid,summary:{reference},payload:{...payload,subject:'HIGH PRIORITY synthetic owner warning'}};
     await Promise.all([store.startOwner(owner),store.startOwner(owner)]);
