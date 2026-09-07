@@ -20,7 +20,7 @@ test('owner mail verification fails closed outside explicitly enabled paused rev
 
 test('owner verification uses one fixed recipient, sender/reply identity and durable idempotent job', async () => {
   let job, sent = false, calls = 0;
-  const store = {async enqueue(key,kind,reference,mail){job ||= {key,kind,payload:mail,payload_hash:hash(mail)};},
+  const store = {async enqueue(key,kind,reference,mail){assert.equal(kind,'contact');assert.equal(reference,null);job ||= {key,kind,payload:mail,payload_hash:hash(mail)};},
     async claim(){return sent?undefined:job;}, async mailQuota(){return true;}, async markAttempt(){},
     async finish(_job,status){sent = status==='sent';}};
   const fetchImpl = async (url,options) => {
