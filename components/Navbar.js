@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { startCheckout } from "../lib/checkout";
 
-export default function Navbar() {
+export default function Navbar({ checkoutCoupon = null }) {
   const [cart, setCart] = useState([]);
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,8 +19,9 @@ export default function Navbar() {
   useEffect(() => {
     loadCart();
 
-    const handler = () => {
+    const handler = (event) => {
       loadCart();
+      if (event.detail?.silent) return;
       setOpen(true);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
@@ -106,7 +107,7 @@ export default function Navbar() {
   }, [cart]);
 
   const checkout = () => {
-    startCheckout(cart);
+    startCheckout(cart, checkoutCoupon);
   };
 
   const handleBrandClick = () => {

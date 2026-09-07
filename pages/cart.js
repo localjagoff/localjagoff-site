@@ -11,7 +11,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
     if (transfer) {
       setCart(transfer.items);
       try { localStorage.setItem("cart", JSON.stringify(transfer.items)); } catch {}
-      window.dispatchEvent(new Event("cartUpdated"));
+      window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { silent: true } }));
       return;
     }
     try {
@@ -23,13 +23,13 @@ export default function CartPage({ transfer = null, transferError = null }) {
   const updateCart = (updated) => {
     setCart(updated);
     localStorage.setItem("cart", JSON.stringify(updated));
-    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { silent: Boolean(transfer) } }));
   };
 
   const clearCart = () => {
     localStorage.removeItem("cart");
     setCart([]);
-    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new CustomEvent("cartUpdated", { detail: { silent: Boolean(transfer) } }));
   };
 
   const increaseQty = (index) => {
@@ -66,7 +66,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
 
   return (
     <div className="cart-page">
-      <Navbar />
+      <Navbar checkoutCoupon={transfer?.coupon} />
 
       <main className="cart-wrap">
         <div className="cart-head">
