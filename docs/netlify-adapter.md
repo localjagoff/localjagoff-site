@@ -38,6 +38,18 @@ The review site's published slot may be called `production` by Netlify so its
 schedule can run; its application mode must nevertheless remain `preview` with
 customer sending disabled. This is not the production store.
 
+The native function entries use `.js` in this CommonJS package so the Netlify v2
+dependency tracer retains the Stripe and Neon dependencies. Forced `.mjs` output
+in the verified Windows CLI build dropped those dependencies despite a green
+build. Verify the final archives by extracting them outside the checkout and
+loading their generated entries, then confirm deployed tick/worker outcome logs.
+Changing `node_bundler` alone does not override the v2 dependency tracer.
+
+An explicit `COMMERCE_ENV=preview` build sets `X-Robots-Tag` to
+`noindex, nofollow, noarchive`. This is search exclusion, not access protection.
+Production must be rebuilt with its own environment, never promoted from a
+test-configured artifact without rebuilding.
+
 ## Verification Required Before Cutover
 
 - Actual hosted Stripe TEST Checkout, authoritative pricing, return origin,

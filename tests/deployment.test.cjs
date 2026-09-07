@@ -12,6 +12,20 @@ const logger={info(){},error(){}};
 const preview={SITE_ID:'review-site',SITE_NAME:'review',URL:'https://review.netlify.app',
   SITE_URL:'https://review.netlify.app',COMMERCE_ENV:'preview',CRON_SECRET:'fixture-only'.repeat(4)};
 
+test('only an explicitly configured review build receives search exclusion headers',async()=>{
+  const original=process.env.COMMERCE_ENV;
+  const config=require('../next.config.js');
+  try {
+    process.env.COMMERCE_ENV='preview';
+    assert.deepEqual(await config.headers(),[{source:'/:path*',
+      headers:[{key:'X-Robots-Tag',value:'noindex, nofollow, noarchive'}]}]);
+    process.env.COMMERCE_ENV='production';assert.deepEqual(await config.headers(),[]);
+    delete process.env.COMMERCE_ENV;assert.deepEqual(await config.headers(),[]);
+  } finally {
+    if(original===undefined) delete process.env.COMMERCE_ENV;else process.env.COMMERCE_ENV=original;
+  }
+});
+
 test('Netlify live access requires production role and matching pinned site, never just NODE_ENV/CONTEXT',()=>{
   for (const env of [{},{NODE_ENV:'production'},{CONTEXT:'production'},preview,
     {...preview,VERCEL_ENV:'production'}, {...preview,COMMERCE_ENV:'production'},
