@@ -17,7 +17,8 @@ const DEFAULT_DESCRIPTION =
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const isProductPage = router.pathname === "/product/[id]";
-  const cleanPath = router.asPath?.split("?")[0] || "/";
+  const privateCommunication = router.pathname === "/review" || router.pathname.startsWith("/admin/");
+  const cleanPath = router.asPath?.split(/[?#]/)[0] || "/";
   const canonicalUrl = `${SITE_URL}${cleanPath === "/" ? "" : cleanPath}`;
 
   useEffect(() => {
@@ -122,7 +123,7 @@ export default function App({ Component, pageProps }) {
       <DepthExperience>
         <Component {...pageProps} />
       </DepthExperience>
-      <Analytics />
+      {!privateCommunication && <Analytics />}
     </>
   );
 }

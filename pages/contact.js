@@ -9,6 +9,7 @@ export default function Contact() {
   const [error, setError] = useState("");
   const [topic, setTopic] = useState("");
   const [challenge, setChallenge] = useState("");
+  const [preview, setPreview] = useState(false);
   const requestId = useRef("");
   const result = useRef(null);
 
@@ -21,6 +22,7 @@ export default function Contact() {
       .then(data => {
         if (!data.challenge) throw new Error("challenge_unavailable");
         setChallenge(data.challenge);
+        setPreview(data.preview === true);
       })
       .catch(() => setError("The form is temporarily unavailable. Email us directly at hello@localjagoff.com."))
       .finally(() => clearTimeout(timeout));
@@ -49,6 +51,7 @@ export default function Contact() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "We couldn't send that. Please try again or email us directly.");
       setStatus("sent");
+      setPreview(data.preview === true);
       form.reset();
     } catch (failure) {
       setStatus("error");
@@ -82,7 +85,8 @@ export default function Contact() {
           </aside>
           <section className={styles.formArea} aria-labelledby="message-heading">
             <h2 id="message-heading">SEND A MESSAGE</h2>
-            {status === "sent" ? <div className={styles.success} ref={result} tabIndex={-1} role="status"><h3>Message received.</h3><p>We'll get back to you at the email you provided. No need to send it twice.</p><Link href="/">Back to the shop</Link></div> : <form onSubmit={send}>
+            {status === "sent" ? <div className={styles.success} ref={result} tabIndex={-1} role="status"><h3>{preview ? "Preview message recorded." : "Message received."}</h3><p>{preview ? "No email was sent. For real support, email hello@localjagoff.com." : "We'll get back to you at the email you provided. No need to send it twice."}</p><Link href="/">Back to the shop</Link></div> : <form onSubmit={send}>
+              {preview && <p className={styles.note}>Preview only. Messages here are not delivered.</p>}
               <div className={styles.row}>
                 <label>Your name<input name="name" autoComplete="name" maxLength={80} required /></label>
                 <label>Email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>

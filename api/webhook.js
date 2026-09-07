@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import fulfillment from "../lib/fulfillment.cjs";
+import communications from "../lib/communications-service.cjs";
 
 export const config = {
   api: {
@@ -252,7 +253,13 @@ export function createWebhookHandler(options = {}) {
     }
 
     try {
-      const result = await fulfillEvent(event, { sendEmail: sendOrderReceivedEmail, ...options, stripe: client, env });
+      let notifications = {};
+      if (event.livemode === true && env.COMMUNICATIONS_ENABLED === "true" &&
+        ['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type)) {
+        const service = communications.createService({stripe:client,env});
+        notifications = {recordPaid:service.recordPaid,recordLinked:service.recordLinked};
+      }
+      const result = await fulfillEvent(event, { sendEmail: sendOrderReceivedEmail, ...notifications, ...options, stripe: client, env });
       return res.status(200).json(result);
     } catch (err) {
       console.error("Webhook processing failed", { event_id: event.id });

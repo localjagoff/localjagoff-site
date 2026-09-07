@@ -173,6 +173,19 @@ function fulfillmentFixture() {
   return { state, session, event, options, run: (e = event) => fulfillEvent(e, options) };
 }
 
+test('durable paid notification is registered before Printful; linked callback replaces legacy email',async()=>{
+  const f=fulfillmentFixture();let recorded=0,linked=0;
+  f.options.recordPaid=async({session,reference})=>{assert.equal(session.payment_status,'paid');assert.equal(reference,externalId(session.id));assert.equal(f.state.fetches.length,0);recorded++;};
+  f.options.recordLinked=async({order})=>{assert.equal(order.status,'draft');linked++;};
+  await f.run();assert.equal(recorded,1);assert.equal(linked,1);assert.equal(f.state.emails,0);assert.equal(f.state.posts.length,1);
+});
+test('durable notification persistence failure prevents a new Printful call; TEST skips both callbacks',async()=>{
+  const f=fulfillmentFixture();f.options.recordPaid=async()=>{throw new Error('database unavailable');};
+  await assert.rejects(f.run());assert.equal(f.state.fetches.length,0);
+  f.options.recordPaid=f.options.recordLinked=()=>assert.fail('TEST notification callback');
+  assert.equal((await f.run({...f.event,livemode:false})).skipped,'test_mode_no_printful');
+});
+
 test("paid Stripe purchase creates exactly one draft with correct recipient, quantities and retail amounts", async () => {
   const f = fulfillmentFixture();
   await f.run();

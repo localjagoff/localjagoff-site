@@ -19,7 +19,7 @@ before(async () => {
   origin = `http://127.0.0.1:${port}`;
   const env = { ...process.env, NEXT_TELEMETRY_DISABLED: "1" };
   for (const key of Object.keys(env)) {
-    if (/^(STRIPE|PRINTFUL|RESEND|PROMO_ADMIN)/.test(key)) delete env[key];
+    if (/^(STRIPE|PRINTFUL|RESEND|PROMO_ADMIN|COMMUNICATIONS|CUSTOMER_EMAIL|DATABASE|CRON_SECRET)/.test(key)) delete env[key];
   }
   server = spawn(process.execPath, [require.resolve("next/dist/bin/next"), "start",
     "--hostname", "127.0.0.1", "--port", String(port)], {
@@ -41,13 +41,23 @@ after(async () => {
   if (exited) await exited;
 });
 
-for (const route of ["/", "/tees", "/hoodies", "/hats", "/cart", "/success"]) {
+for (const route of ["/", "/tees", "/hoodies", "/hats", "/cart", "/success", "/review"]) {
   test(`built storefront HTML responds: ${route}`, async () => {
     const response = await fetch(origin + route);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /__NEXT_DATA__/);
   });
 }
+
+test('communication APIs fail closed without configuration or authentication',async()=>{
+  for(const [route,method,status] of [['/api/contact','GET',503],['/api/reviews?productId=430697388','GET',503],['/api/printful-events','POST',400],['/api/communications/run','GET',401]]){
+    const r=await fetch(origin+route,{method});assert.equal(r.status,status,route);assert.match(r.headers.get('cache-control'),/no-store/);
+  }
+  for(const route of ['/admin/reviews','/api/reviews/moderation'])assert.equal((await fetch(origin+route)).status,500);
+});
+test('checkout return does not claim a URL proves payment',async()=>{
+  const html=await (await fetch(origin+'/success')).text();assert.match(html,/confirmed by Stripe, not by this page/);
+});
 
 test("product SSR fails closed without provider configuration", async () => {
   const response = await fetch(origin + "/product/430697388");

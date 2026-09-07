@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
+import ProductReviews from "../../components/ProductReviews";
 import { getProductImages } from "../../lib/getProductImages";
 
 const SITE_URL = "https://www.localjagoff.com";
@@ -591,6 +592,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
             <p>Printed when ordered. Shipped direct. No mall-rack nonsense.</p>
             <p>Questions? <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a></p>
           </div>
+          <ProductReviews productId={product.id} />
         </section>
       </main>
 

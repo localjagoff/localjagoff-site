@@ -1,5 +1,7 @@
 # Customer Communication Implementation Checkpoint
 
+**Historical checkpoint at 580d088. Superseded by [the durable implementation](customer-communications-durable.md).** Keep the following as implementation history, not current status.
+
 Status: **source-only foundation, not production ready**. Branch: `fix/customer-communications`.
 
 This is not an active email queue, contact endpoint, review system, or scheduler. Do not merge this branch into production until the integration and deployed checks below are complete. Existing checkout, Stripe webhook, Printful draft handling, and live email behavior have not been changed.

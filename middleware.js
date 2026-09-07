@@ -73,6 +73,8 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
+    "/admin/reviews",
+    "/api/reviews/moderation",
     "/admin/promo-generator",
     "/admin/promo-generator/:path*",
     "/admin/holiday-promo-generator",

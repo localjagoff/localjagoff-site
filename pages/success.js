@@ -10,25 +10,25 @@ export default function SuccessPage() {
   return (
     <div className="success-page">
       <main className="success-card">
-        <h1>ORDER RECEIVED</h1>
+        <h1>CHECKOUT RETURN</h1>
 
         <p className="success-subtitle">
-          You're officially less of a jagoff now.
+          Thanks for repping Local Jagoff.
         </p>
 
         <p className="success-text">
-          Thank you for your order. We’ve received your payment and your order
-          is being prepared.
+          Your payment is confirmed by Stripe, not by this page. Check your
+          inbox for your paid-order confirmation before placing another order.
         </p>
 
         <p className="success-text">
-          You’ll receive an email confirmation shortly. Once your order ships,
-          you’ll get another email with tracking information.
+          After payment is confirmed, we prepare your order and send tracking
+          as each package ships.
         </p>
 
         <p className="success-note">
-          If there are any issues with your order, we’ll contact you using the
-          email you provided at checkout.
+          Missing a confirmation or need a hand? Email hello@localjagoff.com
+          using the address you entered at checkout.
         </p>
 
         <Link href="/" className="success-button">

@@ -25,6 +25,32 @@ export default function Privacy() {
           communicate updates related to your purchase.
         </p>
 
+        <h3>Messages and Reviews</h3>
+        <p>
+          Contact messages include the name, email, topic, message, and optional
+          order reference you provide. We use Resend to send store email and Neon
+          to hold communication and review records. A keyed, non-public hash of
+          your network address helps limit spam; the contact service does not log
+          message contents or raw network addresses.
+        </p>
+        <p>
+          Purchase-linked reviews are optional. Only your chosen public name,
+          rating, and review are displayed after moderation. Your email, shipping
+          address, order reference, and private review link are not published.
+          Moderation checks for abuse and personal information, not positive ratings.
+        </p>
+        <h3>Retention and Requests</h3>
+        <p>
+          Completed communication payloads are cleared from our delivery queue
+          after 30 days. Customer email and invitation links are cleared from
+          inactive, resolved communication records after 180 days when no job or
+          invitation remains outstanding. Unresolved records are retained for
+          follow-up. Public reviews and delivery deduplication records remain
+          until removed through an appropriate support request. Mailbox and
+          payment or fulfillment provider records have separate retention policies.
+          Contact hello@localjagoff.com to request access, correction, or removal.
+        </p>
+
         <h3>Security</h3>
         <p>
           Payments are processed securely through Stripe. We do not store your
