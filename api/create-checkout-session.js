@@ -3,8 +3,6 @@ const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -13,6 +11,7 @@ module.exports = async function handler(req, res) {
   try {
     if (process.env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
     assertCheckoutEnvironment(process.env);
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:1});
     const coupon = couponCode(req.body?.coupon);
     const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
     const metadataItems = encodeItems(items);

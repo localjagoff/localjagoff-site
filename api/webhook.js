@@ -8,8 +8,6 @@ export const config = {
   },
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 const { fulfillEvent } = fulfillment;
 
 async function buffer(readable) {
@@ -231,7 +229,6 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
 }
 
 export function createWebhookHandler(options = {}) {
-  const client = options.stripe || stripe;
   const env = options.env || process.env;
   return async function handler(req, res) {
     if (req.method !== "POST") {
@@ -239,10 +236,11 @@ export function createWebhookHandler(options = {}) {
     }
 
     const sig = req.headers["stripe-signature"];
-
+    let client;
     let event;
 
     try {
+      client = options.stripe || new Stripe(env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:1});
       const buf = await buffer(req);
       event = client.webhooks.constructEvent(
         buf,
