@@ -589,7 +589,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
           <div className="trust-box">
             <p>Printed when ordered. Shipped direct. No mall-rack nonsense.</p>
-            <p>Questions? Hit up info@localjagoff.com.</p>
+            <p>Questions? <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a></p>
           </div>
         </section>
       </main>

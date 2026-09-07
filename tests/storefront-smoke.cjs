@@ -89,3 +89,25 @@ test("promo middleware fails closed without credentials", async () => {
   assert.equal(response.status, 500);
   assert.equal(response.headers.get("cache-control"), "no-store");
 });
+
+test("Contact renders branded accessible fields and a direct support fallback", async () => {
+  const response = await fetch(origin + "/contact");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /LET&#x27;S SORT IT OUT\./);
+  assert.match(html, /mailto:hello@localjagoff.com/);
+  for (const name of ["name", "email", "topic", "message", "website"]) assert.ok(html.includes(`name="${name}"`), name);
+  assert.match(html, /aria-labelledby="message-heading"/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, /disabled=""[^>]*>SEND MESSAGE/);
+});
+
+test("customer-facing footer and legal contact references use the official inbox", async () => {
+  for (const route of ["/", "/contact", "/privacy", "/terms"]) {
+    const response = await fetch(origin + route);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /mailto:hello@localjagoff.com/);
+    assert.doesNotMatch(html, /mailto:(info@localjagoff.com|localjagoff@gmail.com)/);
+  }
+});

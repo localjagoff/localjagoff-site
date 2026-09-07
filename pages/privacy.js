@@ -33,7 +33,7 @@ export default function Privacy() {
 
         <h3>Contact</h3>
         <p>
-          If you have any questions, reach out via the contact page.
+          If you have any questions, email <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a> or reach out via the contact page.
         </p>
       </main>
     </div>

@@ -57,7 +57,7 @@ export default function Terms() {
 
         <h3>Contact</h3>
         <p>
-          For any concerns, please use the contact page.
+          For any concerns, email <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a> or use the contact page.
         </p>
       </main>
     </div>

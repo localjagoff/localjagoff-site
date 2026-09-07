@@ -52,6 +52,8 @@ export default function Home() {
       name: "Local Jagoff",
       url: SITE_URL,
       logo: `${SITE_URL}/images/social-share.jpg`,
+      email: "hello@localjagoff.com",
+      contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: "hello@localjagoff.com", url: `${SITE_URL}/contact` },
     },
   };
 
@@ -227,6 +229,7 @@ export default function Home() {
         <div className="footer-links">
           <Link href="/whats-a-jagoff">What’s a Jagoff?</Link>
           <Link href="/contact">Contact</Link>
+          <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>
         </div>
