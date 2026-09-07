@@ -13,9 +13,13 @@ const { fulfillEvent } = fulfillment;
 
 async function buffer(readable) {
   const chunks = [];
+  let size = 0;
 
   for await (const chunk of readable) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    const bytes = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+    size += bytes.length;
+    if (size > 1048576) throw new Error("Webhook body too large");
+    chunks.push(bytes);
   }
 
   return Buffer.concat(chunks);

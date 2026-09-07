@@ -41,13 +41,25 @@ after(async () => {
   if (exited) await exited;
 });
 
-for (const route of ["/", "/tees", "/hoodies", "/hats", "/cart", "/success", "/product/430697388"]) {
+for (const route of ["/", "/tees", "/hoodies", "/hats", "/cart", "/success"]) {
   test(`built storefront HTML responds: ${route}`, async () => {
     const response = await fetch(origin + route);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /__NEXT_DATA__/);
   });
 }
+
+test("product SSR fails closed without provider configuration", async () => {
+  const response = await fetch(origin + "/product/430697388");
+  assert.equal(response.status, 503);
+  const html = await response.text();
+  assert.match(html, /Temporarily unavailable/);
+  assert.doesNotMatch(html, /schema.org\/InStock/);
+});
+
+test("hidden product does not reach a provider or expose an offer", async () => {
+  assert.equal((await fetch(origin + "/product/430925200")).status, 404);
+});
 
 test("unused image optimization endpoint is disabled", async () => {
   const response = await fetch(origin + "/_next/image?url=%2Ffavicon.ico&w=64&q=75");

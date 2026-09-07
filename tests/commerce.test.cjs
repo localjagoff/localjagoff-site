@@ -412,34 +412,33 @@ test("live checkout is blocked in previews; server-controlled test return origin
 });
 
 test("public catalog preserves curated name, exclusion and retail price", async () => {
-  const originalFetch = global.fetch;
-  try {
-    global.fetch = async url => url.includes("/sync/products?")
-      ? response(200, [{ id: item.id, name: "Raw tee" }, { id: 430925200, name: "Hidden" }])
+    const { loadCatalog } = require("../lib/catalog.cjs");
+    const fetchImpl = async url => url.includes("/sync/products?")
+      ? { status: 200, ok: true, json: async () => ({ code: 200,
+        result: [{ id: item.id }, { id: 430925200 }], paging: { total: 2, offset: 0 } }) }
       : response(200, detail());
-    const { default: handler } = await import("../api/get-products.js");
-    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
-    await handler({}, res);
+    const sandbox = { module: { exports: {} }, console: quiet,
+      require: () => ({ getCatalog: () => loadCatalog({ apiKey: "fixture", fetchImpl }) }) };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/get-products.js"), "utf8"), sandbox);
+    const res = { setHeader() {}, status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
+    await sandbox.module.exports({ method: "GET" }, res);
     assert.equal(res.code, 200);
     assert.equal(res.body.length, 1);
     assert.equal(res.body[0].name, "Local Jagoff PGH OG Tee");
     assert.equal(res.body[0].retail_price, "30.00");
-    assert.deepEqual(res.body[0].variants, [{ id: item.variant_id, name: "XL", price: "30.00" }]);
-  } finally { global.fetch = originalFetch; }
+    assert.equal(res.body[0].variants[0].id, item.variant_id);
+    assert.equal(res.body[0].variants[0].name, "XL");
+    assert.equal(res.body[0].variants[0].availability, "in stock");
 });
 
 test("public catalog failures do not expose upstream exception content", async () => {
-  const originalFetch = global.fetch;
-  const originalError = console.error;
   const logs = [];
-  try {
-    console.error = (...args) => logs.push(args);
-    global.fetch = async () => { throw new Error("PRIVATE_PROVIDER_DETAIL"); };
-    const { default: handler } = await import("../api/get-products.js");
-    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
-    await handler({}, res);
-    assert.equal(res.code, 500);
-    assert.deepEqual(res.body, { error: "Failed to load products" });
+    const sandbox = { module: { exports: {} }, console: { error: (...args) => logs.push(args) },
+      require: () => ({ getCatalog: async () => { throw new Error("PRIVATE_PROVIDER_DETAIL"); } }) };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/get-products.js"), "utf8"), sandbox);
+    const res = { setHeader() {}, status(code) { this.code = code; return this; }, json(body) { this.body = body; } };
+    await sandbox.module.exports({ method: "GET" }, res);
+    assert.equal(res.code, 503);
+    assert.equal(res.body.error, "Products temporarily unavailable");
     assert.doesNotMatch(JSON.stringify(logs), /PRIVATE_PROVIDER_DETAIL/);
-  } finally { global.fetch = originalFetch; console.error = originalError; }
 });

@@ -176,15 +176,15 @@ function ProductMeta({ shareTitle, shareDescription, shareImage, shareUrl, produ
   );
 }
 
-export default function ProductPage({ initialProductId }) {
+export default function ProductPage({ initialProductId, initialProduct, initialVariantId, unavailable }) {
   const router = useRouter();
   const { id } = router.query;
 
   const productId = String(id || initialProductId || "");
 
-  const [product, setProduct] = useState(null);
-  const [selectedImage, setSelectedImage] = useState("");
-  const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [product, setProduct] = useState(initialProduct);
+  const [selectedImage, setSelectedImage] = useState(initialProduct?.images?.[0] || "");
+  const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId);
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const [added, setAdded] = useState(false);
@@ -211,33 +211,11 @@ export default function ProductPage({ initialProductId }) {
   const productSignal = productSignals[productId];
 
   useEffect(() => {
-    if (!productId) return;
-
-    fetch("/api/get-products")
-      .then((res) => res.json())
-      .then((data) => {
-        const found = Array.isArray(data)
-          ? data.find((p) => String(p.id) === String(productId))
-          : null;
-
-        if (!found) return;
-
-        const imgs = getProductImages(found);
-
-        setProduct({
-          ...found,
-          images: imgs,
-          thumbnail_url: imgs[0],
-        });
-
-        setSelectedImage(imgs[0]);
-
-        if (found.variants?.length) {
-          setSelectedVariantId(found.variants[0].id);
-        }
-      })
-      .catch(() => setProduct(null));
-  }, [productId]);
+    setProduct(initialProduct);
+    setSelectedImage(initialProduct?.images?.[0] || "");
+    setSelectedVariantId(initialVariantId);
+    setQuantity(1);
+  }, [initialProduct, initialVariantId]);
 
   useEffect(() => {
     if (!imageZoomOpen) return;
@@ -273,8 +251,7 @@ export default function ProductPage({ initialProductId }) {
     if (!product?.variants?.length) return null;
 
     return (
-      product.variants.find((v) => String(v.id) === String(selectedVariantId)) ||
-      product.variants[0]
+      product.variants.find((v) => String(v.id) === String(selectedVariantId)) || null
     );
   }, [product, selectedVariantId]);
 
@@ -292,15 +269,16 @@ export default function ProductPage({ initialProductId }) {
       name: "Local Jagoff",
     },
     url: shareUrl,
-    ...(product
+    ...(product && selectedVariant
       ? {
           offers: {
             "@type": "Offer",
             priceCurrency: "USD",
             price: String(displayedPrice),
-            availability: "https://schema.org/InStock",
+            availability: selectedVariant.availability === "in stock"
+              ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             itemCondition: "https://schema.org/NewCondition",
-            url: shareUrl,
+            url: `${shareUrl}?variant=${selectedVariant.id}`,
             seller: {
               "@type": "Organization",
               name: "Local Jagoff",
@@ -349,9 +327,11 @@ export default function ProductPage({ initialProductId }) {
   };
 
   const addToCart = () => {
-    if (!product) return;
+    if (!product || !selectedVariant) return;
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    let cart;
+    try { cart = JSON.parse(localStorage.getItem("cart")); } catch { cart = []; }
+    if (!Array.isArray(cart)) cart = [];
 
     const existing = cart.find(
       (item) =>
@@ -360,7 +340,7 @@ export default function ProductPage({ initialProductId }) {
     );
 
     if (existing) {
-      existing.quantity += quantity;
+      existing.quantity = Math.min(99, (Number(existing.quantity) || 0) + quantity);
     } else {
       cart.push({
         id: product.id,
@@ -440,7 +420,8 @@ export default function ProductPage({ initialProductId }) {
         <main className="loading-wrap">
           <div className="loading-card">
             <p className="loading-kicker">LOCAL JAGOFF</p>
-            <h1>Loading the goods...</h1>
+            <h1>{unavailable ? "Temporarily unavailable" : "Product unavailable"}</h1>
+            <p>Please check back soon. No purchase has been made.</p>
           </div>
         </main>
 
@@ -569,6 +550,7 @@ export default function ProductPage({ initialProductId }) {
                 value={selectedVariantId}
                 onChange={(e) => setSelectedVariantId(e.target.value)}
               >
+                {!selectedVariant && <option value="">Select an available size / style</option>}
                 {product.variants.map((v) => (
                   <option key={v.id} value={v.id}>
                     {getVariantLabel(product.name, v.name)}
@@ -589,7 +571,7 @@ export default function ProductPage({ initialProductId }) {
             <span>{quantity}</span>
             <button
               type="button"
-              onClick={() => setQuantity((q) => q + 1)}
+              onClick={() => setQuantity((q) => Math.min(99, q + 1))}
               aria-label="Increase quantity"
             >
               +
@@ -597,7 +579,7 @@ export default function ProductPage({ initialProductId }) {
           </div>
 
           <div className="button-row">
-            <button type="button" className="add-button" onClick={addToCart}>
+            <button type="button" className="add-button" disabled={!selectedVariant} onClick={addToCart}>
               {added ? "Added" : "Add to Cart"}
             </button>
             <button type="button" className="share-button" onClick={handleShare}>
@@ -974,9 +956,25 @@ export default function ProductPage({ initialProductId }) {
 }
 
 export async function getServerSideProps(context) {
+  const { loadProduct } = require("../../lib/catalog.cjs");
+  const id = String(context.params?.id || "");
+  if (!/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id))) return { notFound: true };
+  context.res.setHeader("Cache-Control", "no-store");
+  let product;
+  try {
+    product = await loadProduct(id, { apiKey: process.env.PRINTFUL_API_KEY });
+  } catch {
+    context.res.statusCode = 503;
+    return { props: { initialProductId: id, initialProduct: null, initialVariantId: "", unavailable: true } };
+  }
+  if (!product) return { notFound: true };
+  const requestedVariant = context.query.variant;
+  // A stale/invalid Meta variant must not silently select a different item.
+  const variant = requestedVariant === undefined ? product.variants[0] :
+    product.variants.find(v => String(v.id) === requestedVariant);
   return {
     props: {
-      initialProductId: String(context.params?.id || ""),
+      initialProductId: id, initialProduct: product, initialVariantId: variant?.id || "", unavailable: false,
     },
   };
 }

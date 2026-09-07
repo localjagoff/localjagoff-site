@@ -248,7 +248,7 @@ export default async function handler(req, res) {
     const data = await openaiRes.json();
 
     if (!openaiRes.ok) {
-      return res.status(openaiRes.status).json({ error: data?.error?.message || "OpenAI request failed." });
+      return res.status(502).json({ error: "Promo provider unavailable." });
     }
 
     const rawText = extractResponseText(data);
@@ -257,12 +257,12 @@ export default async function handler(req, res) {
     try {
       promo = JSON.parse(stripJsonFence(rawText));
     } catch (err) {
-      return res.status(500).json({ error: "The AI response was not valid JSON.", raw: rawText });
+      return res.status(502).json({ error: "The AI response was not valid JSON." });
     }
 
     return res.status(200).json({ promo: appendCtaHelper(promo, promptData) });
   } catch (err) {
-    console.error("PROMO GENERATOR ERROR:", err);
-    return res.status(500).json({ error: "Failed to generate promo content.", message: err.message });
+    console.error("promo_generation_failed");
+    return res.status(500).json({ error: "Failed to generate promo content." });
   }
 }
