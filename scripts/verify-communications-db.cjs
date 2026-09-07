@@ -17,6 +17,27 @@ async function main(){
     await store.markAttempt(job);await store.finish(job,'sent',{providerId:'synthetic'});
     assert.equal(await store.claim(job.key),undefined);
     await store.link(reference,1);
+    const owner={...paid,summary:{reference},payload:{...payload,subject:'HIGH PRIORITY synthetic owner warning'}};
+    await Promise.all([store.startOwner(owner),store.startOwner(owner)]);
+    assert.equal(await store.claim('owner/'+reference),undefined);
+    const normal={...payload,subject:'Paid synthetic owner'},recovery={...payload,subject:'Recovered synthetic owner'};
+    await Promise.all([store.resolveOwner(reference,normal,recovery),store.resolveOwner(reference,normal,recovery)]);
+    const ownerClaims=await Promise.all([store.claim('owner/'+reference),store.claim('owner/'+reference)]);
+    assert.equal(ownerClaims.filter(Boolean).length,1);
+    const normalJob=ownerClaims.find(Boolean);assert.equal(normalJob.kind,'owner_order');assert.deepEqual(normalJob.payload,normal);
+    await store.markAttempt(normalJob);await store.finish(normalJob,'sent',{providerId:'synthetic-owner'});
+    await store.resolveOwner(reference,normal,recovery);assert.equal(await store.hasJob('owner-recovery/'+reference),false);
+    // Reuse only this run's isolated fixture to exercise an ambiguous send/recovery race.
+    await store.query('DELETE FROM comm_outbox WHERE key=$1',['owner/'+reference]);
+    await store.startOwner(owner);await store.expediteOwner(reference);
+    const urgent=await store.claim('owner/'+reference);assert.equal(urgent.kind,'owner_alert');
+    await store.markAttempt(urgent);
+    await Promise.all([store.resolveOwner(reference,normal,recovery),store.resolveOwner(reference,normal,recovery)]);
+    const preserved=(await store.query('SELECT payload,payload_hash FROM comm_outbox WHERE key=$1',[urgent.key]))[0];
+    assert.deepEqual(preserved.payload,urgent.payload);assert.equal(preserved.payload_hash,urgent.payload_hash);
+    assert.equal(Number((await store.query("SELECT count(*) AS n FROM comm_outbox WHERE order_ref=$1 AND kind='owner_recovery'",[reference]))[0].n),1);
+    await store.finish(urgent,'sent',{providerId:'synthetic-urgent'});
+    await store.startOwner(owner);await store.expediteOwner(reference);assert.equal(await store.claim(urgent.key),undefined);
     const ipHash=hash(run+'ip'),emailHash=hash(run+'email');rateKeys.push('contact-ip:'+ipHash,'contact-email:'+emailHash);
     const fields={requestId:crypto.randomUUID(),message:'Synthetic only'};requests.push(fields.requestId);
     const outcomes=await Promise.all([store.contact(fields,run+'challenge',ipHash,emailHash,payload),store.contact(fields,run+'challenge',ipHash,emailHash,payload)]);
@@ -40,7 +61,7 @@ async function main(){
     await store.query("UPDATE comm_reviews SET status='approved' WHERE order_ref=$1",[reference]);
     const visible=(await runRequest({},'GET')).body.reviews.find(r=>r.display_name==='Synthetic fixture');assert.equal(visible.rating,1);assert.equal(visible.order_ref,undefined);
     await store.query('UPDATE comm_orders SET suppress_reviews=true WHERE reference=$1',[reference]);assert.equal((await runRequest({action:'open',token})).code,410);
-    console.log('PASS: isolated Review database migration, duplicate receipt/contact, concurrent claim, JSONB integrity, rate limit, purchase-bound review, moderation, suppression. No provider/email calls.');
+    console.log('PASS: isolated Review database migration, duplicate receipt/contact/owner alerts, concurrent claim, crash-deadline warning, immutable attempted owner payload, one recovery notification, JSONB integrity, rate limit, purchase-bound review, moderation, suppression. No provider/email calls.');
   }finally{
     await store.sql.transaction([
       store.sql.query('DELETE FROM comm_reviews WHERE order_ref=$1',[reference]),

@@ -182,8 +182,30 @@ test('durable paid notification is registered before Printful; linked callback r
 test('durable notification persistence failure prevents a new Printful call; TEST skips both callbacks',async()=>{
   const f=fulfillmentFixture();f.options.recordPaid=async()=>{throw new Error('database unavailable');};
   await assert.rejects(f.run());assert.equal(f.state.fetches.length,0);
-  f.options.recordPaid=f.options.recordLinked=()=>assert.fail('TEST notification callback');
+  f.options.recordPaid=f.options.recordLinked=f.options.recordFailed=()=>assert.fail('TEST notification callback');
   assert.equal((await f.run({...f.event,livemode:false})).skipped,'test_mode_no_printful');
+});
+
+test('owner failure callback runs only after verified paid identity, including an uncertain draft outcome',async()=>{
+  for(const mutate of [f=>f.state.getStatus=500,f=>f.state.updateFailures=1,f=>f.options.recordPaid=async()=>{throw new Error('database offline');}]) {
+    const f=fulfillmentFixture();let alerts=0;mutate(f);
+    f.options.recordFailed=async({session,event,reference})=>{
+      alerts++;assert.equal(session.payment_status,'paid');assert.equal(event.livemode,true);assert.equal(reference,externalId(session.id));
+    };
+    await assert.rejects(f.run());assert.equal(alerts,1);
+  }
+  for(const mutate of [f=>f.session.payment_status='unpaid',f=>f.session.metadata.store_id='wrong',f=>f.session.mode='subscription',f=>f.session.livemode=false]) {
+    const f=fulfillmentFixture();mutate(f);f.options.recordFailed=()=>assert.fail('Unverified owner alert');
+    await f.run().catch(()=>{});assert.equal(f.state.posts.length,0);
+  }
+});
+
+test('failed durable owner alert retains webhook retry and sanitized operational evidence',async()=>{
+  const f=fulfillmentFixture();f.state.getStatus=500;
+  f.options.recordFailed=async()=>{throw new Error('private@example.test secret-address');};
+  await assert.rejects(f.run(),/retry required/);
+  assert.match(JSON.stringify(f.state.logs),/owner_alert_persistence_failed/);
+  assert.doesNotMatch(JSON.stringify(f.state.logs),/private@example|secret-address/);
 });
 
 test("paid Stripe purchase creates exactly one draft with correct recipient, quantities and retail amounts", async () => {

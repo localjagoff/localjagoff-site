@@ -133,7 +133,7 @@ function buildOrderEmailHtml({ session, recipient, orderId, lineItems }) {
                 <tr>
                   <td style="padding: 18px 24px; border-top:1px solid #242424; background:#080808;">
                     <p style="margin:0; color:#777; font-size:12px; line-height:1.5;">
-                      Questions? Reply to your order email or visit localjagoff.com.
+                      Questions? Reply to your order email or contact hello@localjagoff.com.
                     </p>
                   </td>
                 </tr>
@@ -178,6 +178,7 @@ ${recipient.address2 ? `${recipient.address2}\n` : ""}${recipient.city}, ${recip
 
 No nonsense. Just Pittsburgh attitude.
 
+Questions? Contact hello@localjagoff.com.
 localjagoff.com`;
 }
 
@@ -212,6 +213,7 @@ async function sendOrderReceivedEmail({ session, recipient, orderId, lineItems }
     body: JSON.stringify({
       from,
       to: [to],
+      reply_to: "hello@localjagoff.com",
       subject: "We got your Local Jagoff order",
       html,
       text,
@@ -257,7 +259,7 @@ export function createWebhookHandler(options = {}) {
       if (event.livemode === true && env.COMMUNICATIONS_ENABLED === "true" &&
         ['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type)) {
         const service = communications.createService({stripe:client,env});
-        notifications = {recordPaid:service.recordPaid,recordLinked:service.recordLinked};
+        notifications = {recordPaid:service.recordPaid,recordLinked:service.recordLinked,recordFailed:service.recordFailed};
       }
       const result = await fulfillEvent(event, { sendEmail: sendOrderReceivedEmail, ...notifications, ...options, stripe: client, env });
       return res.status(200).json(result);
