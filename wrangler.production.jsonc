@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "localjagoff-production",
+  "account_id": "3ba52abcb44be302ce5b6d5f695474d8",
+  "main": ".open-next/prewarm-worker.js",
+  "compatibility_date": "2026-09-07",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {"directory": ".open-next/assets", "binding": "ASSETS"},
+  "services": [{"binding": "WORKER_SELF_REFERENCE", "service": "localjagoff-production"}],
+  "durable_objects": {"bindings": [{"name": "COMMERCE_EXECUTOR", "class_name": "CommerceExecutor"}]},
+  "migrations": [{"tag": "commerce-executor-v1", "new_sqlite_classes": ["CommerceExecutor"]}],
+  "d1_databases": [{"binding": "PUBLIC_CATALOG_DB", "database_name": "localjagoff-catalog-production", "database_id": "a96e419e-b04e-4e62-98dc-f174a3c5c878"}],
+  "vars": {
+    "CLOUDFLARE_WORKER_NAME": "localjagoff-production",
+    "COMMERCE_PRODUCTION_WORKER": "localjagoff-production",
+    "COMMERCE_ENV": "production",
+    "SITE_URL": "https://www.localjagoff.com",
+    "CHECKOUT_PAUSED": "true",
+    "CUSTOMER_EMAIL_ENABLED": "false",
+    "COMMUNICATIONS_ENABLED": "false",
+    "CATALOG_SNAPSHOT_ENABLED": "true",
+    "NATIVE_PRODUCT_ENABLED": "true",
+    "COMMUNICATIONS_IDLE_GATE": "true",
+    "COMMERCE_EXECUTOR_ENABLED": "true"
+  },
+  "triggers": {"crons": []},
+  "observability": {"enabled": true, "head_sampling_rate": 1}
+}

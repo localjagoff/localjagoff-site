@@ -4,7 +4,7 @@ This is a review implementation, not production capacity certification. Keep the
 
 ## Build and Isolation
 
-Run `npm run build:cloudflare` with `COMMERCE_ENV=preview`. The pinned OpenNext build is followed by an explicit public static-route export and a tested startup preloading patch. Dependency upgrades must pass the patch guards and real workerd startup tests before deployment.
+Run `npm run build:cloudflare`; absent `COMMERCE_ENV` defaults safely to `preview`. A production artifact requires explicit `COMMERCE_ENV=production`. The pinned OpenNext build is followed by an explicit public static-route export and a tested startup preloading patch. Dependency upgrades must pass the patch guards and real workerd startup tests before deployment. Check deployed static-page noindex headers as well as dynamic responses; runtime Preview flags cannot fix headers of assets that bypass the Worker.
 
 The same build produces the [native product renderer](native-product-runtime.md) from existing components and sets the Cloudflare-only client platform flag. Run generated-artifact tests after the build completes. Native product HTML and data routes read one product from the environment's D1 snapshot without a live-provider fallback.
 

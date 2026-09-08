@@ -1,7 +1,8 @@
 const {spawnSync}=require('node:child_process');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const env={...process.env,NEXT_PUBLIC_HOST_PLATFORM:'cloudflare'};
+const env={...process.env,COMMERCE_ENV:process.env.COMMERCE_ENV||'preview',NEXT_PUBLIC_HOST_PLATFORM:'cloudflare'};
+if(!['preview','production'].includes(env.COMMERCE_ENV))throw Error('Invalid Cloudflare build environment');
 for(const [file,...args] of [
   ['scripts/patch-opennext.cjs'],
   ['node_modules/@opennextjs/cloudflare/dist/cli/index.js','build'],
