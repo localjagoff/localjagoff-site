@@ -1,6 +1,6 @@
-# Cloudflare Review Runtime
+# Cloudflare Runtime And Review Isolation
 
-This is a review implementation, not production capacity certification. Keep the production host unchanged until the private operational gates pass.
+The same reviewed runtime supports isolated review and production environments. Capacity evidence, provider approvals and the coordinated cutover record are maintained in private operations documentation, not inferred from a successful build alone.
 
 ## Build and Isolation
 
@@ -10,7 +10,7 @@ The same build produces the [native product renderer](native-product-runtime.md)
 
 `wrangler.jsonc` targets review only. Checkout is paused and normal communications/customer email are disabled by default. Install credentials only through the provider secret store; never place credentials in Wrangler configuration, command arguments, logs, Git, or browser screenshots. Stripe review credentials must be TEST-only. Printful review tokens must not grant order creation or fulfillment access.
 
-Vercel Git auto-deployment is disabled for `fix/cloudflare-platform` only. This preserves the existing production branch and rollback deployment while preventing review checkpoints from creating unrelated Vercel builds.
+Vercel Git auto-deployment is disabled for `fix/cloudflare-platform` and `main`. The retained Vercel deployment is a paused rollback artifact; merging this Cloudflare branch must not rebuild or replace it on the legacy host.
 
 Public static pages use Workers Assets without invoking the server where eligible. Sensitive or personalized routes must never enter that static allowlist. Dynamic routes and errors retain Preview noindex protection. Robots directives do not replace authentication.
 
@@ -28,7 +28,9 @@ Temporary review helpers require an expiring window, exact review identity, paus
 
 Separate catalog, read-only idle and Contact windows cannot authorize arbitrary mail or provider operations. The Contact window exposes the existing Contact handler in Preview and lets the native timer deliver only one hardcoded owner-only payload whose full hash matches the real contact-email formatter. All other queued messages remain unable to send. Keep its completed idempotency record and close the window after verification; do not reset it to repeat delivery.
 
-Free account Cron Trigger allowance is shared across Workers. Review currently uses four schedules. Do not attempt a second four-trigger production deployment alongside it: record and disable the review schedules during the controlled production handover, retaining the review artifact/configuration for rollback. Check account-wide quota immediately before the handover. This is separate from per-invocation CPU and the 32-subrequest application cap.
+Free account Cron Trigger allowance is shared across Workers. The four schedules were transferred from review to production; review now has none. Do not enable a second four-trigger set alongside production. Restore schedules only as a coordinated transfer, retaining the review artifact. This is separate from per-invocation CPU and the 32-subrequest application cap.
+
+Production uses exact apex/www Worker routes over the retained legacy DNS targets, with both routes verified fail-closed. Canonical apex-to-HTTPS-www redirection preserves path, query and request method. Public assets must remain indexable; administration and personalized routes remain authenticated or token-protected. Production credentials exist only in Cloudflare secrets. The private preparation entrypoint closes automatically when communications are enabled; lifecycle subscription setup uses individual event writes and never replaces the signing pair.
 
 ## Legacy Host Compatibility
 
