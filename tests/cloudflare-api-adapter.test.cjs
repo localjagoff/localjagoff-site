@@ -191,12 +191,33 @@ test('native parsing matches Next for JSON, empty bodies, forms, text and charse
   const adapter=createApiAdapter({contactFactory:()=>async(req,res)=>{parsed=req.body;res.json({ok:true});}});
   for(const [type,body] of [['application/json','{"name":"fixture"}'],['application/json',''],
     ['application/ld+json','[1,2]'],['application/x-www-form-urlencoded','a=1&a=2&__proto__=safe'],
-    ['text/plain','fixture'],['invalid type','fixture'],['text/plain; charset=iso-8859-1',Buffer.from([233])]]){
+    ['text/plain','fixture'],['invalid type','fixture'],['text/plain; charset=iso-8859-1',Buffer.from([233])],
+    ['application/json; charset=UTF-8',Buffer.concat([Buffer.from([239,187,191]),Buffer.from('{"v":1}')])],
+    ['application/json; charset=utf8',Buffer.from([34,255,34])],
+    ['application/json; charset=iso-8859-1',Buffer.from([34,233,34])]]){
     const nodeReq=Readable.from([Buffer.from(body)]);nodeReq.headers={'content-type':type};
     const expected=await parseBody(nodeReq,'20kb');
     const response=await adapter(req('/api/contact',{method:'POST',headers:{'content-type':type},body}),env);
     assert.equal(response.status,200);assert.deepEqual(parsed,expected);
   }
+});
+
+test('UTF-8 JSON fast path preserves multibyte chunk boundaries and rejects actual byte overflow before handlers',async()=>{
+  let parsed,calls=0,cancelled=false;
+  const adapter=createApiAdapter({contactFactory:()=>async(req,res)=>{calls++;parsed=req.body;res.json({ok:true});}});
+  const bytes=Buffer.from([34,240,159,152,128,34]);let cursor=0;
+  const chunked=new Request(env.SITE_URL+'/api/contact',{method:'POST',headers:{'content-type':'application/json'},
+    body:new ReadableStream({pull(controller){
+      if(cursor===bytes.length)controller.close();else controller.enqueue(bytes.subarray(cursor,++cursor));
+    }}),duplex:'half'});
+  assert.equal((await adapter(chunked,env)).status,200);assert.equal(parsed,String.fromCodePoint(128512));
+  const oversized=new Request(env.SITE_URL+'/api/contact',{method:'POST',headers:{'content-type':'application/json'},
+    body:new ReadableStream({pull(controller){controller.enqueue(new Uint8Array(20481));},
+      cancel(){cancelled=true;}}),duplex:'half'});
+  assert.equal((await adapter(oversized,env)).status,413);assert.equal(cancelled,true);assert.equal(calls,1);
+  const broken=new Request(env.SITE_URL+'/api/contact',{method:'POST',headers:{'content-type':'application/json'},
+    body:new ReadableStream({pull(controller){controller.error(Error('fixture stream failure'));}}),duplex:'half'});
+  assert.equal((await adapter(broken,env)).status,400);assert.equal(calls,1);
 });
 
 test('adapter work remains inside one invocation budget and each request gets a fresh allowance',async()=>{
