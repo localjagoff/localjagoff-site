@@ -53,6 +53,11 @@ test('compare-and-swap rejects a racing or stale refresh and never publishes par
   assert.equal(await store.advance(state,[product(snapshot.IDS[0])],false),false);
   assert.equal((await store.read()).cursor,1);assert.equal(await store.published(),undefined);
 });
+test('small database clock skew keeps a new cycle; materially future timestamps still reset before provider access',async()=>{
+  await reset();const started=Date.parse((await store.read()).cycle_started_at);
+  assert.equal((await snapshot.refreshStep(env,{store,now:()=>started-2,readProduct:async id=>product(id)})).outcome,'catalog_product_refreshed');
+  assert.equal((await snapshot.refreshStep(env,{store,now:()=>started-5001,readProduct:()=>assert.fail('future cycle must not contact provider')})).outcome,'catalog_cycle_reset');
+});
 test('expired and policy-mismatched snapshots fail closed without a provider fallback',async()=>{
   await reset();await cycle();
   db.exec("UPDATE public_catalog_snapshot SET published_source_at=strftime('%Y-%m-%dT%H:%M:%fZ','now','-151 minutes')");

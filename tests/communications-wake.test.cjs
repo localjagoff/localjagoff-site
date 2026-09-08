@@ -58,6 +58,24 @@ test('disabled hint and cleanup preserve existing runner behavior without access
   await wake.run({env:{PUBLIC_CATALOG_DB:database,COMMUNICATIONS_IDLE_GATE:'true'},mode:'cleanup',execute:async()=>calls++});
   assert.equal(calls,2);
 });
+
+test('successful active work keeps a generation-protected due hint without an extra Neon due-time read',async()=>{
+  const f=fixture();
+  try{
+    await f.wake.signal();const before=await f.wake.read();
+    const result=await wake.run({env:f.env,mode:'fast',execute:async()=>{
+      await f.wake.settle(before.version,new Date(Date.now()+3600000).toISOString());
+      return {outcome:'sent'};
+    },storeFactory:()=>assert.fail('active work must avoid another Neon query')});
+    assert.equal(result.outcome,'sent');
+    const current=await f.wake.read();assert.equal(current.next_due,0);assert.ok(current.version>before.version);
+    let reads=0;
+    await wake.run({env:f.env,mode:'fast',execute:async()=>({outcome:'no_due_order'}),
+      storeFactory:()=>({nextFastDue:async()=>{reads++;return null;}})});
+    assert.equal(reads,1);
+    assert.equal((await wake.run({env:f.env,mode:'fast',execute:()=>assert.fail('idle'),storeFactory:()=>assert.fail('idle')})).outcome,'no_due_work_hint');
+  }finally{f.db.close();}
+});
 test('read-only native review probe expires, cannot run in production and becomes D1-only when idle',async()=>{
   const review=require('../lib/cloudflare-review-verification.cjs');const f=fixture();let reads=0;
   const env={...f.env,COMMERCE_ENV:'preview',CLOUDFLARE_WORKER_NAME:'localjagoff-review',

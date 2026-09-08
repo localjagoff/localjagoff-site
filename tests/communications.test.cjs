@@ -57,7 +57,7 @@ function queueFixture(changes={}){
   const payload={subject:'Fixture',nested:{z:1,a:2}};
   const job={key:'receipt/LJfixture',kind:'receipt',payload,payload_hash:hash(payload),attempts:1,claim_token:'fixture',...changes};
   const finishes=[];let marked=0;
-  return {job,finishes,get marked(){return marked;},store:{claim:async()=>job,finish:async(...args)=>finishes.push(args),enqueue:async()=>{},mailQuota:async()=>true,markAttempt:async()=>{marked++;}},options:{env:{VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true'},logger:quiet,send:async()=>({id:'00000000-0000-4000-8000-000000000001'})}};
+  return {job,finishes,get marked(){return marked;},store:{claim:async()=>job,finish:async(...args)=>finishes.push(args),enqueue:async()=>{},prepareAttempt:async()=>{marked++;return 'ready';}},options:{env:{VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true'},logger:quiet,send:async()=>({id:'00000000-0000-4000-8000-000000000001'})}};
 }
 test('outbox integrity hash survives JSONB key ordering and sends with one stable identity',async()=>{
   const f=queueFixture();f.job.payload={nested:{a:2,z:1},subject:'Fixture'};let key;
@@ -77,7 +77,7 @@ test('retry, terminal rejection and quota exhaustion remain durable without fals
     const f=queueFixture();const result=await deliver(f.store,{...f.options,send:async()=>{const error=new Error('failure');error.status=status;throw error;}});
     assert.equal(result.outcome,outcome);assert.equal(f.finishes[0][1],state);
   }
-  const f=queueFixture();f.store.mailQuota=async()=>false;
+  const f=queueFixture();f.store.prepareAttempt=async()=> 'daily_mail_budget';
   assert.equal((await deliver(f.store,{...f.options,send:forbidden})).outcome,'daily_mail_budget');assert.equal(f.marked,0);
 });
 test('provider acceptance followed by database failure retains claim instead of retrying with a new key',async()=>{

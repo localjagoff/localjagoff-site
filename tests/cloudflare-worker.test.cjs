@@ -37,7 +37,7 @@ test('worker guards avoid Next and provider I/O; eager native and lazy HTTP path
       }};`};
     }
     if(url.endsWith('/lib/communications-runner.cjs')){
-      trace.runnerLoads++;return {format:'module',shortCircuit:true,source:`export default {async runCommunications({mode}){
+      trace.runnerLoads++;return {format:'commonjs',shortCircuit:true,source:`module.exports={async runCommunications({mode}){
         globalThis.__cloudflareTestTrace.modes.push(mode);
         for(let i=0;i<32;i++)await globalThis.fetch('https://fixture.test');
         try{await globalThis.fetch('https://fixture.test');throw Error('budget bypass');}

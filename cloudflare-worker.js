@@ -1,10 +1,12 @@
 import budget from './lib/invocation-budget.cjs';
 import review from './lib/cloudflare-review-verification.cjs';
+import capacity from './lib/cloudflare-capacity-verification.cjs';
 import deployment from './lib/deployment.cjs';
 import bootstrap from './lib/cloudflare-provider-bootstrap.cjs';
 import api from './lib/cloudflare-api-adapter.cjs';
-// Evaluate the store/Neon and runner/Stripe modules at startup; clients stay invocation-local.
+// Signature SDK code is preloaded by the native adapter; clients stay invocation-local.
 import './lib/communications-store.cjs';
+import './lib/communications-prewarm.cjs';
 import runner from './lib/communications-runner.cjs';
 import catalogSnapshot from './lib/catalog-snapshot.cjs';
 import wake from './lib/communications-wake.cjs';
@@ -56,6 +58,10 @@ export default {
     const modes={'*/5 * * * *':'fast','2 * * * *':'fallback','17 4 * * *':'cleanup'};
     const mode=Object.hasOwn(modes,event.cron)?modes[event.cron]:null;
     if(!mode)throw new Error('invalid_worker_schedule');
+    if(mode==='fast'&&capacity.enabled(env)){
+      const result=await budget.withBudget(()=>capacity.run(env));
+      console.info('communications_scheduled',{mode:'synthetic_capacity_review',...result});return;
+    }
     if(mode==='fast'&&review.idleEnabled(env)){
       const result=await budget.withBudget(()=>review.idleScheduled(env));
       console.info('communications_scheduled',{mode:'read_only_idle_review',...result});return;

@@ -251,6 +251,9 @@ test('real generated OpenNext prewarms in workerd with guarded routes, request e
           if(header==='cache-control'&&baseline.headers.get(header)===null){
             assert.equal(direct.headers.get(header),'no-store',label+' conservative cache policy');continue;
           }
+          if(header==='x-robots-tag'){
+            assert.equal(direct.headers.get(header),'noindex, nofollow, noarchive',label+' stricter Preview protection');continue;
+          }
           if(direct.headers.get(header)!==baseline.headers.get(header))parityDifferences.push([label+' '+header,direct.headers.get(header),baseline.headers.get(header)]);
         }
         const directBody=await direct.text(),baselineBody=await baseline.text();

@@ -185,6 +185,42 @@ test('third-page requirement fails closed with durable alert and no partial ship
   assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind<>'owner_alert'")).rows[0].n,0);
 });
 
+test('large package lists persist four messages per pass and resume without dropped or duplicate packages',async()=>{
+  const f=await fixture();
+  f.items=Array.from({length:9},(_,i)=>({id:i+1,quantity:1}));
+  f.shipments=f.items.map(i=>({...f.shipments[0],id:100+i.id,shipment_items:[{order_item_id:i.id,quantity:1}]}));
+  for(const [index,expected] of ['reconciled_partial','reconciled_partial','reconciled'].entries()){
+    if(index)await db.query('UPDATE comm_orders SET next_due_at=now()-interval \'1 second\' WHERE reference=$1',[reference]);
+    assert.equal((await f.run()).outcome,expected);
+    const saved=await store.order(reference);
+    assert.equal(saved.lifecycle_complete,index===2);
+    if(index<2){assert.equal(saved.reconcile_reason,'event');assert.ok(Date.parse(saved.next_due_at)<Date.now()+20000);}
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='shipment'")).rows[0].n,Math.min(9,4*(index+1)));
+  }
+  assert.equal(await store.claimReconciliation(),undefined);
+  const before=(await db.query('SELECT key,payload_hash FROM comm_outbox ORDER BY key')).rows;
+  await f.service.reconcile(reference);
+  assert.deepEqual((await db.query('SELECT key,payload_hash FROM comm_outbox ORDER BY key')).rows,before);
+});
+
+test('missing review date alerts once while all package batches continue before terminal manual review',async()=>{
+  const f=await fixture();f.items=[{id:1,quantity:6}];
+  f.shipments=Array.from({length:6},(_,i)=>({...f.shipments[0],id:100+i,delivery_status:'in_transit',delivered_at:undefined}));
+  assert.equal((await f.run()).outcome,'reconciled_partial');
+  assert.equal((await row(`lifecycle-alert/${reference}`)).status,'pending');
+  await db.query('UPDATE comm_orders SET next_due_at=now()-interval \'1 second\' WHERE reference=$1',[reference]);
+  assert.equal((await f.run()).outcome,'manual_review_required');
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='shipment'")).rows[0].n,6);
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='owner_alert'")).rows[0].n,1);
+  assert.equal((await store.order(reference)).lifecycle_complete,true);
+});
+
+test('claimed order snapshot avoids a duplicate database read without weakening concurrent-event fences',async()=>{
+  const f=await fixture(),original=store.order;
+  store.order=()=>assert.fail('claimed snapshot already contains the order');
+  try{assert.equal((await f.run()).outcome,'reconciled');}finally{store.order=original;}
+});
+
 test('pagination rejects foreign origins, repeated pages, changed paths and inconsistent totals before sends',async()=>{
   for(const next of ['https://attacker.test/v2/orders/123/order-items','/v2/orders/123/order-items','/v2/orders/999/order-items']){
     const f=await fixture();f.order.status='inprocess';
@@ -206,13 +242,13 @@ test('signed event during real SQL lease survives stale snapshot; replay cannot 
   assert.equal(Number((await store.order(reference)).reconcile_generation),1);
 });
 
-test('review final SQL fence prevents a refund event arriving during quota check from sending',async()=>{
+test('review final SQL fence prevents a refund event arriving before attempt preparation from sending',async()=>{
   const f=await fixture();await dueReview(f);
-  const original=store.mailQuota;store.mailQuota=async()=>{assert.equal((await notify(lifecycle('order_refunded'))).code,200);return true;};
+  const original=store.prepareAttempt;store.prepareAttempt=async(...args)=>{assert.equal((await notify(lifecycle('order_refunded'))).code,200);return original(...args);};
   try{
     const result=await deliver(store,{key:`review/${reference}`,env,beforeReview:f.service.beforeReview,send:forbidden,logger});
     assert.equal(result.outcome,'review_changed_before_send');assert.equal((await row(`review/${reference}`)).first_attempt_at,null);
-  }finally{store.mailQuota=original;}
+  }finally{store.prepareAttempt=original;}
   const result=await deliver(store,{key:`review/${reference}`,env,beforeReview:f.service.beforeReview,send:forbidden,logger});
   assert.equal(result.outcome,'no_due_job');
   await db.query("UPDATE comm_outbox SET next_attempt_at=now()-interval '1 second' WHERE kind='review'");
@@ -242,10 +278,30 @@ test('new event racing a terminal manual-review write preserves the queued revie
 
 test('review freshness fence rejects stale checks and expired leases in actual SQL',async()=>{
   const f=await fixture();await dueReview(f);const job=await store.claim(`review/${reference}`);
-  assert.equal(await store.markAttempt(job,{generation:0,checkedAt:Date.now()-61000}),null);
+  assert.equal(await store.prepareAttempt(job,{generation:0,checkedAt:Date.now()-61000}),'review_changed_before_send');
   await db.query("UPDATE comm_outbox SET lease_until=now()-interval '1 second' WHERE key=$1",[job.key]);
-  assert.equal(await store.markAttempt(job,{generation:0,checkedAt:Date.now()}),null);
+  assert.equal(await store.prepareAttempt(job,{generation:0,checkedAt:Date.now()}),'review_changed_before_send');
   assert.equal((await row(job.key)).first_attempt_at,null);
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_rate WHERE bucket='mail-attempts'")).rows[0].n,0);
+});
+
+test('atomic attempt preparation enforces the mail cap without marking a rejected attempt',async()=>{
+  await fixture();
+  await db.query("SELECT comm_take_rate('mail-attempts',86400,80) FROM generate_series(1,80)");
+  await store.enqueue('quota-fixture','processing',reference,{to:['fixture@example.invalid'],text:'fixture'});
+  const job=await store.claim('quota-fixture');
+  assert.equal(await store.prepareAttempt(job),'daily_mail_budget');
+  assert.equal((await row(job.key)).first_attempt_at,null);
+  assert.equal((await db.query("SELECT count FROM comm_rate WHERE bucket='mail-attempts'")).rows[0].count,80);
+  await db.query("DELETE FROM comm_rate WHERE bucket='mail-attempts'");
+  assert.equal(await store.prepareAttempt(job),'ready');
+  const started=(await row(job.key)).first_attempt_at;
+  assert.ok(started);
+  assert.equal(await store.prepareAttempt(job),'ready');
+  assert.deepEqual((await row(job.key)).first_attempt_at,started);
+  await db.query("UPDATE comm_outbox SET claim_token='00000000-0000-4000-8000-000000000009' WHERE key=$1",[job.key]);
+  await assert.rejects(store.prepareAttempt(job),/outbox_claim_lost/);
+  assert.equal((await db.query("SELECT count FROM comm_rate WHERE bucket='mail-attempts'")).rows[0].count,2);
 });
 
 test('review due time moves to fresh delivery plus seven days without changing immutable payload',async()=>{
