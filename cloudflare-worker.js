@@ -1,6 +1,7 @@
 import budget from './lib/invocation-budget.cjs';
 import review from './lib/cloudflare-review-verification.cjs';
 import capacity from './lib/cloudflare-capacity-verification.cjs';
+import executor from './lib/commerce-executor.cjs';
 import deployment from './lib/deployment.cjs';
 import bootstrap from './lib/cloudflare-provider-bootstrap.cjs';
 import api from './lib/cloudflare-api-adapter.cjs';
@@ -28,6 +29,7 @@ export default {
       if(pathname==='/api/create-checkout-session'&&env.CHECKOUT_PAUSED==='true'){
         return Response.json({error:'Checkout temporarily paused'},{status:503,headers:{'cache-control':'no-store','x-robots-tag':'noindex'}});
       }
+      if(executor.enabled(env)&&executor.PATHS.has(pathname))return executor.stub(env).fetch(request);
       const productResponse=await product(request,env);
       if(productResponse)return productResponse;
       const apiEnv=pathname==='/api/contact'&&review.contactEnabled(env)?{...env,COMMUNICATIONS_ENABLED:'true'}:env;
@@ -59,7 +61,7 @@ export default {
     const mode=Object.hasOwn(modes,event.cron)?modes[event.cron]:null;
     if(!mode)throw new Error('invalid_worker_schedule');
     if(mode==='fast'&&capacity.enabled(env)){
-      const result=await budget.withBudget(()=>capacity.run(env));
+      const result=await budget.withBudget(()=>executor.enabled(env)?executor.stub(env).verifyCapacity(2):capacity.run(env));
       console.info('communications_scheduled',{mode:'synthetic_capacity_review',...result});return;
     }
     if(mode==='fast'&&review.idleEnabled(env)){
@@ -75,6 +77,7 @@ export default {
       if(!deployment.isProduction(env)||env.COMMUNICATIONS_ENABLED!=='true'||env.CUSTOMER_EMAIL_ENABLED!=='true'){
         return {outcome:'sending_disabled'};
       }
+      if(executor.enabled(env))return executor.stub(env).scheduled(mode);
       return wake.run({env,mode,storeFactory:communicationsStore.createStore,
         execute:()=>runner.runCommunications({env,mode})});
     });

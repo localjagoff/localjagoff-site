@@ -40,10 +40,13 @@ test('real SQL and lifecycle code use only isolated synthetic rows; providers ne
       results.push(await probe.run(env,{...options,phase:i}));
       if(i===1)await probe.freeze(env,options);
     }
-    assert.deepEqual(results.map(r=>r.outcome),['reconciled','reconciled_partial','sent','sent','retry_scheduled','no_due_order','no_due_order','cleanup_complete']);
+    assert.deepEqual(results.map(r=>r.outcome),['reconciled','reconciled_partial','sent','sent','retry_scheduled','no_due_order','no_due_order','cleanup_complete','paid_capacity_pass','paid_capacity_pass','paid_capacity_pass']);
     assert.deepEqual(results[1].simulated_provider_calls,{stripe:1,printful:5,email:0});
     assert.deepEqual(results[3].simulated_provider_calls,{stripe:1,printful:5,email:1});
-    assert.equal((await probe.run(env,{...options,phase:8})).outcome,'capacity_disabled');
+    assert.equal((await probe.run(env,{...options,phase:11})).outcome,'capacity_disabled');
+    assert.equal(results[8].simulated_provider_calls.email,2);
+    assert.equal(results[9].simulated_provider_calls.email,0);
+    assert.equal(results[10].status,500);
     const status=await probe.status(env,options);
     assert.equal(status.jobs.find(j=>j.kind==='review').status,'sent');
     assert.deepEqual((await db.query('SELECT * FROM public.comm_orders')).rows,[{sentinel:'untouched'}]);

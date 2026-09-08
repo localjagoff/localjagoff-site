@@ -3,19 +3,21 @@ const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
 
-module.exports = async function handler(req, res) {
+function createCheckoutHandler({env=process.env,stripeFactory=(key)=>new Stripe(key,
+  {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()}),fetchImpl}={}) {
+return async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    if (process.env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
-    assertCheckoutEnvironment(process.env);
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()});
+    if (env.CHECKOUT_PAUSED === "true") throw new CommerceError("Checkout temporarily paused", 503);
+    assertCheckoutEnvironment(env);
+    const stripe = stripeFactory(env.STRIPE_SECRET_KEY);
     const coupon = couponCode(req.body?.coupon);
-    const items = await resolveCart(req.body?.items, { apiKey: process.env.PRINTFUL_API_KEY });
+    const items = await resolveCart(req.body?.items, { apiKey: env.PRINTFUL_API_KEY,...(fetchImpl?{fetchImpl}:{}) });
     const metadataItems = encodeItems(items);
-    const siteUrl = siteOrigin(process.env);
+    const siteUrl = siteOrigin(env);
     let promotionId;
     if (coupon) {
       const promotions = await stripe.promotionCodes.list({ code: coupon, active: true, limit: 2 });
@@ -111,3 +113,6 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+}
+module.exports=createCheckoutHandler();
+module.exports.createCheckoutHandler=createCheckoutHandler;

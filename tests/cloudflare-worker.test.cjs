@@ -142,6 +142,9 @@ test('worker guards avoid Next and provider I/O; eager native and lazy HTTP path
       }
     }finally{api.request=apiRequest;wake.signal=signal;}
     const checkout=await worker.fetch(new Request('https://review.example.test/api/create-checkout-session',{method:'POST'}),{CHECKOUT_PAUSED:'false'},{});
-    assert.equal(await checkout.text(),'next fixture');assert.equal(trace.requests,289);
+    assert.equal(checkout.status,400);assert.deepEqual(await checkout.json(),{error:'Invalid items'});
+    assert.equal(trace.requests,257,'native invalid checkout never loads Next or fetches a provider');
+    const fallback=await worker.fetch(new Request('https://review.example.test/unhandled'),setup,{});
+    assert.equal(await fallback.text(),'next fixture');assert.equal(trace.requests,289);
   }finally{hooks.deregister();globalThis.fetch=original;console.info=info;delete globalThis.__cloudflareTestTrace;}
 });

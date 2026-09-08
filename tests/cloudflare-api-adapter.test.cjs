@@ -19,9 +19,9 @@ const products=[{id:430964873,name:'Fixture tee',description:'A fixture tee',cat
   variants:[{id:123,name:'M',price:'25.00',unit_amount:2500,currency:'USD',availability:'in stock',size:'M',color:'Black'}]}];
 const req=(route,init={})=>new Request('https://fixture.test'+route,init);
 
-test('only exact reviewed routes are intercepted; admin, scheduler, checkout and encoded variants fall through unread',async()=>{
+test('only exact reviewed routes are intercepted; admin, scheduler and encoded variants fall through unread',async()=>{
   const adapter=createApiAdapter();
-  for(const route of ['/api/reviews/moderation','/api/communications/run','/api/create-checkout-session','/admin/reviews',
+  for(const route of ['/api/reviews/moderation','/api/communications/run','/admin/reviews',
     '/api/webhook/','/api/%77ebhook','/api/webhook-extra','/__proto__','/constructor']){
     const request=req(route,{method:'POST',body:'unread'});
     assert.equal(await adapter(request,env),null);assert.equal(request.bodyUsed,false);

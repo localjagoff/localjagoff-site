@@ -19,6 +19,7 @@ const {default:worker}=await import('../cloudflare-worker.js');
 // Middleware and server capture only the budgeted fetch; no synthetic request or env.
 await import('./worker.js');
 export default worker;
+export {CommerceExecutor} from '../cloudflare-commerce-object.js';
 `;
 
 function count(source,text){return source.split(text).length-1;}
