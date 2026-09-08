@@ -7,7 +7,7 @@ import budget from './lib/invocation-budget.cjs';
 export class ProductionPreparation extends WorkerEntrypoint {
   async run(action,input){
     if(!preparation.enabled(this.env))return {outcome:'production_preparation_closed'};
-    if(!['preflight','catalog-step','catalog-status','webhook-stage','signing-status','admin-handoff'].includes(action))return {outcome:'unsupported_preparation_action'};
+    if(!['preflight','catalog-step','catalog-status','webhook-stage','signing-status','admin-handoff','lifecycle-subscriptions'].includes(action))return {outcome:'unsupported_preparation_action'};
     return budget.withBudget(()=>executor.stub(this.env).prepareProduction(action,input));
   }
 }
