@@ -20,6 +20,7 @@ const {default:worker}=await import('../cloudflare-worker.js');
 await import('./worker.js');
 export default worker;
 export {CommerceExecutor} from '../cloudflare-commerce-object.js';
+export {ProductionPreparation} from '../cloudflare-production-preparation.js';
 `;
 
 function count(source,text){return source.split(text).length-1;}
