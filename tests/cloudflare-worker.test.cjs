@@ -126,6 +126,21 @@ test('worker guards avoid Next and provider I/O; eager native and lazy HTTP path
       assert.equal(await response.text(),'native fixture');assert.equal(calls,1);
       assert.equal(trace.requests,257);assert.equal(trace.nextLoads,1);
     }finally{api.request=apiRequest;}
+    const wake=require('../lib/communications-wake.cjs'),signal=wake.signal;
+    try{
+      let signals=0;
+      wake.signal=async()=>{signals++;};
+      for(const [status,body,currentEnv,expected] of [
+        [400,{error:'bad_signature'},live,0],
+        [200,{received:true,skipped:'test_mode_no_printful'},live,0],
+        [200,{received:true},setup,0],
+        [200,{received:true},live,1],
+      ]){
+        api.request=async()=>Response.json(body,{status});
+        await worker.fetch(new Request('https://www.localjagoff.com/api/webhook',{method:'POST'}),currentEnv,{});
+        assert.equal(signals,expected);
+      }
+    }finally{api.request=apiRequest;wake.signal=signal;}
     const checkout=await worker.fetch(new Request('https://review.example.test/api/create-checkout-session',{method:'POST'}),{CHECKOUT_PAUSED:'false'},{});
     assert.equal(await checkout.text(),'next fixture');assert.equal(trace.requests,289);
   }finally{hooks.deregister();globalThis.fetch=original;console.info=info;delete globalThis.__cloudflareTestTrace;}

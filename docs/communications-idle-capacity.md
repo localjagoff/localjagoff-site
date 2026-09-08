@@ -1,0 +1,13 @@
+# Idle Communications Capacity
+
+`COMMUNICATIONS_IDLE_GATE=true` enables a disposable D1 scheduling hint. Create the fixed schema in `lib/communications-wake.cjs` in the existing D1 binding before enabling it. The table holds only one generation number and next-due timestamp; no recipient, order identity, payment or message content. Durable jobs remain in Neon.
+
+After a successful production payment/webhook/contact handler completes its durable writes, it marks the hint due. Stripe TEST skips and rejected requests do not mark it. A fast native tick reads D1 first. A future or empty queue hint avoids Neon entirely. After active work, the next pending message, expired sending lease or event-driven reconciliation determines the next wake. Compare-and-swap prevents a concurrent request's signal from being overwritten by a drain's older observation.
+
+Hourly fallback always examines durable state even if the hint is idle. A process crash between a durable commit and the D1 signal is therefore recovered within the next hourly fallback, plus normal bounded queue-drain time. A D1 failure does not suppress durable processing. A runner failure retains its earlier due hint. Sending leases, retry delays, fixed idempotency keys and owner-alert deadlines are not changed. Cleanup remains daily. This is an optimization, never the source of truth or a guarantee of instantaneous mail delivery.
+
+The native hint remains opt-in until its review checks pass; missing/disabled flag preserves the existing runner. Additional worst-case idle initialization is three D1 reads/writes; steady idle is one. Active normal drain adds one initial D1 read, one bounded due-time SQL aggregate and one D1 compare-and-swap. All operations share the existing 32-subrequest cap; a hint update failure leaves the queue recoverable.
+
+Neon Free currently includes 100 CU-hours/project/month and suspends after five idle minutes. An always-awake 0.25 CU endpoint is about 180 CU-hours/30 days, so unconditional five-minute queries cannot be treated as free-safe. Hourly fallback with five-minute idle windows is about 15 CU-hours/30 days before actual work. Illustrative conservative additions: ten order/contact activity windows per day at 15 minutes each add 18.75 CU-hours/month; 500 otherwise isolated public-review reads at five minutes each add 10.42. Total about 44.17 CU-hours; overlaps reduce it, slower/larger compute or extra traffic increase it. This is a planning model, not measured hosted usage or an unlimited-traffic guarantee. Monitor actual compute and request limits before cutover and as traffic grows.
+
+References: https://neon.com/pricing and https://neon.com/docs/introduction/scale-to-zero. No paid plan or higher resource size is authorized.

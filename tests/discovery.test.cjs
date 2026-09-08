@@ -108,6 +108,22 @@ test("Google and OpenAI exports share identities, prices and exact variant URLs"
   for (const line of lines) assert.equal(line.split("\t").length, header.split("\t").length);
 });
 
+test("variant projection preserves shared fields, image escaping and stable ordering", () => {
+  const p = product();
+  p.images = ["/images/hero.jpg", "https://images.example/a,b.jpg"];
+  p.variants.reverse();
+  const rows = d.googleRows([p]);
+  const expected = [...p.variants].sort((a, b) => a.id - b.id).map(v => ({
+    id: `lj_${p.id}_${v.id}`, item_group_id: `lj_${p.id}`, item_group_title: p.name.slice(0, 150),
+    title: `${p.name} - ${v.name}`.slice(0, 150), description: p.description.slice(0, 5000),
+    link: `${d.ORIGIN}/product/${p.id}?variant=${v.id}`,
+    image_link: `${d.ORIGIN}/images/hero.jpg`, additional_image_link: "https://images.example/a%2Cb.jpg",
+    availability: "in_stock", price: `${v.price} ${v.currency}`, condition: "new", brand: "Local Jagoff",
+    size: v.size, color: v.color,
+  }));
+  assert.deepEqual(rows, expected);
+});
+
 test("serializers handle separators and JSON script escapes without adding rows", () => {
   const p = product(); p.description = 'Line\tbreak\n"quote" & </script>';
   assert.equal(d.googleTsv([p]).trim().split("\n").length, 3);

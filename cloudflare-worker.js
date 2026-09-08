@@ -6,6 +6,9 @@ import api from './lib/cloudflare-api-adapter.cjs';
 // Evaluate the store/Neon and runner/Stripe modules at startup; clients stay invocation-local.
 import './lib/communications-store.cjs';
 import runner from './lib/communications-runner.cjs';
+import catalogSnapshot from './lib/catalog-snapshot.cjs';
+import wake from './lib/communications-wake.cjs';
+import communicationsStore from './lib/communications-store.cjs';
 
 globalThis.fetch=budget.installBudget(globalThis.fetch);
 
@@ -21,13 +24,29 @@ export default {
         return Response.json({error:'Checkout temporarily paused'},{status:503,headers:{'cache-control':'no-store','x-robots-tag':'noindex'}});
       }
       const direct=await api.request(request,env);
-      if(direct)return direct;
+      if(direct){
+        if(deployment.isProduction(env)&&env.COMMUNICATIONS_ENABLED==='true'&&
+          request.method==='POST'&&direct.status>=200&&direct.status<300&&
+          ['/api/webhook','/api/printful-events','/api/contact'].includes(pathname)){
+          // Notify only after the handler's durable writes. TEST skips do not wake the queue.
+          const body=await direct.clone().json().catch(()=>null);
+          if(body&&!body.skipped)await wake.signal(env);
+        }
+        return direct;
+      }
       // OpenNext middleware captures fetch at module evaluation, after our budget is installed.
       const {default:handler}=await import('./.open-next/worker.js');
       return handler.fetch(request,env,ctx);
     });
   },
   async scheduled(event,env) {
+    if(event.cron==='1-56/5 * * * *'){
+      try{
+        const result=await budget.withBudget(()=>catalogSnapshot.refreshStep(env));
+        console.info('catalog_scheduled',result);
+      }catch{console.error('catalog_scheduled',{outcome:'catalog_refresh_failed'});}
+      return;
+    }
     const modes={'*/5 * * * *':'fast','2 * * * *':'fallback','17 4 * * *':'cleanup'};
     const mode=Object.hasOwn(modes,event.cron)?modes[event.cron]:null;
     if(!mode)throw new Error('invalid_worker_schedule');
@@ -40,7 +59,8 @@ export default {
       if(!deployment.isProduction(env)||env.COMMUNICATIONS_ENABLED!=='true'||env.CUSTOMER_EMAIL_ENABLED!=='true'){
         return {outcome:'sending_disabled'};
       }
-      return runner.runCommunications({env,mode});
+      return wake.run({env,mode,storeFactory:communicationsStore.createStore,
+        execute:()=>runner.runCommunications({env,mode})});
     });
     console.info('communications_scheduled',{mode,...result});
   },
