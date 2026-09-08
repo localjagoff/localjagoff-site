@@ -9,6 +9,9 @@ import runner from './lib/communications-runner.cjs';
 import catalogSnapshot from './lib/catalog-snapshot.cjs';
 import wake from './lib/communications-wake.cjs';
 import communicationsStore from './lib/communications-store.cjs';
+import productRoute from './lib/cloudflare-product-route.cjs';
+import {renderProduct,buildId} from './.open-next/product-render.mjs';
+const product=productRoute.createProductRoute({renderProduct,buildId});
 
 globalThis.fetch=budget.installBudget(globalThis.fetch);
 
@@ -23,7 +26,10 @@ export default {
       if(pathname==='/api/create-checkout-session'&&env.CHECKOUT_PAUSED==='true'){
         return Response.json({error:'Checkout temporarily paused'},{status:503,headers:{'cache-control':'no-store','x-robots-tag':'noindex'}});
       }
-      const direct=await api.request(request,env);
+      const productResponse=await product(request,env);
+      if(productResponse)return productResponse;
+      const apiEnv=pathname==='/api/contact'&&review.contactEnabled(env)?{...env,COMMUNICATIONS_ENABLED:'true'}:env;
+      const direct=await api.request(request,apiEnv);
       if(direct){
         if(deployment.isProduction(env)&&env.COMMUNICATIONS_ENABLED==='true'&&
           request.method==='POST'&&direct.status>=200&&direct.status<300&&
@@ -50,7 +56,11 @@ export default {
     const modes={'*/5 * * * *':'fast','2 * * * *':'fallback','17 4 * * *':'cleanup'};
     const mode=Object.hasOwn(modes,event.cron)?modes[event.cron]:null;
     if(!mode)throw new Error('invalid_worker_schedule');
-    if(review.enabled(env)){
+    if(mode==='fast'&&review.idleEnabled(env)){
+      const result=await budget.withBudget(()=>review.idleScheduled(env));
+      console.info('communications_scheduled',{mode:'read_only_idle_review',...result});return;
+    }
+    if(review.enabled(env)||(mode==='fast'&&review.contactEnabled(env))){
       const result=await budget.withBudget(()=>review.scheduled(env));
       console.info('communications_scheduled',{mode:'owner_only_review',...result});return;
     }

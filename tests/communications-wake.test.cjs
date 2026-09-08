@@ -58,6 +58,26 @@ test('disabled hint and cleanup preserve existing runner behavior without access
   await wake.run({env:{PUBLIC_CATALOG_DB:database,COMMUNICATIONS_IDLE_GATE:'true'},mode:'cleanup',execute:async()=>calls++});
   assert.equal(calls,2);
 });
+test('read-only native review probe expires, cannot run in production and becomes D1-only when idle',async()=>{
+  const review=require('../lib/cloudflare-review-verification.cjs');const f=fixture();let reads=0;
+  const env={...f.env,COMMERCE_ENV:'preview',CLOUDFLARE_WORKER_NAME:'localjagoff-review',
+    SITE_URL:'https://localjagoff-review.localjagoff-site.workers.dev',CATALOG_SNAPSHOT_ENABLED:'true',
+    CUSTOMER_EMAIL_ENABLED:'false',CHECKOUT_PAUSED:'true',
+    CLOUDFLARE_IDLE_VERIFY_UNTIL:new Date(Date.now()+600000).toISOString()};
+  const options={storeFactory:()=>({nextFastDue:async()=>{reads++;return null;}})};
+  try{
+    for(const change of [{COMMERCE_ENV:'production'},{CUSTOMER_EMAIL_ENABLED:'true'},
+      {CHECKOUT_PAUSED:'false'},{CLOUDFLARE_IDLE_VERIFY_UNTIL:'1970-01-01'}]){
+      assert.equal((await review.idleScheduled({...env,...change},options)).outcome,'idle_verification_disabled');
+    }
+    assert.equal(reads,0);
+    await f.wake.signal();
+    assert.equal((await review.idleScheduled(env,options)).outcome,'read_only_due_checked');
+    assert.equal(reads,2);
+    assert.equal((await review.idleScheduled(env,options)).outcome,'no_due_work_hint');
+    assert.equal(reads,2);
+  }finally{f.db.close();}
+});
 test('Neon next-due query includes future jobs, expired send leases and event work only',async()=>{
   const db=new PGlite();
   try{

@@ -6,6 +6,8 @@ This is a review implementation, not production capacity certification. Keep the
 
 Run `npm run build:cloudflare` with `COMMERCE_ENV=preview`. The pinned OpenNext build is followed by an explicit public static-route export and a tested startup preloading patch. Dependency upgrades must pass the patch guards and real workerd startup tests before deployment.
 
+The same build produces the [native product renderer](native-product-runtime.md) from existing components and sets the Cloudflare-only client platform flag. Run generated-artifact tests after the build completes. Native product HTML and data routes read one product from the environment's D1 snapshot without a live-provider fallback.
+
 `wrangler.jsonc` targets review only. Checkout is paused and normal communications/customer email are disabled by default. Install credentials only through the provider secret store; never place credentials in Wrangler configuration, command arguments, logs, Git, or browser screenshots. Stripe review credentials must be TEST-only. Printful review tokens must not grant order creation or fulfillment access.
 
 Vercel Git auto-deployment is disabled for `fix/cloudflare-platform` only. This preserves the existing production branch and rollback deployment while preventing review checkpoints from creating unrelated Vercel builds.
@@ -23,6 +25,10 @@ The API adapter reuses the existing commerce, contact, review and signature hand
 Native timers separate due-message work, slower active-order fallback, and cleanup. Persisted next-due dates and lifecycle completion prevent repeated scans of completed orders. Customer communications require explicit production identity plus both communications and email flags. Printful remains draft-only, with separate manual owner confirmation/payment.
 
 Temporary review helpers require an expiring window, exact review identity, paused checkout and authentication. Their fixed commands expose sanitized evidence only. Close their windows after verification and remove bootstrap-only code/credentials when no longer needed. Never deploy an enabled review helper to production.
+
+Separate catalog, read-only idle and Contact windows cannot authorize arbitrary mail or provider operations. The Contact window exposes the existing Contact handler in Preview and lets the native timer deliver only one hardcoded owner-only payload whose full hash matches the real contact-email formatter. All other queued messages remain unable to send. Keep its completed idempotency record and close the window after verification; do not reset it to repeat delivery.
+
+Free account Cron Trigger allowance is shared across Workers. Review currently uses four schedules. Do not attempt a second four-trigger production deployment alongside it: record and disable the review schedules during the controlled production handover, retaining the review artifact/configuration for rollback. Check account-wide quota immediately before the handover. This is separate from per-invocation CPU and the 32-subrequest application cap.
 
 ## Legacy Host Compatibility
 

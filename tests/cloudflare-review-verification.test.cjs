@@ -114,3 +114,47 @@ test('terminal rejection holds; transport failure retries the same fixed job',as
   assert.equal((await verification.scheduled(env,{...g.options,fetchImpl:async()=>{throw new Error('fixture offline');}})).outcome,'owner_verification_retry');
   assert.equal(g.finishes[0].status,'pending');assert.equal(g.job.key,KEY);
 });
+
+test('contact-only window cannot queue owner mail, migrate or inspect providers; scope and expiry fail closed',async()=>{
+  const contactEnv={...env,SITE_URL:'https://localjagoff-review.localjagoff-site.workers.dev',
+    CLOUDFLARE_REVIEW_VERIFY_UNTIL:'',CLOUDFLARE_CONTACT_VERIFY_UNTIL:new Date(Date.now()+600000).toISOString()};
+  assert.equal(verification.contactEnabled(contactEnv),true);
+  for(const body of ['queue','migrate','status','provider-status','fixtures','catalog-wake']){
+    assert.equal((await verification.request(req(body),contactEnv,blocked)).status,404);
+  }
+  for(const change of [{SITE_URL:'https://www.localjagoff.com'},{COMMERCE_ENV:'production'},
+    {CLOUDFLARE_WORKER_NAME:'localjagoff-production'},{CHECKOUT_PAUSED:'false'},
+    {CUSTOMER_EMAIL_ENABLED:'true'},{CLOUDFLARE_CONTACT_VERIFY_UNTIL:new Date(Date.now()-1).toISOString()}]){
+    assert.equal(verification.contactEnabled({...contactEnv,...change}),false);
+    assert.equal((await verification.scheduled({...contactEnv,...change},blocked)).outcome,'verification_closed');
+  }
+  const response=await verification.request(req('contact-status'),contactEnv,{storeFactory:()=>({query:async(sql,params)=>{
+    assert.equal(sql,'SELECT status,attempts,provider_id,sent_at FROM comm_outbox WHERE key=$1');
+    assert.deepEqual(params,[verification.CONTACT_KEY]);return [];
+  }})});
+  assert.equal(response.status,200);
+});
+
+test('contact verification sends only the exact Contact-generated owner payload and preserves stable idempotency',async()=>{
+  const contactEnv={...env,SITE_URL:'https://localjagoff-review.localjagoff-site.workers.dev',
+    CLOUDFLARE_REVIEW_VERIFY_UNTIL:'',CLOUDFLARE_CONTACT_VERIFY_UNTIL:new Date(Date.now()+600000).toISOString()};
+  for(const tamper of [false,true]){
+    const payload=require('../lib/customer-mail.cjs').contactEmail(verification.CONTACT_FIELDS);
+    if(tamper)payload.text+=' changed';
+    let job={key:verification.CONTACT_KEY,kind:'contact',order_ref:null,payload,payload_hash:hash(payload),attempts:1};
+    let sends=0;
+    const store={claim:async key=>{assert.equal(key,verification.CONTACT_KEY);return job;},
+      mailQuota:async()=>true,markAttempt:async()=>true,finish:async(j,status)=>{
+        assert.equal(status,tamper?'held':'sent');job=null;
+      }};
+    const options={storeFactory:()=>store,fetchImpl:async(url,init)=>{
+      sends++;assert.equal(url,'https://api.resend.com/emails');
+      assert.deepEqual(JSON.parse(init.body),require('../lib/customer-mail.cjs').contactEmail(verification.CONTACT_FIELDS));
+      assert.equal(init.headers['idempotency-key'],verification.CONTACT_KEY);
+      return Response.json({id:'00000000-0000-4000-8000-000000000002'});
+    }};
+    assert.equal((await verification.scheduled(contactEnv,options)).outcome,tamper?'held':'owner_verification_sent');
+    assert.equal((await verification.scheduled(contactEnv,options)).outcome,'owner_verification_no_due_job');
+    assert.equal(sends,tamper?0:1);
+  }
+});

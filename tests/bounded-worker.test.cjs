@@ -43,7 +43,8 @@ test('fallback is hourly and retry scheduling remains durable across a new store
 test('fast outbox sends due jobs promptly without entering order/provider reconciliation',async()=>{
   let sent=0;
   const result=await runCommunications({env,storeFactory:()=>({claimReconciliation:()=>assert.fail('not needed')}),
-    serviceFactory:()=>({}),dispatch:async()=>{sent++;return {outcome:'sent'};}});
+    serviceFactory:()=>assert.fail('transactional mail must not initialize lifecycle providers'),
+    dispatch:async()=>{sent++;return {outcome:'sent'};}});
   assert.equal(result.outcome,'sent');assert.equal(sent,1);
 });
 test('one invocation reconciles at most one claimed order and never sends inline',async()=>{

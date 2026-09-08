@@ -38,6 +38,15 @@ test('provider failure preserves the previous full snapshot and does not advance
   const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,13);
   assert.ok(!published.some(p=>p.id===snapshot.IDS[0]));
 });
+test('single-product D1 read preserves approval, omission and snapshot expiry without parsing the entire catalog',async()=>{
+  await reset();await cycle();const id=snapshot.IDS[0];
+  assert.deepEqual(await snapshot.readProductSnapshot(env,id,{store}),product(id));
+  assert.equal(await snapshot.readProductSnapshot(env,999999,{store}),null);
+  await cycle(async current=>current===id?null:product(current));
+  assert.equal(await snapshot.readProductSnapshot(env,id,{store}),null);
+  db.exec("UPDATE public_catalog_snapshot SET published_source_at=strftime('%Y-%m-%dT%H:%M:%fZ','now','-151 minutes')");
+  await assert.rejects(snapshot.readProductSnapshot(env,id,{store}),/unavailable/);
+});
 test('compare-and-swap rejects a racing or stale refresh and never publishes partial data',async()=>{
   await reset();const state=await store.read();
   assert.equal(await store.advance(state,[product(snapshot.IDS[0])],false),true);

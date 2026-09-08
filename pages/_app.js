@@ -123,7 +123,7 @@ export default function App({ Component, pageProps }) {
       <DepthExperience>
         <Component {...pageProps} />
       </DepthExperience>
-      {!privateCommunication && <Analytics />}
+      {!privateCommunication && process.env.NEXT_PUBLIC_HOST_PLATFORM !== 'cloudflare' && <Analytics />}
     </>
   );
 }
