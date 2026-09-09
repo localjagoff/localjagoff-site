@@ -36,10 +36,24 @@ test("curation, positive USD prices and exact variant handoff survive feed seria
   assert.equal(row.link, `https://www.localjagoff.com/product/${id}?variant=${variantId}`);
   assert.equal(row.price, "30.00 USD");
   assert.equal(row.availability, "in stock");
+  assert.equal(row.quantity_to_sell_on_facebook, 999999);
   assert.equal(row.size, "S");
   assert.match(feedCsv([row]), /"id","item_group_id"/);
   assert.throws(() => metaRows([p, p], "https://www.localjagoff.com"), /Duplicate/);
   for (const image of p.images) assert.ok(fs.existsSync(path.join(__dirname, "../public", image)));
+});
+
+test("Meta Shop explicitly receives untracked POD inventory and never marks unavailable offers sellable", () => {
+  const p = curateProduct(fixture(), id);
+  const rows = metaRows([p], "https://www.localjagoff.com");
+  const lines = feedCsv(rows).trim().split("\r\n");
+  assert.match(lines[0], /,"quantity_to_sell_on_facebook"$/);
+  assert.match(lines[1], /,"999999"$/);
+  for (const availability of ["out of stock", "discontinued", "", undefined]) {
+    const unavailable = { ...p, variants: [{ ...p.variants[0], availability }] };
+    const [row] = metaRows([unavailable], "https://www.localjagoff.com");
+    assert.equal(row.quantity_to_sell_on_facebook, 0);
+  }
 });
 
 test("pagination is complete and hidden products never need a detail fetch", async () => {

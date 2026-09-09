@@ -40,6 +40,14 @@ Each scheduled step reports sanitized publication age/cursor/health. At120minute
 
 The private named ProductionPreparation service exposes only `catalog('status')` and `catalog('step')` for live incident recovery. These cannot access order/fulfillment APIs or arbitrary URLs/SQL, change prices, reveal credentials or reopen the closed credential/webhook preparation actions. Use successive bounded steps until `catalog_published`, then verify all customer-visible products and downstream feed counts. Never fix an expiry by manually bumping `published_source_at` without authoritative reads.
 
+## Meta Shop Inventory Projection
+
+The Meta CSV explicitly sends `quantity_to_sell_on_facebook=999999` for curated in-stock POD variants, using Meta's documented infinity sentinel for untracked inventory. This is not a claim of warehouse stock. Other availability states receive zero, and the authoritative curation policy still excludes unavailable/unapproved variants. Prices, variant identities and website checkout validation are unchanged.
+
+An omitted quantity persisted as zero in Commerce Manager even though the same item was Eligible / In stock; the owner saw Sold out in the real mobile Shop. The quantity must therefore be explicit in the hourly source feed, not a manual item edit that the next feed replaces. After import, verify the stored quantity and real customer mobile availability; admin preview alone does not close this gate.
+
+References: [Meta catalog fields](https://www.facebook.com/business/help/120325381656392) documents the untracked-inventory sentinel; [Printful stock sync](https://help.printful.com/hc/en-us/articles/4402498011282-What-is-product-stock-sync-and-how-does-it-affect-my-store) distinguishes POD availability from tracked warehousing quantities.
+
 ## Legacy Host Compatibility
 
 Rollback means restoring the exact retained old Vercel deployment, with the coordinated checkout/v2-webhook pair and its original runtime. It does not mean deploying this Cloudflare review branch to Vercel or Netlify.
