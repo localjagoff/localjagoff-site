@@ -38,6 +38,19 @@ test('provider failure preserves the previous full snapshot and does not advance
   const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,13);
   assert.ok(!published.some(p=>p.id===snapshot.IDS[0]));
 });
+test('idle initialization does not backdate freshly fetched products or expire before the next cycle',async()=>{
+  await reset();
+  db.exec("UPDATE public_catalog_snapshot SET cycle_started_at=strftime('%Y-%m-%dT%H:%M:%fZ','now','-108 minutes')");
+  await cycle();
+  const state=await store.read();
+  assert.ok(Date.now()-Date.parse(state.published_source_at)<120000);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,14);
+  // The start time must remain the oldest actual fetch, not move with every product.
+  await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
+  const first=(await store.read()).cycle_started_at;
+  await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
+  assert.equal((await store.read()).cycle_started_at,first);
+});
 test('single-product D1 read preserves approval, omission and snapshot expiry without parsing the entire catalog',async()=>{
   await reset();await cycle();const id=snapshot.IDS[0];
   assert.deepEqual(await snapshot.readProductSnapshot(env,id,{store}),product(id));
@@ -56,7 +69,8 @@ test('compare-and-swap rejects a racing or stale refresh and never publishes par
 test('small database clock skew keeps a new cycle; materially future timestamps still reset before provider access',async()=>{
   await reset();const started=Date.parse((await store.read()).cycle_started_at);
   assert.equal((await snapshot.refreshStep(env,{store,now:()=>started-2,readProduct:async id=>product(id)})).outcome,'catalog_product_refreshed');
-  assert.equal((await snapshot.refreshStep(env,{store,now:()=>started-5001,readProduct:()=>assert.fail('future cycle must not contact provider')})).outcome,'catalog_cycle_reset');
+  const fetched=Date.parse((await store.read()).cycle_started_at);
+  assert.equal((await snapshot.refreshStep(env,{store,now:()=>fetched-5001,readProduct:()=>assert.fail('future cycle must not contact provider')})).outcome,'catalog_cycle_reset');
 });
 test('expired and policy-mismatched snapshots fail closed without a provider fallback',async()=>{
   await reset();await cycle();

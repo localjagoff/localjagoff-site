@@ -15,7 +15,7 @@ test('Production activation retains isolation, canonical routes and exclusive sc
   const production=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../wrangler.production.jsonc'),'utf8'));
   const review=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../wrangler.jsonc'),'utf8'));
   assert.equal(production.workers_dev,false);assert.equal(production.preview_urls,false);
-  assert.deepEqual(production.triggers.crons,['*/5 * * * *','2 * * * *','17 4 * * *','1-56/5 * * * *']);
+  assert.deepEqual(production.triggers.crons,['*/5 * * * *','2 * * * *','17 4 * * *','* * * * *']);
   assert.deepEqual(review.triggers.crons,[]);
   assert.deepEqual(production.routes,[{pattern:'www.localjagoff.com/*',zone_name:'localjagoff.com'},
     {pattern:'localjagoff.com/*',zone_name:'localjagoff.com'}]);

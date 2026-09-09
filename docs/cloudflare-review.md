@@ -32,6 +32,14 @@ Free account Cron Trigger allowance is shared across Workers. The four schedules
 
 Production uses exact apex/www Worker routes over the retained legacy DNS targets, with both routes verified fail-closed. Canonical apex-to-HTTPS-www redirection preserves path, query and request method. Public assets must remain indexable; administration and personalized routes remain authenticated or token-protected. Production credentials exist only in Cloudflare secrets. The private preparation entrypoint closes automatically when communications are enabled; lifecycle subscription setup uses individual event writes and never replaces the signing pair.
 
+## Catalog Freshness And Recovery
+
+Production refreshes exactly one approved product each minute through the bounded executor. A full14-product cycle normally completes in14minutes; no parallel full-catalog request or extra Cron Trigger is required. Freshness is anchored at the first successful product fetch, with a conservative one-minute allowance, never the earlier database initialization time. Incomplete cycles cannot replace the published snapshot, and the150-minute expiry remains fail-closed.
+
+Each scheduled step reports sanitized publication age/cursor/health. At120minutes, a fixed owner-only high-priority alert is attempted once per source timestamp with a durable receipt and Resend idempotency key. Uncertain delivery is held, not repeatedly resent. Provider/database failures surface as failed scheduled invocations rather than swallowed success. This does not guarantee email delivery if the entire host/scheduler or email service is down; retain the owner operating check and paused-pair rollback.
+
+The private named ProductionPreparation service exposes only `catalog('status')` and `catalog('step')` for live incident recovery. These cannot access order/fulfillment APIs or arbitrary URLs/SQL, change prices, reveal credentials or reopen the closed credential/webhook preparation actions. Use successive bounded steps until `catalog_published`, then verify all customer-visible products and downstream feed counts. Never fix an expiry by manually bumping `published_source_at` without authoritative reads.
+
 ## Legacy Host Compatibility
 
 Rollback means restoring the exact retained old Vercel deployment, with the coordinated checkout/v2-webhook pair and its original runtime. It does not mean deploying this Cloudflare review branch to Vercel or Netlify.

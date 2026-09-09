@@ -50,11 +50,13 @@ export default {
     });
   },
   async scheduled(event,env) {
-    if(event.cron==='1-56/5 * * * *'){
+    if(['* * * * *','1-56/5 * * * *'].includes(event.cron)){
       try{
-        const result=await budget.withBudget(()=>catalogSnapshot.refreshStep(env));
+        const result=await budget.withBudget(()=>deployment.isProduction(env)&&executor.enabled(env)?
+          executor.stub(env).maintainCatalog('step'):catalogSnapshot.refreshStep(env));
         console.info('catalog_scheduled',result);
-      }catch{console.error('catalog_scheduled',{outcome:'catalog_refresh_failed'});}
+        if(['catalog_refresh_failed','catalog_state_read_failed'].includes(result.outcome))throw Error('catalog_refresh_failed');
+      }catch{console.error('catalog_scheduled',{outcome:'catalog_refresh_failed'});throw Error('catalog_refresh_failed');}
       return;
     }
     const modes={'*/5 * * * *':'fast','2 * * * *':'fallback','17 4 * * *':'cleanup'};
