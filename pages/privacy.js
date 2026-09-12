@@ -9,8 +9,8 @@ export default function Privacy() {
         <h1>Privacy Policy</h1>
 
         <p>
-          We respect your privacy. Any information you provide is used solely to
-          process orders and improve your experience.
+          We use information to process orders, provide support, and, only when
+          you allow optional Meta cookies, measure shopping activity as described below.
         </p>
 
         <h3>Information We Collect</h3>
@@ -55,6 +55,33 @@ export default function Privacy() {
         <p>
           Payments are processed securely through Stripe. We do not store your
           payment information.
+        </p>
+
+        <h3>Optional Meta Cookies</h3>
+        <p>
+          With your permission, Meta Pixel receives visits and product-view,
+          add-to-cart, checkout, and verified purchase events from our storefront.
+          Events include product identifiers, quantities, currency and value, along
+          with browser and network information Meta receives when its script connects.
+          Meta may use this data for measurement, personalized content and advertising.
+          We do not include your name, email, shipping address or payment details in
+          these events, and automatic advanced matching is off.
+        </p>
+        <p>
+          Optional Meta tracking is off until you choose Allow Meta cookies. Use
+          Cookie choices at the bottom of our pages to decline or withdraw consent.
+          We honor Global Privacy Control and Do Not Track signals by keeping this
+          tracking off. Declining does not prevent shopping or checkout. Blocking
+          cookies or changing browsers may require you to set your choice again.
+          Private review and administration pages do not initialize the Pixel.
+        </p>
+        <p>
+          Our choice and recent purchase-event deduplication records are stored in
+          your browser. A secure, HttpOnly checkout-verification cookie lasts up to
+          24 hours and is used only by our paid-status endpoint, not sent to Meta.
+          See <a href="https://www.facebook.com/privacy/policy/">Meta's Privacy Policy</a>
+          {' '}and <a href="https://optout.aboutads.info/">industry advertising choices</a>
+          {' '}for additional information and controls.
         </p>
 
         <h3>Contact</h3>

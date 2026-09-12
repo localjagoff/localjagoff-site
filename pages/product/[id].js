@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 import ProductReviews from "../../components/ProductReviews";
+import { getTracker } from "../../lib/meta-pixel.cjs";
 import { getProductImages } from "../../lib/getProductImages";
 import { productJsonLd as buildProductJsonLd } from "../../lib/discovery.cjs";
 
@@ -256,6 +257,12 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
   const productJsonLd = buildProductJsonLd(product);
 
+  useEffect(() => {
+    if (!product || !selectedVariant) return;
+    return getTracker()?.observeProduct({ id: product.id, variant_id: selectedVariant.id,
+      quantity: 1, unit_amount: Math.round(Number(displayedPrice) * 100) });
+  }, [product?.id, selectedVariant?.id, displayedPrice]);
+
   const variantLabel = selectedVariant
     ? getVariantLabel(product?.name, selectedVariant.name)
     : "";
@@ -307,6 +314,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
         String(item.variant_id || "") === String(selectedVariant?.id || "")
     );
 
+    const addedQuantity = existing ? Math.max(0, Math.min(quantity, 99 - (Number(existing.quantity) || 0))) : quantity;
     if (existing) {
       existing.quantity = Math.min(99, (Number(existing.quantity) || 0) + quantity);
     } else {
@@ -329,6 +337,8 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cartUpdated"));
+    if (addedQuantity > 0) getTracker()?.addToCart([{ id: product.id, variant_id: selectedVariant.id,
+      quantity: addedQuantity, unit_amount: Math.round(Number(displayedPrice) * 100) }]);
 
     setAdded(true);
     setTimeout(() => setAdded(false), 1600);

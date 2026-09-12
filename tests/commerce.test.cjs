@@ -29,11 +29,12 @@ function checkoutFixture(product = detail(), status = 200) {
       } }; promotionCodes = { list: async () => promotions }; };
       if (name.endsWith("commerce-policy.cjs")) return require("../lib/commerce-policy.cjs");
       if (name.endsWith("meta-checkout.cjs")) return require("../lib/meta-checkout.cjs");
+      if (name.endsWith("checkout-receipt.cjs")) return require("../lib/checkout-receipt.cjs");
       return { ...commerce, resolveCart: (items, options) => commerce.resolveCart(items, { ...options, fetchImpl }) };
     } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/create-checkout-session.js"), "utf8"), sandbox);
   return { sessions, calls, promotions, env: sandbox.process.env, async run(items = [item], overrides = {}) {
-    const res = { status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
+    const res = { headers: {}, setHeader(key,value) { this.headers[key] = value; }, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
     await sandbox.module.exports({ method: "POST", headers: { origin: "https://attacker.test" }, body: { items }, ...overrides }, res);
     return res;
   } };
@@ -44,6 +45,8 @@ test("actual checkout handler ignores altered client price/name and resolves aut
     const f = checkoutFixture();
     const res = await f.run([{ ...item, price, name: "Injected product", variant_name: "Wrong size" }]);
     assert.equal(res.code, 200);
+    assert.equal(res.body.measurement_items[0].unit_amount, 3000);
+    assert.match(res.headers['Set-Cookie'], /Max-Age=0$/);
     const session = f.sessions[0];
     assert.equal(session.line_items[0].price_data.unit_amount, 3000);
     assert.equal(session.line_items[0].price_data.product_data.name, "Local Jagoff PGH OG Tee");

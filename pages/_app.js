@@ -1,9 +1,11 @@
 import "../styles/global.css";
+import "../styles/privacy-choices.css";
 import Head from "next/head";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { Analytics } from "@vercel/analytics/next";
 import DepthExperience from "../components/DepthExperience";
+import PrivacyChoices from "../components/PrivacyChoices";
 
 const SITE_URL = "https://www.localjagoff.com";
 const SOCIAL_IMAGE = `${SITE_URL}/images/social-share.jpg`;
@@ -123,6 +125,7 @@ export default function App({ Component, pageProps }) {
       <DepthExperience>
         <Component {...pageProps} />
       </DepthExperience>
+      <PrivacyChoices />
       {!privateCommunication && process.env.NEXT_PUBLIC_HOST_PLATFORM !== 'cloudflare' && <Analytics />}
     </>
   );

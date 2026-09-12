@@ -2,6 +2,7 @@ const Stripe = require("stripe");
 const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
+const { receiptCookie, CLEAR_COOKIE } = require('../lib/checkout-receipt.cjs');
 
 function createCheckoutHandler({env=process.env,stripeFactory=(key)=>new Stripe(key,
   {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()}),fetchImpl}={}) {
@@ -105,7 +106,11 @@ return async function handler(req, res) {
       cancel_url: `${siteUrl}/cart`,
     });
 
-    return res.status(200).json({ url: session.url });
+    const cookie = req.body?.measurement_consent === true ? receiptCookie(session.id, env) : null;
+    res.setHeader('Set-Cookie', cookie || CLEAR_COOKIE);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json({ url: session.url,
+      measurement_items: items.map(({ id, variant_id, quantity, unit_amount }) => ({ id, variant_id, quantity, unit_amount })) });
   } catch (err) {
     console.error("Checkout failed", { code: err instanceof CommerceError ? err.message : "stripe_request_failed" });
     return res.status(err instanceof CommerceError ? err.status : 503).json({

@@ -1,10 +1,28 @@
 import { useEffect } from "react";
 import Link from "next/link";
+import { getTracker } from '../lib/meta-pixel.cjs';
 
 export default function SuccessPage() {
   useEffect(() => {
     localStorage.removeItem("cart");
     window.dispatchEvent(new Event("cartUpdated"));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false, pending = false;
+    const verify = async () => {
+      const tracker = getTracker();
+      if (pending || !tracker?.allowed()) return;
+      pending = true;
+      try {
+        const response = await fetch('/api/checkout-receipt', { method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (response.ok && !cancelled) tracker.purchase(await response.json());
+      } catch {} finally { pending = false; }
+    };
+    verify();
+    window.addEventListener('lj-privacy-choice', verify);
+    return () => { cancelled = true; window.removeEventListener('lj-privacy-choice', verify); };
   }, []);
 
   return (

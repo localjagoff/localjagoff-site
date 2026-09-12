@@ -274,6 +274,7 @@ test("actual product SSR includes escaped ProductGroup and omits it during an ou
     if (name === "next/router") return { useRouter: () => ({ query: {} }) };
     if (name.includes("components/")) return () => null;
     if (name.endsWith("getProductImages")) return { getProductImages: p => p.images || [] };
+    if (name.endsWith("meta-pixel.cjs")) return require('../lib/meta-pixel.cjs');
     if (name.endsWith("discovery.cjs")) return d;
     if (["react", "react/jsx-runtime", "styled-jsx/style"].includes(name)) return require(name);
     throw Error(`Unexpected dependency: ${name}`);

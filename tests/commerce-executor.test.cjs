@@ -67,6 +67,13 @@ test('one named object binding call counts toward the parent invocation budget',
   assert.equal(ids,1);assert.equal(gets,1);assert.equal(logs[0].subrequests,1);
 });
 
+test('paid receipt read never wakes communications or invokes a fulfillment path',async()=>{
+  const object=executor.createExecutor(production,{signal:blocked,run:blocked,storeFactory:blocked,wakeRun:blocked,
+    apiRequest:async request=>{assert.equal(new URL(request.url).pathname,'/api/checkout-receipt');return Response.json({paid:true});}});
+  const response=await object.fetch(new Request('https://www.localjagoff.com/api/checkout-receipt',{method:'POST',body:'{}'}));
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),{paid:true});
+});
+
 test('real SQLite-backed Durable Object RPC and raw webhook adapter execute with no external access',async()=>{
   const path=require('node:path'),{build}=require('esbuild'),{Miniflare,Log,LogLevel}=require('miniflare');
   const {outputFiles}=await build({stdin:{resolveDir:path.resolve(__dirname,'..'),sourcefile:'executor-fixture.js',contents:`
