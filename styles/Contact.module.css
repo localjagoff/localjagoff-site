@@ -57,3 +57,10 @@
 .reviewItem h2 { font-size: 22px; }
 .actions { display: flex; gap: 16px; }
 .actions button { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 16px; color: #fff; background: #202020; border: 1px solid #555; border-radius: 4px; }
+.contactPage { background: var(--ink); }
+.contactPage .heading, .contactPage .success { border-color: var(--gold); }
+.contactPage .details h2 span { color: var(--gold); }
+.contactPage .send { background: var(--gold); }
+.contactPage .send:hover:enabled { background: #ffdb63; }
+.contactPage :is(input, select, textarea, button, a):focus-visible { outline-color: var(--gold); }
+.contactPage .details > a { display: block; width: fit-content; }

@@ -14,6 +14,7 @@
     "@vercel/analytics": "^2.0.0",
     "lucide-react": "^1.42.0",
     "next": "15.5.25",
+    "phaser": "3.90.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "stripe": "^14.0.0"

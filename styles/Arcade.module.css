@@ -1,0 +1,117 @@
+.page { background:#171c19; color:#f7f7f2; min-height:70vh; }
+.arcadeMain { width:min(1360px,calc(100% - 96px)); margin:auto; padding:48px 0 64px; }
+.arcadeHeading { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-bottom:34px; }
+.arcadeHeading p { font-size:11px; line-height:1.7; margin:0 0 10px; color:#b9c3b9; }
+.arcadeHeading>p { text-align:right; }
+.arcadeHeading h1 { font-size:72px; line-height:1.05; }
+.arcadeHeading h1 span,.gameHeading h1 span { color:var(--gold); }
+.gameGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:30px; }
+.gameCard { display:block; min-width:0; border-bottom:1px solid #495049; padding-bottom:24px; }
+.cover { position:relative; aspect-ratio:1.6; overflow:hidden; background:#c8d7cf; }
+.coverWorld { width:100%; height:100%; object-fit:cover; }
+.coverRunner { position:absolute; width:16%; height:auto; bottom:14%; left:27%; transform:rotate(-9deg); }
+.coverChair { position:absolute; width:11%; height:auto; bottom:14%; left:61%; }
+.coverToken { position:absolute; width:6%; height:auto; bottom:48%; left:59%; }
+.coverShip { position:absolute; width:16%; height:auto; bottom:10%; left:42%; }
+.coverDrone { position:absolute; width:10%; height:auto; }
+.coverIndex { position:absolute; left:20px; top:15px; color:#f7f7f2; font:600 32px/1 'Oswald',sans-serif; mix-blend-mode:difference; }
+.coverArrow { display:grid; place-items:center; position:absolute; bottom:14px; right:14px; width:44px; height:44px; background:var(--gold); color:#18231d; transition:transform .18s; }
+.gameCard:hover .coverArrow { transform:translate(2px,-2px); }
+.cardMeta { display:flex; justify-content:space-between; align-items:center; gap:12px; padding-top:22px; }
+.cardMeta p { font-size:10px; color:#b9c3b9; margin:0 0 9px; }
+.cardMeta h2 { font-size:38px; margin:0 0 10px; }
+.cardMeta span { color:#b9c3b9; font-size:13px; }
+.arcadeBottom { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:40px; }
+.arcadeBottom a { display:grid; grid-template-columns:1fr auto; align-items:center; padding:12px 0; }
+.arcadeBottom span { grid-column:1; color:#9dab9e; font-size:10px; margin-bottom:6px; }
+.arcadeBottom strong { grid-column:1; font-size:16px; font-weight:500; }
+.arcadeBottom svg { grid-column:2; grid-row:1/3; color:var(--gold); }
+.gameMain { width:min(1200px,calc(100% - 80px)); margin:auto; padding:26px 0 44px; }
+.gameHeading { display:flex; align-items:center; gap:30px; padding-bottom:24px; }
+.back { display:inline-flex; align-items:center; gap:8px; font-size:12px; color:#bcc6bb; }
+.gameHeading p { font-size:9px; margin:0 0 7px; color:#b9c3b9; }
+.gameHeading h1 { font-size:36px; }
+.shopLink { margin-left:auto; display:flex; gap:10px; align-items:center; font-size:12px; }
+.gameLayout { display:grid; grid-template-columns:minmax(0,720px) minmax(160px,1fr); gap:48px; align-items:start; }
+.gameColumn { min-width:0; max-width:720px; width:100%; }
+.hud { height:67px; display:flex; align-items:center; gap:32px; border-top:1px solid #475348; padding:10px 0; }
+.hud>div>span { display:block; color:#aebdaa; font-size:9px; line-height:1.5; }
+.hud strong { font:500 26px/1.2 'Oswald',sans-serif; font-variant-numeric:tabular-nums; display:block; min-width:78px; }
+.hud .shields { display:flex; gap:5px; color:var(--gold); }
+.tools { margin-left:auto; display:flex; gap:2px; }
+.tools button { border:0; color:#f7f7f2; background:transparent; width:40px; height:44px; display:grid; place-items:center; }
+.tools button:hover { color:var(--gold); }
+.stage { position:relative; width:100%; aspect-ratio:1; overflow:hidden; touch-action:none; background:#182927; outline-offset:4px; }
+.canvas { width:100%; height:100%; }
+.canvas canvas { display:block; width:100% !important; height:100% !important; margin:0 !important; }
+.overlay { position:absolute; inset:0; display:grid; place-items:center; background:#10211b52; }
+.stateContent { text-align:center; color:#fff; width:90%; max-width:480px; padding:25px 22px; background:#15221de8; border-top:4px solid var(--gold); }
+.stateKicker { font-size:9px; color:#d5daca; margin:0 0 12px; }
+.stateContent h2 { font-size:36px; line-height:1.15; }
+.finalScore { font:500 48px/1 'Oswald',sans-serif; margin:20px 0; }
+.finalScore span { display:block; font:400 9px/1.5 'Inter',sans-serif; margin-top:6px; color:#c1ceb9; }
+.play { background:var(--gold); color:#19221b; border:none; min-height:48px; display:inline-flex; align-items:center; justify-content:center; gap:14px; font-size:13px; font-weight:600; padding:14px 28px; margin-top:23px; border-radius:0; }
+.play:hover { background:#ffdd61; }
+.controlBar { display:flex; min-height:72px; justify-content:space-between; align-items:center; gap:14px; border-bottom:1px solid #475348; padding:10px 0; }
+.liveState { display:flex; gap:9px; align-items:center; font-size:9px; color:#c0c9bd; }
+.liveState i { width:6px; height:6px; background:#788876; }
+.liveState .live { background:var(--gold); }
+.touchControls { display:flex; gap:8px; }
+.touchControls button { display:grid; place-items:center; width:64px; height:50px; color:#17231a; background:#e6eadf; border:0; border-bottom:3px solid #8fa086; border-radius:4px; touch-action:none; user-select:none; }
+.touchControls button:last-child { background:var(--gold); border-color:#aa891c; }
+.touchControls button:active { transform:translateY(2px); border-bottom-width:1px; }
+.gameAside { border-top:1px solid #475348; padding:25px 0 0; }
+.index { font-size:10px; line-height:1.7; color:#acbba7; margin:0 0 48px; }
+.gameAside h2 { font-size:42px; line-height:1.15; max-width:220px; }
+.record { display:flex; gap:18px; color:var(--gold); padding:38px 0; align-items:center; }
+.record span { color:#b2c0ab; font-size:10px; }
+.record strong { display:block; color:#fff; font:500 36px/1.3 'Oswald',sans-serif; font-variant-numeric:tabular-nums; }
+.gameAside>a { position:relative; display:block; font-size:12px; color:#b2c0ab; padding:23px 32px 23px 0; border-top:1px solid #475348; }
+.gameAside>a strong { display:block; color:#fff; font:500 24px/1.3 'Oswald',sans-serif; margin-top:8px; }
+.gameAside>a svg { position:absolute; right:0; top:25px; color:var(--gold); }
+.gameBottom { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-top:32px; }
+.gameBottom span { font-size:10px; color:#a3b09d; }
+.gameBottom a { display:inline-flex; align-items:center; gap:14px; font-size:12px; }
+@media(min-width:1000px) and (max-height:1000px) { .gameLayout { grid-template-columns:minmax(0, min(64vh,720px)) minmax(160px,1fr); } }
+@media(max-width:900px) {
+  .gameMain { width:min(720px,calc(100% - 40px)); padding-top:20px; }
+  .gameLayout { grid-template-columns:minmax(0,1fr); gap:0; }
+  .gameAside { display:none; }
+  .gameHeading { gap:20px; padding-bottom:18px; }
+}
+@media(max-width:650px) {
+  .arcadeMain { width:calc(100% - 40px); padding-top:30px; }
+  .arcadeHeading h1 { font-size:45px; }
+  .arcadeHeading>p { display:none; }
+  .gameGrid { grid-template-columns:1fr; gap:32px; }
+  .cardMeta h2 { font-size:32px; }
+  .arcadeBottom { grid-template-columns:1fr; gap:12px; margin-top:24px; }
+  .gameHeading h1 { font-size:27px; }
+  .gameHeading p { font-size:8px; }
+  .gameHeading .back { font-size:0; gap:0; }
+  .gameHeading .back svg { width:22px; height:22px; }
+  .gameHeading { gap:12px; }
+  .hud { height:60px; gap:16px; }
+  .hud strong { font-size:23px; min-width:68px; }
+  .hud .shields { gap:3px; }
+  .shields svg { width:14px; }
+  .tools { gap:0; }
+  .tools button { width:34px; }
+  .stateContent { padding:22px 16px; }
+  .stateContent h2 { font-size:27px; }
+  .stateKicker { font-size:8px; }
+  .finalScore { font-size:40px; margin:14px 0; }
+  .play { margin-top:18px; }
+  .controlBar { min-height:70px; }
+  .touchControls button { width:55px; }
+  .gameBottom { flex-direction:column; align-items:flex-start; margin-top:25px; }
+}
+@media(prefers-reduced-motion:reduce) { .coverArrow { transition:none; } }
+@media(max-width:360px) {
+  .gameHeading h1 { font-size:24px; }
+  .hud { gap:8px; }
+  .hud strong { min-width:60px; }
+  .tools button { width:32px; }
+  .touchControls button { width:48px; }
+  .liveState { font-size:8px; }
+}

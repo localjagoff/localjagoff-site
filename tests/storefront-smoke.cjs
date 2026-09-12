@@ -41,13 +41,21 @@ after(async () => {
   if (exited) await exited;
 });
 
-for (const route of ["/", "/tees", "/hoodies", "/hats", "/stuff-nat", "/cart", "/success", "/review"]) {
+for (const route of ["/", "/tees", "/hoodies", "/hats", "/stuff-nat", "/cart", "/success", "/review", "/arcade", "/jagoff-jump", "/yinzer-invaders"]) {
   test(`built storefront HTML responds: ${route}`, async () => {
     const response = await fetch(origin + route);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /__NEXT_DATA__/);
   });
 }
+
+test('retired arcade routes redirect without loading their old game', async () => {
+  for (const route of ['/bridge-rage','/fry-catcher','/pothole-patrol','/parking-chair-panic']) {
+    const response = await fetch(origin + route, { redirect: 'manual' });
+    assert.equal(response.status, 307);
+    assert.equal(response.headers.get('location'), '/arcade');
+  }
+});
 
 test('communication APIs fail closed without configuration or authentication',async()=>{
   for(const [route,method,status] of [['/api/contact','GET',503],['/api/reviews?productId=430697388','GET',503],['/api/printful-events','POST',400],['/api/communications/run','GET',401]]){

@@ -64,7 +64,7 @@ export default function Contact() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.contactPage}`}>
       <Head>
         <title>Contact Local Jagoff | Orders & Support</title>
         <meta name="description" content="An order question, a gear issue, or something else? Talk to Local Jagoff at hello@localjagoff.com." key="description" />
@@ -79,9 +79,11 @@ export default function Contact() {
           <aside className={styles.details}>
             <h2>Real questions.<br /><span>Real answers.</span></h2>
             <p>Order question? Gear not right? Tell us what's up.</p>
+            <p>Game feedback or an idea for the next drop? We're listening.</p>
             <div className={styles.direct}><span>DIRECT LINE</span><a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a><p>We typically reply within 24-48 hours.</p></div>
             <p className={styles.note}>For an order issue, include your reference number. Keep payment details and passwords out of your message.</p>
             <Link href="/terms">Returns & order policy</Link>
+            <Link href="/arcade">Back to the arcade</Link>
           </aside>
           <section className={styles.formArea} aria-labelledby="message-heading">
             <h2 id="message-heading">SEND A MESSAGE</h2>

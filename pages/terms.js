@@ -23,6 +23,13 @@ export default function Terms() {
           Prices are listed in USD and may change without notice.
         </p>
 
+        <h3>Shipping</h3>
+        <p>
+          We currently ship to addresses in the United States. Standard shipping
+          is $5.99 per order, shown before payment at checkout. Our products are
+          made to order.
+        </p>
+
         <h3>Returns and Refunds</h3>
         <p>
           Because our items are made to order, returns or exchanges are only
