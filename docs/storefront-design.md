@@ -1,5 +1,7 @@
 # Storefront Design
 
+The later [Google listings and two-game arcade release](google-arcade-release.md) records the current September 12 production version and supersedes only the arcade/contact presentation and Google-specific feed imagery described below.
+
 The September 12, 2026 redesign is a frontend replacement around the existing commerce contracts, not a checkout or catalog rewrite.
 
 ## Structure
@@ -21,4 +23,3 @@ Frontend commit fd2c78d032e4adef1329359144c98f5d10b530e5; production Worker f073
 Live catalog remains 14 products / 78 variants (9 tees, 3 hoodies, 2 hats). Both catalog feeds retain 14 groups / 78 rows; the sorted id|price|availability SHA256 matches the pre-deployment baseline: 245757971F23C8A7CFE9A9D824E5150994CFCD72993C1F3E9C7D41D183695534. No backend, provider configuration, cron, stock-policy or price changes.
 
 Full operator evidence and limits are in the private creator-ops repository, facebook-creator/commerce/storefront_redesign_2026-09-12.md. Native iPhone swipe behavior is not claimed hardware-tested. Existing imagery contains some baked-in marketing overlays; a consistent future photography set remains an opportunity, not an invented product replacement.
-
