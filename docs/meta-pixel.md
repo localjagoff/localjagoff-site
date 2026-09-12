@@ -24,6 +24,8 @@ Browser Purchase uses a SHA-256-derived event ID and a bounded localStorage dedu
 
 ## Verification
 
+September 12, 2026: the existing manual-install wizard was completed with advanced matching OFF. The correctly owned source's Overview lists Meta Pixel and PageView, ViewContent, AddToCart and InitiateCheckout as Active, in addition to prior Processed Test Events. The storefront redesign adds only the four public category routes to the eligibility allowlist. No new source, credential or Purchase event was created.
+
 `tests/meta-pixel.test.cjs` covers consent, GPC/DNT, private route exclusions, correct source and catalog IDs, duplicates, receipt authentication, expiry, paid status, store/mode/amount checks and sanitized output. Commerce tests retain authoritative prices, pause-before-provider behavior and unchanged success/cancel URLs. Executor tests prove a successful receipt cannot wake email/fulfillment. Actual live event receipt must additionally be checked in Events Manager Test Events; fixture success alone is not that evidence.
 
 Official references: [Meta Pixel](https://developers.facebook.com/docs/meta-pixel/), [Stripe session retrieval](https://docs.stripe.com/api/checkout/sessions/retrieve), [Meta Business Tools Terms](https://business.facebook.com/legal/technology_terms).
