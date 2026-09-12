@@ -430,7 +430,7 @@ export default function JagoffJumpPage() {
 
       <Navbar />
 
-      <main className={styles.wrap}>
+      <main id="main-content" tabIndex={-1} className={styles.wrap}>
         <Link href="/arcade" className={styles.backLink}>← Back to Arcade</Link>
 
         <section className={styles.hero}>

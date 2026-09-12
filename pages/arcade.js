@@ -133,7 +133,7 @@ export default function ArcadePage() {
 
       <Navbar />
 
-      <main className="arcadeWrap">
+      <main id="main-content" tabIndex={-1} className="arcadeWrap">
         <Link href="/" className="backLink">
           ← Back to shop
         </Link>

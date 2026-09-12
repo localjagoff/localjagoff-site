@@ -1,4 +1,8 @@
 import Head from "next/head";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Minus, Plus, Share2, ZoomIn, X } from "lucide-react";
+import { CATEGORIES, displayName, money, inCategory } from "../../lib/storefront.cjs";
+import RelatedProducts from "../../components/RelatedProducts";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
@@ -188,6 +192,8 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
   const [imageZoomOpen, setImageZoomOpen] = useState(false);
 
   const touchStartX = useRef(null);
+  const zoomTrigger = useRef(null);
+  const zoomClose = useRef(null);
 
   const fallbackProductForImages = {
     id: productId,
@@ -217,14 +223,15 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
   useEffect(() => {
     if (!imageZoomOpen) return;
 
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        setImageZoomOpen(false);
-      }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    zoomClose.current?.focus();
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setImageZoomOpen(false);
+      if (event.key === "Tab") { event.preventDefault(); zoomClose.current?.focus(); }
     };
-
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    return () => { document.removeEventListener("keydown", handleEscape); document.body.style.overflow = previousOverflow; zoomTrigger.current?.focus(); };
   }, [imageZoomOpen]);
 
   const images = useMemo(() => {
@@ -347,9 +354,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
   const openImageZoom = () => {
     if (typeof window === "undefined") return;
 
-    if (window.innerWidth <= 768) {
-      setImageZoomOpen(true);
-    }
+    setImageZoomOpen(true);
   };
 
   const handleShare = async () => {
@@ -395,7 +400,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
         <Navbar />
 
-        <main className="loading-wrap">
+        <main id="main-content" className="loading-wrap">
           <div className="loading-card">
             <p className="loading-kicker">LOCAL JAGOFF</p>
             <h1>{unavailable ? "Temporarily unavailable" : "Product unavailable"}</h1>
@@ -403,39 +408,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
           </div>
         </main>
 
-        <style jsx>{`
-          .product-page {
-            min-height: 100vh;
-            background: transparent;
-            color: #fff;
-          }
-          
 
-          .loading-wrap {
-            padding: 24px;
-          }
-
-          .loading-card {
-            max-width: 600px;
-            margin: 0 auto;
-            border: 1px solid #222;
-            border-radius: 18px;
-            padding: 24px;
-            background: #111;
-          }
-
-          .loading-kicker {
-            color: #ffe600;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 1.4px;
-            margin: 0 0 8px;
-          }
-
-          h1 {
-            margin: 0;
-          }
-        `}</style>
       </div>
     );
   }
@@ -452,7 +425,8 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
       <Navbar />
 
-      <main className="product-layout">
+      <nav className="product-breadcrumb store-container" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><Link href={CATEGORIES.find(category => inCategory(product, category.key))?.href || '/stuff-nat'}>{CATEGORIES.find(category => inCategory(product, category.key))?.label || "Stuff N'at"}</Link><span>/</span><span>{displayName(product.name)}</span></nav>
+      <main id="main-content" className="product-layout">
         <section className="gallery-panel">
           <div className="badge-row">
             <span className="badge">PITTSBURGH ATTITUDE</span>
@@ -468,9 +442,12 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
               src={selectedImage || images[0]}
               alt={product.name}
               className="main-image"
-              onClick={openImageZoom}
+              width="900"
+              height="900"
+              fetchpriority="high"
             />
 
+            <button ref={zoomTrigger} className="icon-button zoom-trigger" type="button" aria-label="Enlarge product image" onClick={openImageZoom}><ZoomIn size={20} /></button>
             {images.length > 1 && (
               <>
                 <button
@@ -479,7 +456,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
                   onClick={prevImage}
                   aria-label="Previous image"
                 >
-                  ‹
+                  <ArrowLeft size={20} />
                 </button>
 
                 <button
@@ -488,7 +465,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
                   onClick={nextImage}
                   aria-label="Next image"
                 >
-                  ›
+                  <ArrowRight size={20} />
                 </button>
               </>
             )}
@@ -502,6 +479,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
                 className={`thumb-button ${selectedImageIndex === i ? "active" : ""}`}
                 onClick={() => setSelectedImage(img)}
                 aria-label={`View product image ${i + 1}`}
+                aria-pressed={selectedImageIndex === i}
               >
                 <img src={img} alt={`${product.name} thumbnail ${i + 1}`} />
               </button>
@@ -512,31 +490,27 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
         <section className="info-panel">
           <p className="eyebrow">Local Jagoff Gear</p>
           {productSignal && <p className="product-signal">{productSignal}</p>}
-          <h1>{product.name}</h1>
+          <h1>{displayName(product.name)}</h1>
 
-          <p className="price">${displayedPrice}</p>
+          <p className="price" aria-live="polite">{money(displayedPrice)}</p>
 
           <p className="description">
             {productDescriptions[productId] ||
               "Local gear with Pittsburgh attitude. If you get it, you get it."}
           </p>
 
-          {product.variants?.length > 0 && (
-            <label className="variant-label">
-              Size / Style
-              <select
-                value={selectedVariantId}
-                onChange={(e) => setSelectedVariantId(e.target.value)}
-              >
+          {product.variants?.length > 0 && <>
+            <div className="variant-label">
+              <span>Size / Style{selectedVariant?.color ? ` / ${selectedVariant.color}` : ''}</span>
+              {product.variants.length > 12 && <select aria-label="Size / Style" value={selectedVariantId} onChange={event => setSelectedVariantId(event.target.value)}>
                 {!selectedVariant && <option value="">Select an available size / style</option>}
-                {product.variants.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {getVariantLabel(product.name, v.name)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+                {product.variants.map(variant => <option key={variant.id} value={variant.id}>{getVariantLabel(product.name, variant.name)}</option>)}
+              </select>}
+            </div>
+            {product.variants.length <= 12 && <div className="variant-pills" role="group" aria-label="Available sizes and styles">
+              {product.variants.map(variant => <button key={variant.id} type="button" aria-pressed={String(selectedVariantId) === String(variant.id)} onClick={() => setSelectedVariantId(String(variant.id))}>{getVariantLabel(product.name, variant.name)}</button>)}
+            </div>}
+          </>}
 
           <div className="qty-row">
             <button
@@ -544,7 +518,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               aria-label="Decrease quantity"
             >
-              −
+              <Minus size={18} />
             </button>
             <span>{quantity}</span>
             <button
@@ -552,39 +526,46 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
               onClick={() => setQuantity((q) => Math.min(99, q + 1))}
               aria-label="Increase quantity"
             >
-              +
+              <Plus size={18} />
             </button>
           </div>
 
           <div className="button-row">
             <button type="button" className="add-button" disabled={!selectedVariant} onClick={addToCart}>
-              {added ? "Added" : "Add to Cart"}
+              {added ? "Added to cart" : "Add to Cart"} <ArrowRight size={18} />
             </button>
-            <button type="button" className="share-button" onClick={handleShare}>
-              {copied ? "Copied" : "Share"}
+            <button type="button" className="share-button" title={copied ? "Link copied" : "Share product"} aria-label={copied ? "Link copied" : "Share product"} onClick={handleShare}>
+              <Share2 size={19} />
             </button>
           </div>
 
           <div className="trust-box">
-            <p>Printed when ordered. Shipped direct. No mall-rack nonsense.</p>
+            <p>{product.category === 'hats' ? 'Embroidered when ordered.' : 'Printed when ordered.'} Shipped direct. No mall-rack nonsense.</p>
             <p>Questions? <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a></p>
+          </div>
+          <div className="product-details">
+            <details><summary>Shipping & made-to-order</summary><p>Your piece is made after you order. Shipping and taxes are calculated at secure checkout. You'll receive tracking when it ships.</p></details>
+            <details><summary>Returns & support</summary><p>Made-to-order items are eligible for returns only when damaged, defective, incorrect or misprinted. Contact us within 14 days of delivery. <Link href="/terms">Read the full policy</Link>.</p></details>
           </div>
           <ProductReviews productId={product.id} />
         </section>
       </main>
 
+      <RelatedProducts product={product} />
+
       {imageZoomOpen && (
-        <div className="image-zoom-backdrop" onClick={() => setImageZoomOpen(false)}>
+        <div className="image-zoom-backdrop" role="dialog" aria-modal="true" aria-label="Product image preview" onClick={() => setImageZoomOpen(false)}>
           <button
             type="button"
-            className="image-zoom-close"
+            ref={zoomClose} className="image-zoom-close"
+            autoFocus
             onClick={(e) => {
               e.stopPropagation();
               setImageZoomOpen(false);
             }}
             aria-label="Close image preview"
           >
-            ×
+            <X size={28} />
           </button>
           <img
             src={selectedImage || images[0]}
@@ -594,342 +575,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
         </div>
       )}
 
-      <style jsx>{`
-        .product-page {
-          min-height: 100vh;
-          background: transparent;
-          color: #fff;
-        }
 
-        .product-layout {
-          max-width: 1120px;
-          margin: 0 auto;
-          padding: 32px 18px 80px;
-          display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
-          gap: 28px;
-          align-items: start;
-        }
-
-        .gallery-panel,
-        .info-panel {
-          border: 1px solid rgba(255, 230, 0, 0.18);
-          border-radius: 26px;
-          background: rgba(8, 8, 8, 0.82);
-          box-shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
-          padding: 18px;
-        }
-
-        .badge-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-bottom: 16px;
-        }
-
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          border: 1px solid rgba(255, 230, 0, 0.45);
-          border-radius: 999px;
-          color: #ffe600;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 1px;
-          padding: 7px 10px;
-          text-transform: uppercase;
-          background: rgba(255, 230, 0, 0.08);
-        }
-
-        .muted-badge {
-          color: #bbb;
-          border-color: rgba(255, 255, 255, 0.16);
-          background: rgba(255, 255, 255, 0.05);
-        }
-
-        .main-image-wrap {
-          position: relative;
-          border-radius: 22px;
-          overflow: hidden;
-          background: #f7f7f7;
-          aspect-ratio: 1 / 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .main-image {
-          max-width: 100%;
-          max-height: 100%;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          cursor: zoom-in;
-        }
-
-        .gallery-arrow {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 42px;
-          height: 42px;
-          border-radius: 999px;
-          border: 1px solid rgba(0, 0, 0, 0.2);
-          background: rgba(0, 0, 0, 0.72);
-          color: #ffe600;
-          font-size: 30px;
-          line-height: 1;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2;
-        }
-
-        .gallery-arrow-left {
-          left: 12px;
-        }
-
-        .gallery-arrow-right {
-          right: 12px;
-        }
-
-        .thumb-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-          gap: 10px;
-          margin-top: 14px;
-        }
-
-        .thumb-button {
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 14px;
-          background: #111;
-          padding: 6px;
-          cursor: pointer;
-          aspect-ratio: 1 / 1;
-        }
-
-        .thumb-button.active {
-          border-color: #ffe600;
-          box-shadow: 0 0 0 2px rgba(255, 230, 0, 0.16);
-        }
-
-        .thumb-button img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-          border-radius: 10px;
-          background: #f7f7f7;
-        }
-
-        .info-panel {
-          position: sticky;
-          top: 16px;
-        }
-
-        .eyebrow {
-          color: #ffe600;
-          font-size: 12px;
-          font-weight: 900;
-          letter-spacing: 1.6px;
-          margin: 0 0 10px;
-          text-transform: uppercase;
-        }
-
-        .product-signal {
-          display: inline-flex;
-          margin: 0 0 10px;
-          padding: 7px 10px;
-          border-radius: 999px;
-          color: #ffe600;
-          background: rgba(255, 230, 0, 0.08);
-          border: 1px solid rgba(255, 230, 0, 0.28);
-          font-size: 12px;
-          font-weight: 900;
-        }
-
-        .info-panel h1 {
-          font-size: clamp(32px, 4vw, 58px);
-          line-height: 0.95;
-          letter-spacing: 0.5px;
-          margin: 0 0 14px;
-          text-transform: uppercase;
-        }
-
-        .price {
-          color: #ffe600;
-          font-size: 26px;
-          font-weight: 900;
-          margin: 0 0 18px;
-        }
-
-        .description {
-          color: #ddd;
-          font-size: 16px;
-          line-height: 1.55;
-          margin: 0 0 20px;
-        }
-
-        .variant-label {
-          display: grid;
-          gap: 8px;
-          color: #ffe600;
-          font-size: 12px;
-          font-weight: 900;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          margin-bottom: 18px;
-        }
-
-        .variant-label select {
-          width: 100%;
-          border-radius: 14px;
-          border: 1px solid #333;
-          background: #050505;
-          color: #fff;
-          padding: 13px 14px;
-          font-size: 15px;
-        }
-
-        .qty-row {
-          display: inline-grid;
-          grid-template-columns: 44px 52px 44px;
-          align-items: center;
-          border: 1px solid #333;
-          border-radius: 999px;
-          overflow: hidden;
-          margin-bottom: 18px;
-          background: #050505;
-        }
-
-        .qty-row button {
-          width: 44px;
-          height: 44px;
-          border: 0;
-          background: #111;
-          color: #ffe600;
-          font-size: 22px;
-          cursor: pointer;
-        }
-
-        .qty-row span {
-          text-align: center;
-          font-weight: 900;
-        }
-
-        .button-row {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 12px;
-          margin-bottom: 18px;
-        }
-
-        .add-button,
-        .share-button {
-          border: 0;
-          border-radius: 16px;
-          font-weight: 900;
-          font-size: 15px;
-          cursor: pointer;
-          padding: 15px 18px;
-          text-transform: uppercase;
-        }
-
-        .add-button {
-          background: #ffe600;
-          color: #000;
-        }
-
-        .share-button {
-          background: #1a1a1a;
-          color: #fff;
-          border: 1px solid #333;
-        }
-
-        .trust-box {
-          border-radius: 18px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          background: rgba(255, 255, 255, 0.04);
-          padding: 14px;
-          color: #cfcfcf;
-          font-size: 13px;
-          line-height: 1.45;
-        }
-
-        .trust-box p {
-          margin: 0;
-        }
-
-        .trust-box p + p {
-          margin-top: 8px;
-        }
-
-        .image-zoom-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          background: rgba(0, 0, 0, 0.92);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 18px;
-        }
-
-        .image-zoom-img {
-          max-width: 100%;
-          max-height: 86vh;
-          object-fit: contain;
-          border-radius: 18px;
-          background: #f7f7f7;
-        }
-
-        .image-zoom-close {
-          position: fixed;
-          top: 18px;
-          right: 18px;
-          width: 44px;
-          height: 44px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: #111;
-          color: #ffe600;
-          font-size: 30px;
-          line-height: 1;
-          cursor: pointer;
-          z-index: 10000;
-        }
-
-        @media (max-width: 860px) {
-          .product-layout {
-            grid-template-columns: 1fr;
-          }
-
-          .info-panel {
-            position: static;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .product-layout {
-            padding: 18px 12px 60px;
-          }
-
-          .gallery-panel,
-          .info-panel {
-            border-radius: 20px;
-            padding: 14px;
-          }
-
-          .button-row {
-            grid-template-columns: 1fr;
-          }
-
-          .share-button {
-            width: 100%;
-          }
-        }
-      `}</style>
     </div>
   );
 }

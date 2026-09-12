@@ -111,7 +111,7 @@ export default function WhatsAJagoff() {
 
       <Navbar />
 
-      <main className="wrap">
+      <main id="main-content" tabIndex={-1} className="wrap">
         <section className="hero">
           <p className="kicker">PITTSBURGH SLANG, N’AT</p>
           <h1>What’s a Jagoff?</h1>

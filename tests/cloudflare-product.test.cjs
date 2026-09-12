@@ -26,7 +26,8 @@ test('native product HTML reuses original layout, styles, schema, build scripts 
   assert.match(response.headers.get('x-robots-tag'),/noindex/);
   const html=await response.text();
   for(const text of ['product-layout','gallery-panel','info-panel','Size / Style','Add to Cart','mailto:hello@localjagoff.com',
-    'fonts.googleapis.com','facebook-domain-verification','next-head-count','jsx-72bcb717e4bcd24e'])assert.ok(html.includes(text),text);
+    'fonts.googleapis.com','facebook-domain-verification','next-head-count','store-nav','store-footer'])assert.ok(html.includes(text),text);
+  assert.match(html,/<link[^>]+href="\/_next\/static\/css\/[^\"]+"[^>]*>/);
   const data=JSON.parse(html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]);
   assert.equal(data.buildId,renderer.buildId);assert.equal(data.gssp,true);
   assert.equal(data.props.pageProps.initialVariantId,5292830955);

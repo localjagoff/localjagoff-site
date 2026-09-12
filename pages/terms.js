@@ -5,7 +5,7 @@ export default function Terms() {
     <div className="legal-page">
       <Navbar />
 
-      <main className="legal-card">
+      <main id="main-content" tabIndex={-1} className="legal-card">
         <h1>Terms & Conditions</h1>
 
         <p>

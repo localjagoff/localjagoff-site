@@ -5,7 +5,7 @@ export default function Privacy() {
     <div className="legal-page">
       <Navbar />
 
-      <main className="legal-card">
+      <main id="main-content" tabIndex={-1} className="legal-card">
         <h1>Privacy Policy</h1>
 
         <p>

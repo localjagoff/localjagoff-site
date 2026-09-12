@@ -41,7 +41,7 @@ after(async () => {
   if (exited) await exited;
 });
 
-for (const route of ["/", "/tees", "/hoodies", "/hats", "/cart", "/success", "/review"]) {
+for (const route of ["/", "/tees", "/hoodies", "/hats", "/stuff-nat", "/cart", "/success", "/review"]) {
   test(`built storefront HTML responds: ${route}`, async () => {
     const response = await fetch(origin + route);
     assert.equal(response.status, 200);

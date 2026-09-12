@@ -70,7 +70,7 @@ export default function Contact() {
         <meta name="description" content="An order question, a gear issue, or something else? Talk to Local Jagoff at hello@localjagoff.com." key="description" />
       </Head>
       <Navbar />
-      <main className={styles.main}>
+      <main id="main-content" tabIndex={-1} className={styles.main}>
         <header className={styles.heading}>
           <img src="/images/icon.png" alt="" width="80" height="80" />
           <div><p className={styles.eyebrow}>LOCAL JAGOFF / SUPPORT</p><h1>LET'S SORT IT OUT.</h1></div>

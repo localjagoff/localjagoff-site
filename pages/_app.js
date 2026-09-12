@@ -1,20 +1,19 @@
 import "../styles/global.css";
 import "../styles/privacy-choices.css";
 import Head from "next/head";
-import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { Analytics } from "@vercel/analytics/next";
-import DepthExperience from "../components/DepthExperience";
+import StoreFooter from "../components/StoreFooter";
 import PrivacyChoices from "../components/PrivacyChoices";
 
 const SITE_URL = "https://www.localjagoff.com";
 const SOCIAL_IMAGE = `${SITE_URL}/images/social-share.jpg`;
 
 const DEFAULT_TITLE =
-  "Local Jagoff | Pittsburgh Jagoff Shirts, Hoodies & Yinzer Gear";
+  "Local Jagoff | Independent Pittsburgh Apparel";
 
 const DEFAULT_DESCRIPTION =
-  "Shop Local Jagoff for Pittsburgh jagoff shirts, black and gold hoodies, hats, 412 gear, 724 gear, and Western PA streetwear with yinzer attitude.";
+  "Pittsburgh roots. An attitude that travels. Discover Local Jagoff graphic T-shirts, hoodies, hats and Stuff N'at.";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
@@ -22,33 +21,6 @@ export default function App({ Component, pageProps }) {
   const privateCommunication = router.pathname === "/review" || router.pathname.startsWith("/admin/");
   const cleanPath = router.asPath?.split(/[?#]/)[0] || "/";
   const canonicalUrl = `${SITE_URL}${cleanPath === "/" ? "" : cleanPath}`;
-
-  useEffect(() => {
-    if (!isProductPage || typeof document === "undefined") return undefined;
-
-    const updateProductCareLine = () => {
-      const productTitle =
-        document.querySelector(".info-panel h1")?.textContent?.toLowerCase() || "";
-      const trustLine = document.querySelector(".trust-box p:first-child");
-      if (!trustLine) return;
-
-      const isHat = /\b(hat|cap|trucker)\b/.test(productTitle);
-      trustLine.textContent = isHat
-        ? "Embroidered when ordered. Stitched clean. No mall-rack nonsense."
-        : "Printed when ordered. Shipped direct. No mall-rack nonsense.";
-    };
-
-    updateProductCareLine();
-
-    let attempts = 0;
-    const timer = window.setInterval(() => {
-      updateProductCareLine();
-      attempts += 1;
-      if (attempts >= 20) window.clearInterval(timer);
-    }, 120);
-
-    return () => window.clearInterval(timer);
-  }, [isProductPage, router.asPath]);
 
   return (
     <>
@@ -122,9 +94,8 @@ export default function App({ Component, pageProps }) {
         <link rel="apple-touch-icon" href="/images/icon.png" />
       </Head>
 
-      <DepthExperience>
-        <Component {...pageProps} />
-      </DepthExperience>
+      <Component {...pageProps} />
+      {!privateCommunication && <StoreFooter />}
       <PrivacyChoices />
       {!privateCommunication && process.env.NEXT_PUBLIC_HOST_PLATFORM !== 'cloudflare' && <Analytics />}
     </>

@@ -15,7 +15,7 @@ function browser(path = '/') {
   return { win, tracker, storage, scripts, events, cookies, calls: () => win.fbq?.queue.filter(args => args[0] === 'trackSingle').map(args => Array.from(args)) || [] };
 }
 test('production domain and explicit public routes only; no private tokens or arbitrary URL data', () => {
-  for (const path of ['/', '/product/123', '/product/123?variant=45', '/cart', '/success', '/privacy']) assert.equal(pixel.eligibleLocation(new URL(env.SITE_URL + path)), true, path);
+  for (const path of ['/', '/tees', '/hoodies', '/hats', '/stuff-nat', '/product/123', '/product/123?variant=45', '/cart', '/success', '/privacy']) assert.equal(pixel.eligibleLocation(new URL(env.SITE_URL + path)), true, path);
   for (const path of ['/review?token=private', '/admin/reviews', '/contact', '/checkout?cart=private', '/?email=private', '/success?session_id=secret', '/#private']) assert.equal(pixel.eligibleLocation(new URL(env.SITE_URL + path)), false, path);
   assert.equal(pixel.eligibleLocation(new URL('https://review.workers.dev/')), false);
 });
