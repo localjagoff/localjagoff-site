@@ -6,13 +6,13 @@ Dataset/Pixel `2603757676747952` is owned by the Local Jagoff business portfolio
 
 `lib/meta-pixel.cjs` loads Meta's standard browser library only after explicit optional-cookie consent, on the canonical production origin and a small public storefront route allowlist. GPC and DNT override consent. Unknown query parameters, fragments, private review/admin/contact and transferred-cart routes do not emit events. This conservative exclusion can reduce referral attribution; it avoids sending private URL data. Automatic configuration is disabled in code and detailed automatic page collection is disabled in Events Manager. No noscript beacon bypasses consent.
 
-- PageView: once per eligible browser route visit.
+- PageView: once per eligible browser route visit. Meta's built-in history PageView is disabled (`fbq.disablePushState`) so it cannot duplicate the explicit router event. Consent commands run only when consent actually changes.
 - ViewContent: once per current product/variant view, including consent granted while viewing.
 - AddToCart: actual quantity added, excluding the cart's quantity cap.
 - InitiateCheckout: only after successful hosted-session creation, using the returned server-resolved product prices. Value is merchandise subtotal before shipping, tax or later promotional changes. No action events are replayed from before consent.
 - Purchase: only from `/success`, after the read-only receipt endpoint independently verifies a live, complete, paid Stripe payment session with matching store, v2 metadata and merchandise subtotal. Value is Stripe's final paid total, including applicable shipping/tax and discounts.
 
-Event IDs match catalog variants: `lj_<product_id>_<variant_id>`. No names, addresses, email, phone, payment details or raw Checkout Session IDs are passed as event parameters. Meta still receives normal browser/network information when its script connects, as disclosed by the privacy notice. Client blockers or declined consent mean events may not arrive; do not equate a browser queue call with Events Manager receipt.
+Content IDs match catalog variants: `lj_<product_id>_<variant_id>`. No names, addresses, email, phone, payment details or raw Checkout Session IDs are passed as event parameters. A query/fragment-bearing referrer also suppresses loading/tracking unless it passes the same public URL allowlist, preventing private link tokens from entering the SDK's automatic referrer field. Meta still receives normal browser/network information when its script connects, as disclosed by the privacy notice. Client blockers or declined consent mean events may not arrive; do not equate a browser queue call with Events Manager receipt.
 
 ## Paid Receipt Boundary
 

@@ -36,6 +36,24 @@ test('one correctly owned Pixel, no automatic matching, route and product dedupl
   const setup = b.win.fbq.queue.map(args => Array.from(args));
   assert.ok(setup.some(call => call[0] === 'set' && call[1] === 'autoConfig' && call[2] === false));
   assert.equal(setup.find(call => call[0] === 'init').length, 2);
+  assert.equal(b.win.fbq.disablePushState, true);
+});
+
+test('SPA navigation has one manual PageView and only actual consent transitions', () => {
+  const b = browser(); b.tracker.setChoice('granted');
+  b.tracker.suspend(`/product/${item.id}`);
+  b.win.location = new URL(env.SITE_URL + `/product/${item.id}`);
+  b.tracker.observeProduct(item); b.tracker.refresh();
+  assert.deepEqual(b.calls().map(call => call[2]), ['PageView', 'PageView', 'ViewContent']);
+  const consentCalls = () => b.win.fbq.queue.filter(args => args[0] === 'consent').map(args => args[1]);
+  assert.deepEqual(consentCalls(), ['grant']);
+  b.tracker.suspend('/admin/reviews'); b.tracker.suspend('/contact');
+  assert.deepEqual(consentCalls(), ['grant', 'revoke']);
+  b.win.location = new URL(env.SITE_URL + '/contact'); b.tracker.refresh();
+  assert.equal(b.calls().length, 3);
+  b.win.location = new URL(env.SITE_URL + '/cart'); b.tracker.refresh();
+  assert.deepEqual(consentCalls(), ['grant', 'revoke', 'grant']);
+  assert.equal(b.calls().at(-1)[2], 'PageView');
 });
 test('variant IDs match catalog, values use supplied authoritative cents; malformed values rejected', () => {
   assert.deepEqual(pixel.productParameters([item]), { content_type: 'product', content_ids: ['lj_430697388_123456'], contents: [{ id: 'lj_430697388_123456', quantity: 2, item_price: 30 }], num_items: 2, currency: 'USD', value: 60 });
@@ -51,6 +69,15 @@ test('actual cart and checkout actions do not replay pre-consent; revocation sus
 test('unexpected prior Pixel never receives this store events', () => {
   const b = browser(); b.win.fbq = () => { throw Error('must not reuse'); };
   b.tracker.setChoice('granted'); assert.equal(b.scripts.length, 0);
+});
+test('private query-bearing referrer cannot leak through Meta automatic referrer collection', () => {
+  for (const referrer of [env.SITE_URL + '/review?token=private', 'https://mail.example/?private=value', env.SITE_URL + '/admin/reviews#private']) {
+    const b = browser(); b.win.document.referrer = referrer;
+    b.tracker.setChoice('granted'); b.tracker.addToCart([item]);
+    assert.equal(b.scripts.length, 0); assert.equal(b.calls().length, 0);
+  }
+  const b = browser(); b.win.document.referrer = 'https://checkout.stripe.com/';
+  b.tracker.setChoice('granted'); assert.equal(b.scripts.length, 1);
 });
 function paid(changes = {}) { return { id, livemode: true, mode: 'payment', status: 'complete', payment_status: 'paid', currency: 'usd',
   amount_subtotal: 6000, amount_total: 6599, metadata: { store_id: STORE_ID, commerce_version: '2', items: JSON.stringify([[item.id,item.variant_id,2,3000]]) }, ...changes }; }
