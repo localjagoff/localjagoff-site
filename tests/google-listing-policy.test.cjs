@@ -2,7 +2,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { googleAttributes, products, GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS } = require("../lib/google-listing-policy.cjs");
+const { googleAttributes, products, GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS, GOOGLE_SHIPPING_FIELDS } = require("../lib/google-listing-policy.cjs");
 const { googleRows, googleTsv, openaiRows } = require("../lib/discovery.cjs");
 const { curateProduct } = require("../lib/catalog.cjs");
 
@@ -25,6 +25,17 @@ test("13 approved and four staged Google presentations use original mockups and 
   assert.throws(() => googleAttributes("430925200"), /not reviewed/);
   assert.throws(() => googleAttributes("430697388"), /not reviewed/);
   assert.throws(() => googleAttributes("unreviewed"), /not reviewed/);
+});
+
+test('Google single-offer shipping matches checkout and preserves business-day delivery and cutoff', () => {
+  const { standardShippingCents } = require('../lib/shipping-policy.cjs');
+  for (const id of GOOGLE_APPROVED_PRODUCT_IDS) {
+    const attrs=googleAttributes(id);
+    assert.equal(attrs[GOOGLE_SHIPPING_FIELDS[0]],`US:Standard Shipping:${(standardShippingCents([{id,quantity:1}])/100).toFixed(2)} USD:2:7:3:4`);
+    assert.equal(attrs.shipping_handling_business_days,'Mon-Fri');
+    assert.equal(attrs.shipping_transit_business_days,'Mon-Fri');
+    assert.equal(attrs[GOOGLE_SHIPPING_FIELDS[3]],'US:"14:00":America/New_York');
+  }
 });
 
 test("storefront approval and staged Google metadata do not add offers to the reviewed Google feed", () => {

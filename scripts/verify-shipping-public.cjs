@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const { PRODUCTS } = require('../lib/product-merchandising.cjs');
-const { GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS } = require('../lib/google-listing-policy.cjs');
+const { GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS, GOOGLE_SHIPPING_FIELDS, googleAttributes } = require('../lib/google-listing-policy.cjs');
+const { SHIPPING_CHARGE, SHIPPING_RATE_VERSION } = require('../lib/shipping-policy.cjs');
 const { metaRows, feedCsv } = require('../lib/catalog.cjs');
 const origin = 'https://www.localjagoff.com';
 
@@ -44,6 +45,7 @@ async function verify() {
         assert.equal(row.link, `${origin}/product/${product.id}?variant=${variant.id}`);
         assert.equal(row.additional_image_link, '');
         assert.ok(row.title.startsWith(product.name + ' - '));
+        for (const field of GOOGLE_SHIPPING_FIELDS) assert.equal(row[field], googleAttributes(product.id)[field]);
       }else assert.equal(row,undefined);
       const discovery = openai.find(item => item.item_id === `lj_${product.id}_${variant.id}`);
       assert.ok(discovery.title.startsWith(product.name + ' - '));
@@ -69,10 +71,16 @@ async function verify() {
     const image = await get(`/images/google/${product.id}.jpg`, 'HEAD');
     assert.match(image.headers.get('content-type'), /image\/jpeg/);
   }
+  for (const path of ['/terms', '/cart']) {
+    const html = await (await get(path)).text();
+    assert.ok(html.includes(SHIPPING_CHARGE), path);
+    assert.doesNotMatch(html, /\$5\.99|Printful/i, path);
+  }
   const hash = body => createHash('sha256').update(body).digest('hex');
   console.log(JSON.stringify({ checkedVariants: checked, landingPages: products.length,
     googleImages: products.length, googleFeedSha256: hash(tsv),
     metaFeedSha256: hash(meta), openaiVariants: openai.length,
-    retiredProductsNotOffered: true, displayNamesConsistent: true }));
+    retiredProductsNotOffered: true, displayNamesConsistent: true,
+    shippingRateVersion: SHIPPING_RATE_VERSION, googleShippingOverrides: rows.length }));
 }
 verify().catch(error => { console.error(error.message); process.exitCode = 1; });

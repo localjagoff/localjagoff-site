@@ -3,7 +3,7 @@ const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
 const { receiptCookie, CLEAR_COOKIE } = require('../lib/checkout-receipt.cjs');
-const { PRINTFUL_US, CHECKOUT_DELIVERY } = require('../lib/shipping-policy.cjs');
+const { standardShippingCents, SHIPPING_RATE_VERSION, CHECKOUT_DELIVERY } = require('../lib/shipping-policy.cjs');
 
 function createCheckoutHandler({env=process.env,stripeFactory=(key)=>new Stripe(key,
   {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()}),fetchImpl}={}) {
@@ -19,6 +19,7 @@ return async function handler(req, res) {
     const coupon = couponCode(req.body?.coupon);
     const items = await resolveCart(req.body?.items, { apiKey: env.PRINTFUL_API_KEY,...(fetchImpl?{fetchImpl}:{}) });
     const metadataItems = encodeItems(items);
+    const shippingAmount = standardShippingCents(items);
     const siteUrl = siteOrigin(env);
     let promotionId;
     if (coupon) {
@@ -81,7 +82,7 @@ return async function handler(req, res) {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: PRINTFUL_US.shippingAmount,
+              amount: shippingAmount,
               currency: "usd",
             },
             display_name: "Standard Shipping",
@@ -98,6 +99,7 @@ return async function handler(req, res) {
         store_id: STORE_ID,
         items: metadataItems,
         commerce_version: "2",
+        shipping_rate_version: SHIPPING_RATE_VERSION,
       },
 
       success_url: `${siteUrl}/success`,
@@ -107,7 +109,7 @@ return async function handler(req, res) {
     const cookie = req.body?.measurement_consent === true ? receiptCookie(session.id, env) : null;
     res.setHeader('Set-Cookie', cookie || CLEAR_COOKIE);
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ url: session.url,
+    return res.status(200).json({ url: session.url, shipping_amount: shippingAmount,
       measurement_items: items.map(({ id, variant_id, quantity, unit_amount }) => ({ id, variant_id, quantity, unit_amount })) });
   } catch (err) {
     console.error("Checkout failed", { code: err instanceof CommerceError ? err.message : "stripe_request_failed" });

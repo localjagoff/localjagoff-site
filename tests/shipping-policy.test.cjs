@@ -6,7 +6,7 @@ const policy = require('../lib/shipping-policy.cjs');
 
 test('current Printful policy keeps production, transit and owner review separate', () => {
   assert.deepEqual(policy.PRINTFUL_US, { reviewMin: 0, reviewMax: 2, handlingMin: 2, handlingMax: 7, fulfillmentMin: 2, fulfillmentMax: 5,
-    transitMin: 3, transitMax: 4, shippingAmount: 599 });
+    transitMin: 3, transitMax: 4 });
   assert.match(policy.CHECKOUT_DELIVERY, /reviewed and released within 2 business days/);
   assert.match(policy.CHECKOUT_DELIVERY, /2-5 business days production/);
   assert.match(policy.CHECKOUT_DELIVERY, /3-4 business days domestic US Standard transit/);
@@ -14,6 +14,36 @@ test('current Printful policy keeps production, transit and owner review separat
   assert.equal(policy.PRINTFUL_US.handlingMax, policy.PRINTFUL_US.reviewMax + policy.PRINTFUL_US.fulfillmentMax);
   assert.ok(policy.CHECKOUT_DELIVERY.length <= 1200);
   assert.doesNotMatch(JSON.stringify(policy), /Stuff N|3-5 business days handling/);
+});
+
+const tee = (quantity = 1) => ({ id: 471744647, quantity });
+const hoodie = (quantity = 1) => ({ id: 429208592, quantity });
+const hat = (quantity = 1) => ({ id: 428980566, quantity });
+test('US Standard rates match the current category table without markup', () => {
+  for (const [count, cents] of [[1,495],[2,715],[3,935],[5,1375],[10,2475]]) {
+    assert.equal(policy.standardShippingCents([tee(count)]), cents);
+  }
+  for (const [cart, cents] of [
+    [[hoodie()],879], [[hoodie(2)],1129], [[hat()],469], [[hat(2)],669],
+    [[tee(),hoodie()],1099], [[tee(),hat()],964], [[hoodie(),hat()],1348],
+    [[tee(2),hoodie()],1319], [[tee(4),hoodie()],1759],
+    [[tee(2),hoodie(2),hat(2)],2238],
+  ]) {
+    assert.equal(policy.standardShippingCents(cart), cents);
+    assert.equal(policy.standardShippingCents([...cart].reverse()), cents);
+  }
+  assert.equal(policy.standardShippingCents([tee(),tee()]), policy.standardShippingCents([tee(2)]));
+  assert.equal(policy.standardShippingCents([{...tee(),price:0.01,category:'hats',shipping:0}]),495);
+});
+
+test('every currently authorized product has an explicit shipping route; unknown fulfillment fails closed', () => {
+  const { APPROVED_PRODUCT_IDS } = require('../lib/commerce-policy.cjs');
+  assert.deepEqual(Object.keys(policy.SHIPPING_PRODUCTS).map(Number).sort(), [...APPROVED_PRODUCT_IDS].sort());
+  assert.equal(policy.standardShippingCents([]),0);
+  for (const cart of [null,{},[{id:999999,quantity:1}], [tee(0)],[tee(-1)],[tee(1.5)],[tee(100)],Array(101).fill(tee())]) {
+    assert.throws(()=>policy.standardShippingCents(cart),/Shipping unavailable/);
+  }
+  assert.doesNotMatch(policy.SHIPPING_CHARGE,/Printful|\$5\.99|free shipping/i);
 });
 
 test('product, policy and cart consume the same delivery wording without a new blanket window', () => {

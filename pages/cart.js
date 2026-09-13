@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import { startCheckout } from "../lib/checkout";
-import { SHIPPING_CHARGE, CHECKOUT_DELIVERY } from "../lib/shipping-policy.cjs";
+import { SHIPPING_CHARGE, CHECKOUT_DELIVERY, standardShippingCents } from "../lib/shipping-policy.cjs";
 
 export default function CartPage({ transfer = null, transferError = null }) {
   const [cart, setCart] = useState(transfer?.items || []);
@@ -64,6 +64,8 @@ export default function CartPage({ transfer = null, transferError = null }) {
   const checkout = () => {
     startCheckout(cart, transfer?.coupon);
   };
+  let shipping = null;
+  try { shipping = standardShippingCents(cart) / 100; } catch {}
 
   return (
     <div className="cart-page">
@@ -154,6 +156,14 @@ export default function CartPage({ transfer = null, transferError = null }) {
                 <strong>${total.toFixed(2)}</strong>
               </div>
 
+              <div className="summary-row">
+                <span>Standard Shipping</span>
+                <strong>{shipping === null ? 'Unavailable' : `$${shipping.toFixed(2)}`}</strong>
+              </div>
+              {shipping !== null && <div className="summary-row">
+                <span>Total before discounts</span>
+                <strong>${(total + shipping).toFixed(2)}</strong>
+              </div>}
               <p className="summary-note">
                 {SHIPPING_CHARGE}
               </p>
@@ -167,7 +177,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
                 type="button"
                 className="checkout-btn"
                 onClick={checkout}
-                disabled={cart.length === 0}
+                disabled={cart.length === 0 || shipping === null}
               >
                 CHECKOUT
               </button>
