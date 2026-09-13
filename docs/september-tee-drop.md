@@ -11,7 +11,7 @@ Storefront-approved additions from Local Jagoff store18032822:
 
 All Black, six sizes S/M/L/XL/2XL/3XL; provider retail30/30/30/30/32/34USD. Runtime imports only authoritative synced, non-ignored, active USD variants. No fabricated variant IDs, prices or stock. Total expected storefront17products/96variants, including unchanged prior13/72.
 
-Clean original front/back garment mockups are local1200square JPEGs under `public/images/products/<ID>/`, prepared without crop/artwork changes by `scripts/prepare-september-drop-images.cjs`. MC1082 shares verified soft-washed5.5oz midweight cotton copy. Front designs and inside-neck brand labels, plain backs. The main homepage featured trio/hero stay; one secondary slot features Pittsburgh Original.
+Clean original front/back garment mockups are local1200square JPEGs under `public/images/products/<ID>/`, prepared without crop/artwork changes by `scripts/prepare-september-drop-images.cjs`. MC1082 shares verified soft-washed5.5oz midweight cotton copy. Front designs and inside-neck brand labels, plain backs. The initial release preserved the homepage trio with one secondary Pittsburgh Original slot. The subsequent [featured-drop pass](featured-tee-mockups-2026-09-13.md) replaces that trio with all four new tees, preserves the hero, and cleans the older tee primaries.
 
 ## Google Is A Separate Gate
 
@@ -33,4 +33,4 @@ Tests:311unit/integration/native checks and22built-site smoke checks pass. Code7
 
 ## Print And Channel Review Boundary
 
-Read-only saved-designer inspection reports Good DPI384/389/407/397 for the four front layers, respectively. It also displays outside-print-area warnings, including on label views whose visible artwork appears within the guide. Original complete exported mockups are used unchanged; no provider design was saved or corrected. Do not claim a physical print/sample was verified. Resolve provider placement warnings before confirming the first affected fulfillment. Smoking/middle-finger artwork can receive independent marketplace policy review; do not alter artwork to evade review.
+Historical saved-designer inspection reported Good DPI384/389/407/397 and outside-print-area banners. **Superseding owner/recheck status:** the owner did not reproduce the warning or clipping; the fresh browser inspection still displayed banners (384/389/407/402 DPI), but all four current large front mockups show complete artwork. No current artwork correction is required based solely on the earlier note. Do not move/resize artwork or treat that note as an established active clipping defect. The session discrepancy is documented in the [recheck record](featured-tee-mockups-2026-09-13.md); it is not accurate to claim a universally warning-free designer or a physically verified print. No provider design was saved. Smoking/middle-finger artwork can receive independent marketplace policy review; do not alter artwork to evade review.
