@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import { startCheckout } from "../lib/checkout";
+import { SHIPPING_CHARGE, CHECKOUT_DELIVERY } from "../lib/shipping-policy.cjs";
 
 export default function CartPage({ transfer = null, transferError = null }) {
   const [cart, setCart] = useState(transfer?.items || []);
@@ -154,8 +155,9 @@ export default function CartPage({ transfer = null, transferError = null }) {
               </div>
 
               <p className="summary-note">
-                Shipping and taxes are calculated at checkout.
+                {SHIPPING_CHARGE}
               </p>
+              <p className="summary-note">{CHECKOUT_DELIVERY} <Link href="/terms#shipping">Shipping policy</Link>.</p>
               {transfer?.coupon && <p className="summary-note">
                 Promo code: <strong>{transfer.coupon}</strong>. Eligibility and final discount
                 are confirmed at secure checkout.

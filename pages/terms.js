@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import { SHIPPING_CHARGE, PRINTFUL_DELIVERY, DELIVERY_NOTE } from "../lib/shipping-policy.cjs";
 
 export default function Terms() {
   return (
@@ -23,12 +24,11 @@ export default function Terms() {
           Prices are listed in USD and may change without notice.
         </p>
 
-        <h3>Shipping</h3>
-        <p>
-          We currently ship to addresses in the United States. Standard shipping
-          is $5.99 per order, shown before payment at checkout. Our products are
-          made to order.
-        </p>
+        <h3 id="shipping">Shipping</h3>
+        <p>We currently ship to addresses in the United States. {SHIPPING_CHARGE}</p>
+        <p>{PRINTFUL_DELIVERY}</p>
+        <p>{DELIVERY_NOTE}</p>
+        <p>Questions about your product or destination? Contact <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a> before ordering.</p>
 
         <h3>Returns and Refunds</h3>
         <p>

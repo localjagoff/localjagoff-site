@@ -3,6 +3,7 @@ const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
 const { receiptCookie, CLEAR_COOKIE } = require('../lib/checkout-receipt.cjs');
+const { PRINTFUL_US, CHECKOUT_DELIVERY } = require('../lib/shipping-policy.cjs');
 
 function createCheckoutHandler({env=process.env,stripeFactory=(key)=>new Stripe(key,
   {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()}),fetchImpl}={}) {
@@ -80,17 +81,14 @@ return async function handler(req, res) {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: 599,
+              amount: PRINTFUL_US.shippingAmount,
               currency: "usd",
             },
             display_name: "Standard Shipping",
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: 5 },
-              maximum: { unit: "business_day", value: 10 },
-            },
           },
         },
       ],
+      custom_text: { shipping_address: { message: CHECKOUT_DELIVERY } },
 
       phone_number_collection: {
         enabled: true,

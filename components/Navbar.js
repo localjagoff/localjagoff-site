@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { Menu, X, ShoppingBag, Plus, Minus, ArrowRight, Trash2 } from 'lucide-react';
 import { startCheckout } from '../lib/checkout';
 import { CATEGORIES, money } from '../lib/storefront.cjs';
+import { SHIPPING_CHARGE } from '../lib/shipping-policy.cjs';
 
 function readCart() {
   try { const value = JSON.parse(localStorage.getItem('cart')); return Array.isArray(value) ? value : []; } catch { return []; }
@@ -70,7 +71,7 @@ export default function Navbar({ checkoutCoupon = null }) {
       {cart.length ? <><div className="bag-items">{cart.map((item, index) => <article className="bag-item" key={`${item.id}-${item.variant_id}`}>
         <Link href={`/product/${item.id}`} onClick={() => setOpen(false)}><img src={item.image || '/placeholder.jpg'} alt={item.name} width="100" height="100" /></Link>
         <div><Link className="bag-item-name" href={`/product/${item.id}`} onClick={() => setOpen(false)}>{item.name}</Link><p>{item.variant_name}</p><strong>{money(Number(item.price) * item.quantity)}</strong><div className="bag-controls"><div className="quantity-control"><button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeQuantity(index, -1)}><Minus size={15} /></button><span>{item.quantity}</span><button type="button" aria-label={`Increase quantity of ${item.name}`} disabled={item.quantity >= 99} onClick={() => changeQuantity(index, 1)}><Plus size={15} /></button></div><button className="icon-button" title="Remove item" type="button" aria-label={`Remove ${item.name}`} onClick={() => updateCart(cart.filter((_, i) => i !== index))}><Trash2 size={18} /></button></div></div>
-      </article>)}</div><div className="bag-summary"><div><span>Subtotal</span><strong>{money(total)}</strong></div><p>Shipping and taxes calculated at checkout.</p><button className="store-button" disabled={checking} onClick={checkout}>{checking ? 'Opening secure checkout' : 'Checkout'}<ArrowRight size={18} /></button><Link className="text-link" href="/cart" onClick={() => setOpen(false)}>View cart details <ArrowRight size={17} /></Link></div></> : <div className="bag-empty"><ShoppingBag size={38} strokeWidth={1} /><h3>Room for something good.</h3><p>Your cart is empty.</p><Link className="store-button" href="/tees" onClick={() => setOpen(false)}>Explore the collection <ArrowRight size={18} /></Link></div>}
+      </article>)}</div><div className="bag-summary"><div><span>Subtotal</span><strong>{money(total)}</strong></div><p>{SHIPPING_CHARGE} <Link href="/terms#shipping" onClick={() => setOpen(false)}>Made-to-order delivery details</Link>.</p><button className="store-button" disabled={checking} onClick={checkout}>{checking ? 'Opening secure checkout' : 'Checkout'}<ArrowRight size={18} /></button><Link className="text-link" href="/cart" onClick={() => setOpen(false)}>View cart details <ArrowRight size={17} /></Link></div></> : <div className="bag-empty"><ShoppingBag size={38} strokeWidth={1} /><h3>Room for something good.</h3><p>Your cart is empty.</p><Link className="store-button" href="/tees" onClick={() => setOpen(false)}>Explore the collection <ArrowRight size={18} /></Link></div>}
     </dialog>
   </>;
 }

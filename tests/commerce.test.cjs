@@ -30,6 +30,7 @@ function checkoutFixture(product = detail(), status = 200) {
       if (name.endsWith("commerce-policy.cjs")) return require("../lib/commerce-policy.cjs");
       if (name.endsWith("meta-checkout.cjs")) return require("../lib/meta-checkout.cjs");
       if (name.endsWith("checkout-receipt.cjs")) return require("../lib/checkout-receipt.cjs");
+      if (name.endsWith("shipping-policy.cjs")) return require("../lib/shipping-policy.cjs");
       return { ...commerce, resolveCart: (items, options) => commerce.resolveCart(items, { ...options, fetchImpl }) };
     } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../api/create-checkout-session.js"), "utf8"), sandbox);
@@ -53,6 +54,8 @@ test("actual checkout handler ignores altered client price/name and resolves aut
     assert.equal(session.line_items[0].quantity, 2);
     assert.equal(session.success_url, "https://www.localjagoff.com/success");
     assert.equal(session.shipping_options[0].shipping_rate_data.fixed_amount.amount, 599);
+    assert.equal(session.shipping_options[0].shipping_rate_data.delivery_estimate, undefined);
+    assert.equal(session.custom_text.shipping_address.message, require("../lib/shipping-policy.cjs").CHECKOUT_DELIVERY);
     assert.equal(session.allow_promotion_codes, true);
     assert.deepEqual(JSON.parse(session.metadata.items), [[item.id, item.variant_id, 2, 3000]]);
     assert.equal(session.metadata.commerce_version, "2");

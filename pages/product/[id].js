@@ -10,6 +10,7 @@ import ProductReviews from "../../components/ProductReviews";
 import { getTracker } from "../../lib/meta-pixel.cjs";
 import { getProductImages } from "../../lib/getProductImages";
 import { productJsonLd as buildProductJsonLd } from "../../lib/discovery.cjs";
+import { SHIPPING_CHARGE, PRINTFUL_DELIVERY, DELIVERY_NOTE } from "../../lib/shipping-policy.cjs";
 
 const SITE_URL = "https://www.localjagoff.com";
 
@@ -544,7 +545,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
             <p>Questions? <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a></p>
           </div>
           <div className="product-details">
-            <details><summary>Shipping & made-to-order</summary><p>Your piece is made after you order. Shipping and taxes are calculated at secure checkout. You'll receive tracking when it ships.</p></details>
+            <details><summary>Shipping & made-to-order</summary><p>{SHIPPING_CHARGE}</p><p>{PRINTFUL_DELIVERY}</p><p>{DELIVERY_NOTE}</p><p><Link href="/terms#shipping">Read the shipping policy</Link>.</p></details>
             <details><summary>Returns & support</summary><p>Made-to-order items are eligible for returns only when damaged, defective, incorrect or misprinted. Contact us within 14 days of delivery. <Link href="/terms">Read the full policy</Link>.</p></details>
           </div>
           <ProductReviews productId={product.id} />
