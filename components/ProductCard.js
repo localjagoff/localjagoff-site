@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { displayName, money } from '../lib/storefront.cjs';
+import { merchandising } from '../lib/product-merchandising.cjs';
 
 export default function ProductCard({ product }) {
   const images = product.images?.length ? product.images : [product.thumbnail_url || '/placeholder.jpg'];
@@ -14,7 +15,7 @@ export default function ProductCard({ product }) {
         <span className="product-card-arrow" aria-hidden="true"><ArrowUpRight size={20} /></span>
       </div>
       <div className="product-card-meta"><h3>{displayName(product.name)}</h3><p>{varies && <span>From </span>}{money(product.retail_price)}</p></div>
-      <p className="product-card-detail">{product.category === 'hats' ? 'Embroidered headwear' : product.category === 'hoodies' ? 'Made-to-order layer' : ['tees', '724'].includes(product.category) ? 'Made-to-order graphic tee' : 'Small goods'}</p>
+      <p className="product-card-detail">{merchandising(product.id)?.quality?.card || (product.category === 'hats' ? 'Embroidered headwear' : 'Made to order')}</p>
     </Link>
   </article>;
 }

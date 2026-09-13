@@ -12,9 +12,9 @@ test("Meta products query decodes once, combines duplicates and ignores supplied
   assert.equal(parseMetaCart({ products: `${id}:1` }).coupon, null);
 });
 
-test("Meta rejects invalid/ambiguous IDs, quantities, repeated parameters, coupons and hidden products", () => {
+test("Meta rejects invalid/ambiguous IDs, quantities, repeated parameters and coupons", () => {
   for (const products of [undefined, [], [id + ":1"], "", "123:1", `${id}:0`, `${id}:-1`, `${id}:1.5`,
-    `${id}:100`, `${id}:99,${id}:1`, `${id}:1,`, `${id}%3A1`, "lj_430925200_123:1",
+    `${id}:100`, `${id}:99,${id}:1`, `${id}:1,`, `${id}%3A1`,
     "lj_9007199254740992_1:1", `${id}:1&price=0`, "x".repeat(4097)]) {
     assert.throws(() => parseMetaCart({ products }));
   }
@@ -36,7 +36,7 @@ test("Meta handoff resolves current server price, product identity and eligibili
   const result = await resolveMetaCart({ products: `${id}:2`, price: "0.01" }, { apiKey: "fixture", fetchImpl });
   assert.equal(result.items[0].price, "30.00");
   assert.equal(result.items[0].quantity, 2);
-  assert.equal(result.items[0].name, "Local Jagoff Keystone 724 Tee");
+  assert.equal(result.items[0].name, "Crowned 724 Tee");
   assert.ok(result.items[0].image.startsWith("/images/"));
   assert.equal(calls.length, 1);
   assert.equal(calls[0].method, "GET");

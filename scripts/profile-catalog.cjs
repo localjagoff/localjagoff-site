@@ -13,9 +13,9 @@ const PHASES=Object.freeze({first_native:1,parse:2000,curate:2000,serialize:2000
 
 function fixture(){
   const ids=[...APPROVED_PRODUCT_IDS];
-  if(ids.length!==14)throw Error('Review fixture shape: expected 14 approved products');
+  if(ids.length!==13)throw Error('Review fixture shape: expected 13 approved products');
   const records=[{url:`https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100&offset=0`,
-    raw:JSON.stringify({code:200,result:ids.map(id=>({id})),paging:{offset:0,total:14}})}];
+    raw:JSON.stringify({code:200,result:ids.map(id=>({id})),paging:{offset:0,total:13}})}];
   ids.forEach((id,index)=>{
     const name='Fixture tee '+index;
     records.push({url:`https://api.printful.com/sync/products/${id}?store_id=${STORE_ID}`,
@@ -178,8 +178,8 @@ async function run({rounds=3,phases=PHASES,outputDir,transportMode='loopback',on
         const response=await mf.dispatchFetch(`${ORIGIN}/${phase}?n=${iterations}`);
         const data=await response.json();
         const {profile}=await inspector.send('Profiler.stop');
-        if(response.status!==200||data.products!==14||data.variants!==84)throw Error('Benchmark result mismatch');
-        const expected=['first_native','cold_native'].includes(phase)?15*iterations:0;
+        if(response.status!==200||data.products!==13||data.variants!==78)throw Error('Benchmark result mismatch');
+        const expected=['first_native','cold_native'].includes(phase)?14*iterations:0;
         if(data.nativeCalls!==expected||counters.rejected)throw Error('Unexpected benchmark I/O');
         if(transportMode==='service')fixtureRequests+=expected;
         const filename=`round-${round}-${phase}.cpuprofile`;
@@ -190,7 +190,7 @@ async function run({rounds=3,phases=PHASES,outputDir,transportMode='loopback',on
     }finally{inspector?.close();await mf.dispose();}
   }
   const report={runtime:'local workerd / DevTools Profiler',transport:transportMode,sampling_interval_us:100,rounds,
-    fixture:{products:14,variants_per_product:6,responses:records.length,raw_bytes:records.reduce((sum,r)=>sum+Buffer.byteLength(r.raw),0)},
+    fixture:{products:13,variants_per_product:6,responses:records.length,raw_bytes:records.reduce((sum,r)=>sum+Buffer.byteLength(r.raw),0)},
     external_provider_requests:0,local_fixture_requests:fixtureRequests,
     caveats:['Sampled active time is an estimate, not hosted billed CPU; idle and program samples are reported separately.',
       'Active sample deltas over 5 ms are flagged, not removed: scheduler or I/O suspension may inflate these estimates.',

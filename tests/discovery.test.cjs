@@ -275,6 +275,7 @@ test("actual product SSR includes escaped ProductGroup and omits it during an ou
     if (name === "lucide-react") return require("lucide-react");
     if (name.endsWith("storefront.cjs")) return require("../lib/storefront.cjs");
     if (name.endsWith("shipping-policy.cjs")) return require("../lib/shipping-policy.cjs");
+    if (name.endsWith('product-merchandising.cjs')) return require('../lib/product-merchandising.cjs');
     if (name === "next/router") return { useRouter: () => ({ query: {} }) };
     if (name.includes("components/")) return () => null;
     if (name.endsWith("getProductImages")) return { getProductImages: p => p.images || [] };

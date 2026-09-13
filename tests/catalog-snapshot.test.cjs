@@ -27,16 +27,45 @@ test('scheduled steps read exactly one product; only a complete snapshot is publ
     assert.equal(result.outcome,i===snapshot.IDS.length-1?'catalog_published':'catalog_product_refreshed');
     if(i<snapshot.IDS.length-1)await assert.rejects(snapshot.readSnapshot(env,{store}),/unavailable/);
   }
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,14);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,13);
   assert.equal((await store.read()).cursor,0);
 });
 test('provider failure preserves the previous full snapshot and does not advance',async()=>{
   await reset();await cycle();const before=await store.read();
   await assert.rejects(snapshot.refreshStep(env,{store,readProduct:async()=>{throw Error('fixture outage');}}),/outage/);
   const after=await store.read();assert.equal(after.version,before.version);assert.deepEqual(after.published,before.published);
-  await cycle(async id=>id===snapshot.IDS[0]?null:product(id));
-  const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,13);
+  await cycle(async id=>id===snapshot.IDS[0]?null:require('../lib/product-merchandising.cjs').merchandiseProduct(product(id)));
+  const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,12);
   assert.ok(!published.some(p=>p.id===snapshot.IDS[0]));
+});
+
+test('removal-only migration preserves the remaining authoritative snapshot without extending freshness',async()=>{
+  await reset();await cycle();
+  const before=await store.read();
+  db.prepare('UPDATE public_catalog_snapshot SET policy=?,published=?').run(snapshot.PREVIOUS_POLICY,
+    JSON.stringify([...before.published,product(430697388)]));
+  const migrated=await snapshot.readSnapshot(env,{store});
+  assert.equal(migrated.length,13);
+  assert.ok(!migrated.some(p=>p.id===430697388));
+  assert.deepEqual(migrated.map(p=>p.variants),before.published.map(p=>p.variants));
+  assert.equal(await snapshot.readProductSnapshot(env,430697388,{store}),null);
+  assert.equal((await snapshot.refreshStep(env,{store,readProduct:()=>assert.fail('reset must not access provider')})).outcome,'catalog_cycle_reset');
+  assert.equal((await store.read()).published_source_at,before.published_source_at);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,13);
+  assert.equal((await store.read()).policy,snapshot.POLICY);
+  db.exec("UPDATE public_catalog_snapshot SET published_source_at=strftime('%Y-%m-%dT%H:%M:%fZ','now','-151 minutes')");
+  await assert.rejects(snapshot.readSnapshot(env,{store}),/unavailable/);
+});
+
+test('compatibility never admits unknown products or a different policy',async()=>{
+  await reset();await cycle();const before=await store.read();
+  db.prepare('UPDATE public_catalog_snapshot SET policy=?,published=?').run(snapshot.PREVIOUS_POLICY,
+    JSON.stringify([...before.published,product(999999)]));
+  await assert.rejects(snapshot.readSnapshot(env,{store}),/policy_mismatch/);
+  db.prepare('UPDATE public_catalog_snapshot SET policy=?').run(JSON.stringify([...snapshot.IDS,999999]));
+  await assert.rejects(snapshot.readSnapshot(env,{store}),/unavailable/);
+  await store.reset((await store.read()).version);
+  assert.equal((await store.read()).published,null);
 });
 test('idle initialization does not backdate freshly fetched products or expire before the next cycle',async()=>{
   await reset();
@@ -44,7 +73,7 @@ test('idle initialization does not backdate freshly fetched products or expire b
   await cycle();
   const state=await store.read();
   assert.ok(Date.now()-Date.parse(state.published_source_at)<120000);
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,14);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,13);
   // The start time must remain the oldest actual fetch, not move with every product.
   await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
   const first=(await store.read()).cycle_started_at;
@@ -53,7 +82,7 @@ test('idle initialization does not backdate freshly fetched products or expire b
 });
 test('single-product D1 read preserves approval, omission and snapshot expiry without parsing the entire catalog',async()=>{
   await reset();await cycle();const id=snapshot.IDS[0];
-  assert.deepEqual(await snapshot.readProductSnapshot(env,id,{store}),product(id));
+  assert.deepEqual(await snapshot.readProductSnapshot(env,id,{store}),require('../lib/product-merchandising.cjs').merchandiseProduct(product(id)));
   assert.equal(await snapshot.readProductSnapshot(env,999999,{store}),null);
   await cycle(async current=>current===id?null:product(current));
   assert.equal(await snapshot.readProductSnapshot(env,id,{store}),null);

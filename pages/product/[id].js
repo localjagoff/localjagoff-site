@@ -11,6 +11,7 @@ import { getTracker } from "../../lib/meta-pixel.cjs";
 import { getProductImages } from "../../lib/getProductImages";
 import { productJsonLd as buildProductJsonLd } from "../../lib/discovery.cjs";
 import { SHIPPING_CHARGE, PRINTFUL_DELIVERY, DELIVERY_NOTE } from "../../lib/shipping-policy.cjs";
+import { merchandising, merchandiseProduct } from '../../lib/product-merchandising.cjs';
 
 const SITE_URL = "https://www.localjagoff.com";
 
@@ -38,74 +39,6 @@ function getVariantLabel(productName, variantName) {
   return cleanVariantName;
 }
 
-const productDescriptions = {
-  428851698:
-    "Straight Pittsburgh energy. Clean keystone, no extra nonsense.",
-  428851608:
-    "Front and back print that actually hits. Not subtle. Not supposed to be.",
-  428851513:
-    "Different angle, same attitude. 412 sideways but still loud.",
-  428550417:
-    "You know exactly what this means. No explanation needed.",
-  428821578:
-    "Warm hoodie. Cold attitude. Perfect for when Pittsburgh does its thing.",
-  428851907:
-    "Throw it on and go. Clean, simple, does the job.",
-  428983169:
-    "Heavy hoodie, built right. Not that thin, cheap stuff.",
-  428982889:
-    "Keystone look, no filler. Just straight Pittsburgh.",
-  428980566:
-    "Solid hat. No gimmicks. Just wear it.",
-  429208592:
-    "Another one that hits. Keystone, 412, done right.",
-  429536493:
-    "Basic? Yeah. Boring? Not even close.",
-  430964873:
-    "724 pride with Local Jagoff attitude. Western PA knows what this one means.",
-};
-
-const productSeoDescriptions = {
-  428851698:
-    "Shop the Local Jagoff Keystone 412 Tee, a Pittsburgh jagoff shirt with black and gold attitude, Western PA pride, and clean keystone energy.",
-  428851608:
-    "Shop the Local Jagoff Steel City Front and Back Tee, a Pittsburgh jagoff shirt made for yinzer attitude, black and gold pride, and Western PA streetwear.",
-  428851513:
-    "Shop the Local Jagoff 412 Sideways Tee, a Pittsburgh jagoff shirt with 412 pride, yinzer humor, and black and gold local attitude.",
-  428550417:
-    "Shop the Certified Jagoff T-Shirt from Local Jagoff, a Pittsburgh attitude tee made for yinzers, Western PA locals, and jagoffs who get it.",
-  428821578:
-    "Shop the Pittsburgh Local Jagoff Keystone Hoodie, a black and gold hoodie built for Pittsburgh weather, Western PA pride, and yinzer attitude.",
-  428851907:
-    "Shop the Local Jagoff Trucker Cap, a Pittsburgh hat made for black and gold locals, Western PA jagoffs, and everyday yinzer attitude.",
-  428983169:
-    "Shop the Local Jagoff Keystone 412 Hoodie, a Pittsburgh hoodie with 412 pride, black and gold energy, and Western PA streetwear attitude.",
-  428982889:
-    "Shop the Local Jagoff Keystone Tee, a Pittsburgh jagoff shirt with clean keystone style, black and gold attitude, and Western PA pride.",
-  428980566:
-    "Shop the Local Jagoff Trucker Hat, a Pittsburgh cap made for black and gold pride, Western PA locals, and jagoff attitude.",
-  429208592:
-    "Shop the Local Jagoff Keystone Hoodie, a Pittsburgh hoodie made for black and gold streetwear, yinzer attitude, and Western PA pride.",
-  429536493:
-    "Shop the Local Jagoff 412 Tee, a Pittsburgh jagoff shirt built for 412 pride, black and gold attitude, and Western PA locals.",
-  430964873:
-    "Shop the Local Jagoff Keystone 724 Tee, a Pittsburgh-area jagoff shirt with 724 pride, Western PA attitude, and black and gold local energy.",
-};
-
-const productFallbackNames = {
-  428851698: "Local Jagoff Keystone 412 Tee",
-  428851608: "Local Jagoff Steel City Front and Back Tee",
-  428851513: "Local Jagoff 412 Sideways Tee",
-  428550417: "Certified Jagoff T-Shirt",
-  428821578: "Pittsburgh Local Jagoff Keystone Hoodie",
-  428851907: "Local Jagoff Trucker Cap",
-  428983169: "Local Jagoff Keystone 412 Hoodie",
-  428982889: "Local Jagoff Keystone Tee",
-  428980566: "Local Jagoff Trucker Hat",
-  429208592: "Local Jagoff Keystone Hoodie",
-  429536493: "Local Jagoff 412 Tee",
-  430964873: "Local Jagoff Keystone 724 Tee",
-};
 
 const productSignals = {};
 
@@ -117,9 +50,7 @@ function absoluteImageUrl(path) {
 }
 
 function getProductSeoDescription(productId, productName, category) {
-  if (productSeoDescriptions[productId]) {
-    return productSeoDescriptions[productId];
-  }
+  if (merchandising(productId)) return merchandiseProduct({ id: productId }).description;
 
   const cleanName =
     productName && productName !== "Local Jagoff" ? productName : "Local Jagoff gear";
@@ -205,7 +136,8 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
     getProductImages(fallbackProductForImages)[0] || "/images/social-share.jpg";
 
   const shareTitle =
-    product?.name || productFallbackNames[productId] || "Local Jagoff";
+    product?.name || merchandising(productId)?.name || "Local Jagoff";
+  const merch = merchandising(productId);
   const shareDescription = getProductSeoDescription(
     productId,
     shareTitle,
@@ -496,9 +428,14 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
           <p className="price" aria-live="polite">{money(displayedPrice)}</p>
 
           <p className="description">
-            {productDescriptions[productId] ||
+            {merch?.design ||
               "Local gear with Pittsburgh attitude. If you get it, you get it."}
           </p>
+
+          {merch?.quality && <div className="garment-quality">
+            <h2>{merch.quality.headline}</h2>
+            <p>{merch.quality.copy}</p>
+          </div>}
 
           {product.variants?.length > 0 && <>
             <div className="variant-label">
@@ -545,6 +482,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
             <p>Questions? <a href="mailto:hello@localjagoff.com">hello@localjagoff.com</a></p>
           </div>
           <div className="product-details">
+            {merch?.quality && <details><summary>Fabric & fit</summary><p>{merch.quality.model}</p><ul>{merch.quality.details.map(detail => <li key={detail}>{detail}</li>)}</ul></details>}
             <details><summary>Shipping & made-to-order</summary><p>{SHIPPING_CHARGE}</p><p>{PRINTFUL_DELIVERY}</p><p>{DELIVERY_NOTE}</p><p><Link href="/terms#shipping">Read the shipping policy</Link>.</p></details>
             <details><summary>Returns & support</summary><p>Made-to-order items are eligible for returns only when damaged, defective, incorrect or misprinted. Contact us within 14 days of delivery. <Link href="/terms">Read the full policy</Link>.</p></details>
           </div>

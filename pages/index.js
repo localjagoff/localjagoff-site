@@ -31,7 +31,7 @@ export default function Home() {
       <section className="brand-hero">
         <img className="brand-hero-image" src="/images/products/Local-Jagoff-Keyverse-hoodie1.jpg" alt="Local Jagoff Keystone hoodie with the gold 412 back print" width="1200" height="1200" fetchpriority="high" />
         <div className="brand-hero-copy store-container"><p className="store-eyebrow">Independent apparel / Pittsburgh, PA</p><h1>LOCAL<br />JAGOFF<span>.</span></h1><p className="hero-description">For the ones who get it.<br />And the ones who never left it behind.</p><Link className="store-button" href="/tees">Shop the collection <ArrowUpRight size={19} /></Link></div>
-        <Link className="hero-product-credit" href="/product/428821578"><span>In focus / Keystone Hoodie</span><ArrowUpRight size={18} /></Link>
+        <Link className="hero-product-credit" href="/product/428821578"><span>In focus / Steel City 412 Crest Zip Hoodie</span><ArrowUpRight size={18} /></Link>
       </section>
       <div className="brand-strip"><span>Pittsburgh roots.</span><span>Independent attitude.</span><span>Made to order.</span></div>
       <section className="store-section store-container" id="current-drop">

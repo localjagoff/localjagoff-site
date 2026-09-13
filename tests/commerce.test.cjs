@@ -8,7 +8,7 @@ const commerce = require("../lib/commerce.cjs");
 const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { fulfillEvent, externalId } = require("../lib/fulfillment.cjs");
 
-const item = { id: 430697388, variant_id: 123456, quantity: 2, price: "0.01" };
+const item = { id: 430964873, variant_id: 123456, quantity: 2, price: "0.01" };
 const detail = () => ({ sync_product: { id: item.id, name: "Raw tee", is_ignored: false,
   thumbnail_url: "https://example.test/product.jpg" }, sync_variants: [{ id: item.variant_id,
   sync_product_id: item.id, synced: true, is_ignored: false, availability_status: "active",
@@ -50,7 +50,7 @@ test("actual checkout handler ignores altered client price/name and resolves aut
     assert.match(res.headers['Set-Cookie'], /Max-Age=0$/);
     const session = f.sessions[0];
     assert.equal(session.line_items[0].price_data.unit_amount, 3000);
-    assert.equal(session.line_items[0].price_data.product_data.name, "Local Jagoff PGH OG Tee");
+    assert.equal(session.line_items[0].price_data.product_data.name, "Crowned 724 Tee");
     assert.equal(session.line_items[0].quantity, 2);
     assert.equal(session.success_url, "https://www.localjagoff.com/success");
     assert.equal(session.shipping_options[0].shipping_rate_data.fixed_amount.amount, 599);
@@ -483,7 +483,7 @@ test("public catalog preserves curated name, exclusion and retail price", async 
     await sandbox.module.exports({ method: "GET" }, res);
     assert.equal(res.code, 200);
     assert.equal(res.body.length, 1);
-    assert.equal(res.body[0].name, "Local Jagoff PGH OG Tee");
+    assert.equal(res.body[0].name, "Crowned 724 Tee");
     assert.equal(res.body[0].retail_price, "30.00");
     assert.equal(res.body[0].variants[0].id, item.variant_id);
     assert.equal(res.body[0].variants[0].name, "XL");

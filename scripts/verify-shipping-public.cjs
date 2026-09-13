@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
+const { PRODUCTS } = require('../lib/product-merchandising.cjs');
+const { metaRows, feedCsv } = require('../lib/catalog.cjs');
 const origin = 'https://www.localjagoff.com';
 
 async function get(path, method = 'GET') {
@@ -14,10 +16,21 @@ async function verify() {
   const [head, ...lines] = tsv.trim().split('\n');
   const keys = head.split('\t');
   const rows = lines.map(line => Object.fromEntries(line.split('\t').map((value, i) => [keys[i], value])));
-  assert.equal(products.length, 14);
-  assert.equal(rows.length, 78);
+  assert.equal(products.length, 13);
+  assert.equal(rows.length, 72);
+  const meta = await (await get('/api/meta-catalog')).text();
+  assert.equal(meta, feedCsv(metaRows(products, origin)));
+  const openai = (await (await get('/feeds/openai-products.jsonl')).text()).trim().split('\n').map(JSON.parse);
+  const sitemap = await (await get('/sitemap.xml')).text();
+  assert.equal(openai.length, 72);
+  for (const retired of [430697388, 430925200]) {
+    for (const body of [tsv, meta, JSON.stringify(openai), sitemap]) assert.ok(!body.includes(String(retired)));
+    assert.equal((await fetch(`${origin}/product/${retired}`)).status, 404);
+  }
   let checked = 0;
   for (const product of products) {
+    assert.equal(product.name, PRODUCTS[product.id].name);
+    assert.ok(sitemap.includes(`/product/${product.id}`));
     for (const variant of product.variants) {
       const row = rows.find(row => row.id === `lj_${product.id}_${variant.id}`);
       assert.ok(row);
@@ -25,14 +38,22 @@ async function verify() {
       assert.equal(row.availability, 'in_stock');
       assert.equal(row.link, `${origin}/product/${product.id}?variant=${variant.id}`);
       assert.equal(row.additional_image_link, '');
+      assert.ok(row.title.startsWith(product.name + ' - '));
+      const discovery = openai.find(item => item.item_id === row.id);
+      assert.equal(discovery.title, row.title);
+      assert.equal(discovery.price, row.price);
+      assert.equal(discovery.availability, row.availability);
       checked++;
     }
     const html = await (await get(`/product/${product.id}?variant=${product.variants[0].id}`)).text();
     assert.ok(html.includes('2-5 business days'));
     assert.ok(html.includes('3-4 business days'));
+    assert.ok(html.includes('within 2 business days'));
+    assert.ok(html.includes('2-7 business days'));
     const script = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
     assert.ok(script);
     const group = JSON.parse(script[1]);
+    assert.equal(group.name, product.name);
     for (const variant of product.variants) {
       const { offers } = group.hasVariant.find(v => v.sku === `lj_${product.id}_${variant.id}`);
       assert.equal(offers.price, variant.price);
@@ -44,6 +65,7 @@ async function verify() {
   const hash = body => createHash('sha256').update(body).digest('hex');
   console.log(JSON.stringify({ checkedVariants: checked, landingPages: products.length,
     googleImages: products.length, googleFeedSha256: hash(tsv),
-    metaFeedSha256: hash(await (await get('/api/meta-catalog')).text()) }));
+    metaFeedSha256: hash(meta), openaiVariants: openai.length,
+    retiredProductsNotOffered: true, displayNamesConsistent: true }));
 }
 verify().catch(error => { console.error(error.message); process.exitCode = 1; });

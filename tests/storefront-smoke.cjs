@@ -58,7 +58,7 @@ test('retired arcade routes redirect without loading their old game', async () =
 });
 
 test('communication APIs fail closed without configuration or authentication',async()=>{
-  for(const [route,method,status] of [['/api/contact','GET',503],['/api/reviews?productId=430697388','GET',503],['/api/printful-events','POST',400],['/api/communications/run','GET',401]]){
+  for(const [route,method,status] of [['/api/contact','GET',503],['/api/reviews?productId=430964873','GET',503],['/api/printful-events','POST',400],['/api/communications/run','GET',401]]){
     const r=await fetch(origin+route,{method});assert.equal(r.status,status,route);assert.match(r.headers.get('cache-control'),/no-store/);
   }
   for(const route of ['/admin/reviews','/api/reviews/moderation'])assert.equal((await fetch(origin+route)).status,500);
@@ -68,7 +68,7 @@ test('checkout return does not claim a URL proves payment',async()=>{
 });
 
 test("product SSR fails closed without provider configuration", async () => {
-  const response = await fetch(origin + "/product/430697388");
+  const response = await fetch(origin + "/product/430964873");
   assert.equal(response.status, 503);
   const html = await response.text();
   assert.match(html, /Temporarily unavailable/);

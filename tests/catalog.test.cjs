@@ -27,7 +27,7 @@ test("one sellability policy gates listing, feed and checkout", async () => {
 
 test("curation, positive USD prices and exact variant handoff survive feed serialization", () => {
   const p = curateProduct(fixture(), id);
-  assert.equal(p.name, "Local Jagoff Keystone 724 Tee");
+  assert.equal(p.name, "Crowned 724 Tee");
   assert.equal(p.variants[0].name, "Black / S");
   assert.equal(p.retail_price, "30.00");
   assert.equal(p.images[0], "/images/products/local-jagoff-keystone-724-1.jpg");

@@ -6,8 +6,8 @@ const { googleAttributes, products } = require("../lib/google-listing-policy.cjs
 const { googleRows, googleTsv, openaiRows } = require("../lib/discovery.cjs");
 const { curateProduct } = require("../lib/catalog.cjs");
 
-test("all 14 Google presentations use complete original mockups and reviewed apparel attributes", () => {
-  assert.equal(Object.keys(products).length, 14);
+test("all 13 Google presentations use complete original mockups and reviewed apparel attributes", () => {
+  assert.equal(Object.keys(products).length, 13);
   for (const id of Object.keys(products)) {
     const attrs = googleAttributes(id);
     assert.ok(["male", "unisex"].includes(attrs.gender));
@@ -21,6 +21,7 @@ test("all 14 Google presentations use complete original mockups and reviewed app
     assert.doesNotMatch(JSON.stringify(attrs), /gtin|mpn/);
   }
   assert.throws(() => googleAttributes("430925200"), /not reviewed/);
+  assert.throws(() => googleAttributes("430697388"), /not reviewed/);
   assert.throws(() => googleAttributes("unreviewed"), /not reviewed/);
 });
 

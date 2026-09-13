@@ -13,12 +13,12 @@ test('executor checkout uses original authoritative handler and runtime-only env
   const api=createApiAdapter({checkoutFactory:({env})=>createCheckoutHandler({env,
     stripeFactory:()=>({checkout:{sessions:{create:async options=>{sessions.push(options);return {url:'https://checkout.stripe.com/c/pay/cs_test_fixture'};}}}}),
     fetchImpl:async(url,options)=>{
-      reads++;assert.equal(options.method,'GET');assert.match(url,/sync\/products\/430697388\?store_id=18032822$/);
-      return Response.json({result:{sync_product:{id:430697388,name:'Raw',is_ignored:false},sync_variants:[{
-        id:123456,sync_product_id:430697388,synced:true,is_ignored:false,availability_status:'active',currency:'USD',retail_price:'30.00',name:'M'}]}});
+      reads++;assert.equal(options.method,'GET');assert.match(url,/sync\/products\/430964873\?store_id=18032822$/);
+      return Response.json({result:{sync_product:{id:430964873,name:'Raw',is_ignored:false},sync_variants:[{
+        id:123456,sync_product_id:430964873,synced:true,is_ignored:false,availability_status:'active',currency:'USD',retail_price:'30.00',name:'M'}]}});
     }})});
   const object=createExecutor(env,{apiRequest:api,signal:()=>assert.fail('Checkout must not signal mail')});
-  const r=await object.fetch(request({items:[{id:430697388,variant_id:123456,quantity:1,price:.01,name:'Injected'}]}));
+  const r=await object.fetch(request({items:[{id:430964873,variant_id:123456,quantity:1,price:.01,name:'Injected'}]}));
   assert.equal(r.status,200);assert.equal(reads,1);assert.equal(sessions.length,1);
   assert.equal(sessions[0].line_items[0].price_data.unit_amount,3000);
   assert.equal(sessions[0].success_url,env.SITE_URL+'/success');assert.equal(sessions[0].cancel_url,env.SITE_URL+'/cart');
