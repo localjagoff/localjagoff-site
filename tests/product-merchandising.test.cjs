@@ -17,9 +17,9 @@ test('one-size hats do not repeat the product name as their variant label',()=>{
     assert.equal(variant.name,name);
   }
 });
-test('exactly 13 current designs, eight verified tees and three verified hoodies',()=>{
+test('exactly 17 current designs, twelve verified tees and three verified hoodies',()=>{
   assert.deepEqual(Object.keys(PRODUCTS).map(Number).sort(),[...APPROVED_PRODUCT_IDS].sort());
-  assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,8);
+  assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,12);
   assert.equal(merchandising(428983169).quality.model,'Cotton Heritage M2580');
   for(const id of [428821578,429208592]) assert.equal(merchandising(id).quality.model,'Gildan 18600 Heavy Blend');
   for(const p of Object.values(PRODUCTS).filter(p=>p.garment==='MC1082')) {
@@ -34,6 +34,7 @@ test('presentation keeps all variant IDs and authoritative offers and titles agr
       is_ignored:false,availability_status:'active',currency:'USD',retail_price:'30.00'}]},id);
     const before=JSON.stringify(p.variants),name=getDisplayProductName({id});
     assert.equal(p.name,name);
+    assert.doesNotMatch(p.description,/printful/i);
     const title=name+' - Black / S';
     assert.equal(metaRows([p],'https://www.localjagoff.com')[0].title,title);
     assert.equal(googleRows([p])[0].title,title);

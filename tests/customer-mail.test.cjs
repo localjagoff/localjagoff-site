@@ -66,6 +66,7 @@ test("shipment wording is package-specific and supports split shipments", () => 
   assert.match(result.text, /not a delivery confirmation/);
   assert.match(result.text, /USPS: TEST/);
   assert.match(result.text, /Test tee \| Qty 1/);
+  assert.doesNotMatch(JSON.stringify(result), /printful/i);
 });
 
 test("unsafe tracking and review links cannot become links in mail", () => {
@@ -82,6 +83,7 @@ test("processing and review copy is clear, optional, and not an upsell", () => {
   assert.match(review.text, /Leaving a review is optional/);
   assert.match(review.text, /Still waiting/);
   assert.doesNotMatch(review.text, /discount|coupon|five.star/i);
+  assert.doesNotMatch(JSON.stringify([mail.processingEmail(order),review]), /printful/i);
 });
 
 test("transactional sending fails closed in TEST/Preview/disabled environments", async () => {

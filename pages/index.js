@@ -17,7 +17,8 @@ export default function Home() {
   const catalog = useCatalog();
   const hasSmallGoods = catalog.products.some(product => inCategory(product, 'stuff'));
   const featured = getFeaturedProducts(catalog.products);
-  const selected = [429728777, 428851608, 428980566, 430964873].map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
+  const newDrop = catalog.products.some(product => Number(product.id) === 471744477);
+  const selected = [newDrop ? 471744477 : 429728777, 428851608, 428980566, 430964873].map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
   return <div className="storefront">
     <Head>
       <title>Local Jagoff | Independent Pittsburgh Apparel</title>

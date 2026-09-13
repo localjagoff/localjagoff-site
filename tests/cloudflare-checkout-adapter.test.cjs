@@ -34,3 +34,12 @@ test('paused, invalid and over-limit native checkout reject before provider acce
   assert.equal((await api(request('x'.repeat(1048577)),env)).status,413);
   assert.equal((await api(request({items:[]}),{...env,STRIPE_SECRET_KEY:'sk_live_fixture'})).status,503);
 });
+
+test('provider outage is sanitized in the customer checkout response',async()=>{
+  const api=createApiAdapter({checkoutFactory:({env})=>createCheckoutHandler({env,
+    stripeFactory:()=>({checkout:{sessions:{create:()=>assert.fail('no session on provider outage')}}}),
+    fetchImpl:async()=>new Response(null,{status:503})})});
+  const response=await api(request({items:[{id:430964873,variant_id:123456,quantity:1}]}),env);
+  assert.equal(response.status,503);
+  assert.equal((await response.json()).error,'Checkout unavailable; please try again');
+});

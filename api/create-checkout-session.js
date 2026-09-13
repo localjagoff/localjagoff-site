@@ -112,7 +112,8 @@ return async function handler(req, res) {
   } catch (err) {
     console.error("Checkout failed", { code: err instanceof CommerceError ? err.message : "stripe_request_failed" });
     return res.status(err instanceof CommerceError ? err.status : 503).json({
-      error: err instanceof CommerceError ? err.message : "Checkout unavailable; please try again",
+      error: err instanceof CommerceError && !/printful/i.test(err.message)
+        ? err.message : "Checkout unavailable; please try again",
     });
   }
 };

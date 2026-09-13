@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const { PRODUCTS } = require('../lib/product-merchandising.cjs');
+const { GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS } = require('../lib/google-listing-policy.cjs');
 const { metaRows, feedCsv } = require('../lib/catalog.cjs');
 const origin = 'https://www.localjagoff.com';
 
@@ -16,13 +17,16 @@ async function verify() {
   const [head, ...lines] = tsv.trim().split('\n');
   const keys = head.split('\t');
   const rows = lines.map(line => Object.fromEntries(line.split('\t').map((value, i) => [keys[i], value])));
-  assert.equal(products.length, 13);
+  assert.equal(products.length, 17);
   assert.equal(rows.length, 72);
   const meta = await (await get('/api/meta-catalog')).text();
   assert.equal(meta, feedCsv(metaRows(products, origin)));
   const openai = (await (await get('/feeds/openai-products.jsonl')).text()).trim().split('\n').map(JSON.parse);
   const sitemap = await (await get('/sitemap.xml')).text();
-  assert.equal(openai.length, 72);
+  assert.equal(openai.length, 96);
+  assert.equal(new Set(rows.map(row=>row.item_group_id)).size,13);
+  for(const id of GOOGLE_STAGED_PRODUCT_IDS) assert.ok(!tsv.includes(String(id)));
+  for(const body of [JSON.stringify(products),tsv,meta,JSON.stringify(openai)]) assert.doesNotMatch(body,/printful/i);
   for (const retired of [430697388, 430925200]) {
     for (const body of [tsv, meta, JSON.stringify(openai), sitemap]) assert.ok(!body.includes(String(retired)));
     assert.equal((await fetch(`${origin}/product/${retired}`)).status, 404);
@@ -33,16 +37,18 @@ async function verify() {
     assert.ok(sitemap.includes(`/product/${product.id}`));
     for (const variant of product.variants) {
       const row = rows.find(row => row.id === `lj_${product.id}_${variant.id}`);
-      assert.ok(row);
-      assert.equal(row.price, `${variant.price} ${variant.currency}`);
-      assert.equal(row.availability, 'in_stock');
-      assert.equal(row.link, `${origin}/product/${product.id}?variant=${variant.id}`);
-      assert.equal(row.additional_image_link, '');
-      assert.ok(row.title.startsWith(product.name + ' - '));
-      const discovery = openai.find(item => item.item_id === row.id);
-      assert.equal(discovery.title, row.title);
-      assert.equal(discovery.price, row.price);
-      assert.equal(discovery.availability, row.availability);
+      if(GOOGLE_APPROVED_PRODUCT_IDS.has(product.id)){
+        assert.ok(row);
+        assert.equal(row.price, `${variant.price} ${variant.currency}`);
+        assert.equal(row.availability, 'in_stock');
+        assert.equal(row.link, `${origin}/product/${product.id}?variant=${variant.id}`);
+        assert.equal(row.additional_image_link, '');
+        assert.ok(row.title.startsWith(product.name + ' - '));
+      }else assert.equal(row,undefined);
+      const discovery = openai.find(item => item.item_id === `lj_${product.id}_${variant.id}`);
+      assert.ok(discovery.title.startsWith(product.name + ' - '));
+      assert.equal(discovery.price, `${variant.price} ${variant.currency}`);
+      assert.equal(discovery.availability, 'in_stock');
       checked++;
     }
     const html = await (await get(`/product/${product.id}?variant=${product.variants[0].id}`)).text();
@@ -50,6 +56,7 @@ async function verify() {
     assert.ok(html.includes('3-4 business days'));
     assert.ok(html.includes('within 2 business days'));
     assert.ok(html.includes('2-7 business days'));
+    assert.doesNotMatch(html,/printful/i);
     const script = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
     assert.ok(script);
     const group = JSON.parse(script[1]);

@@ -2,12 +2,14 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { googleAttributes, products } = require("../lib/google-listing-policy.cjs");
+const { googleAttributes, products, GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_PRODUCT_IDS } = require("../lib/google-listing-policy.cjs");
 const { googleRows, googleTsv, openaiRows } = require("../lib/discovery.cjs");
 const { curateProduct } = require("../lib/catalog.cjs");
 
-test("all 13 Google presentations use complete original mockups and reviewed apparel attributes", () => {
-  assert.equal(Object.keys(products).length, 13);
+test("13 approved and four staged Google presentations use original mockups and reviewed attributes", () => {
+  assert.equal(Object.keys(products).length, 17);
+  assert.equal(GOOGLE_APPROVED_PRODUCT_IDS.size,13);
+  assert.equal(GOOGLE_STAGED_PRODUCT_IDS.size,4);
   for (const id of Object.keys(products)) {
     const attrs = googleAttributes(id);
     assert.ok(["male", "unisex"].includes(attrs.gender));
@@ -23,6 +25,23 @@ test("all 13 Google presentations use complete original mockups and reviewed app
   assert.throws(() => googleAttributes("430925200"), /not reviewed/);
   assert.throws(() => googleAttributes("430697388"), /not reviewed/);
   assert.throws(() => googleAttributes("unreviewed"), /not reviewed/);
+});
+
+test("storefront approval and staged Google metadata do not add offers to the reviewed Google feed", () => {
+  const catalog=Object.keys(products).map(Number).map(id=>curateProduct({
+    sync_product:{id,name:"Provider tee",is_ignored:false},sync_variants:[{
+      id:id+100,sync_product_id:id,name:"Black / S",size:"S",color:"Black",synced:true,
+      is_ignored:false,availability_status:"active",currency:"USD",retail_price:"30.00"}]
+  },id));
+  const tsv=googleTsv(catalog);
+  assert.equal(tsv.trim().split("\n").length,14);
+  assert.equal(openaiRows(catalog).length,17);
+  for(const id of GOOGLE_STAGED_PRODUCT_IDS){
+    assert.ok(!GOOGLE_APPROVED_PRODUCT_IDS.has(id));
+    assert.ok(!tsv.includes(String(id)));
+    assert.ok(openaiRows(catalog).some(row=>row.item_id.startsWith("lj_"+id+"_")));
+  }
+  assert.doesNotMatch(tsv,/printful/i);
 });
 
 test("Google presentation leaves authoritative identities, offers, Meta and other discovery imagery alone", () => {
