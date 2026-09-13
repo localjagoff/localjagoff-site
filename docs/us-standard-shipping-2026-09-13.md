@@ -67,7 +67,37 @@ payment details or create any provider order for this verification.
 Authenticated production costs, tax assumptions and threshold stress tests
 belong in the private operations repository, not this public website repository.
 
-## Primary References
+## Production Verification
+
+Deployed code `e518590`; Worker `f2ed701d-308a-459a-86e7-6c60fb18f4ee`;
+Next build `jYwvehaaJmMyf9ceQbCNV`. Full suite: 317 passing tests; production
+build passed. Public regression checks cover all 17 landing pages / 96 variants,
+17 Google images, structured offers and unchanged catalog prices/options.
+Catalog JSON is deep-equal and Meta feed byte-identical to the pre-change baseline.
+Google retains 13 groups / 72 offers and all previous fields unchanged.
+
+Five live, unpaid Stripe sessions matched cart totals exactly:
+
+| Cart | Standard Shipping | Total |
+| --- | ---: | ---: |
+| One $30 tee | $4.95 | $34.95 |
+| Three $30 tees | $9.35 | $99.35 |
+| $30 tee + $50 pullover | $10.99 | $90.99 |
+| $30 tee + $30 hat | $9.64 | $69.64 |
+| Two $30 hats | $6.69 | $66.69 |
+
+No customer/payment details entered; no payment or provider order/draft created.
+Desktop mini-cart and 390px mobile cart inspected; no horizontal overflow and
+shipping/total labels fit. Cart restored empty.
+
+Google source 10728786854 imported September 13, 2026 at 12:49 PM Eastern:
+72 updated, zero new, all attributes recognized, no file issues. Effective
+shipping calculator independently confirms $4.95 tee / $8.79 hoodie / $4.69 hat
+from Product feed, and explicitly says account policies do not apply to these
+offers. Old blanket policy is retained as unused fallback, not advertised as
+effective current-offer shipping. No Google product release or review submission.
+
+## References
 
 - https://www.printful.com/shipping
 - https://help.printful.com/hc/en-us/articles/20583931065372-How-do-I-calculate-shipping-costs-for-different-types-of-orders
