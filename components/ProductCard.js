@@ -5,13 +5,15 @@ import { merchandising } from '../lib/product-merchandising.cjs';
 
 export default function ProductCard({ product }) {
   const images = product.images?.length ? product.images : [product.thumbnail_url || '/placeholder.jpg'];
+  // Keep legacy promotional secondary views in the gallery, not over clean listing imagery.
+  const hoverImage = images[0].startsWith('/images/google/') ? null : images[1];
   const prices = product.variants?.map(variant => Number(variant.price)).filter(Number.isFinite) || [];
   const varies = new Set(prices).size > 1;
   return <article className="shop-product">
     <Link className="product-card-link" href={`/product/${product.id}`} aria-label={`${product.name}, ${varies ? 'from ' : ''}${money(product.retail_price)}`}>
       <div className="product-card-media">
         <img className="product-card-primary" src={images[0]} alt={product.name} loading="lazy" decoding="async" width="600" height="600" />
-        {images[1] && <img className="product-card-secondary" src={images[1]} alt="" loading="lazy" decoding="async" width="600" height="600" />}
+        {hoverImage && <img className="product-card-secondary" src={hoverImage} alt="" loading="lazy" decoding="async" width="600" height="600" />}
         <span className="product-card-arrow" aria-hidden="true"><ArrowUpRight size={20} /></span>
       </div>
       <div className="product-card-meta"><h3>{displayName(product.name)}</h3><p>{varies && <span>From </span>}{money(product.retail_price)}</p></div>
