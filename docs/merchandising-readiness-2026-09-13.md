@@ -44,4 +44,8 @@ Before deployment the authoritative provider-backed live catalog already contain
 
 ## Verification
 
-Predeployment: 308 tests and 22 built storefront smoke tests pass; production OpenNext build succeeds. Live deployment, feed ingestion, responsive QA and final Google owner boundary are recorded in the private operations handoff after verification. No owner attestation or Google review request may be submitted by the agent.
+Final verification: 309 tests and 22 built storefront smoke tests pass; production OpenNext build succeeds. Live checks confirm 13 products / 72 variants, all 13 landing pages and clean Google images, consistent Google/Meta/OpenAI/JSON-LD titles and offers, and no live offer for either retired product. Remaining product/variant IDs, prices, currency, size, color and availability match the pre-edit baseline. One-size hat variant labels are normalized to Black / One size without changing their product names.
+
+Production code commits: 04b22a2dc8b21b7853361876534ff30b9b60610d and c1b327c17ebe76cd2980085d3cb84b72b0cb5ef8, pushed atomically to main and fix/cloudflare-platform. Final Worker version d43cdcaf-82a2-4297-9eac-86a2cba2c1d7; Next build UH6wENKVFFVxVjHazqUYA. Desktop and 390px mobile-size browser checks cover home, all three apparel/headwear categories, representative product galleries/fabric/size controls, cart and an unpaid Stripe handoff. No payment details, purchase or Printful order were created; the QA cart was restored empty.
+
+Google shipping saved as Printful made-to-order US: 2-7 handling + 3-4 transit business days, Monday-Friday, 2 PM Eastern cutoff, $5.99 per order. Six retired PGH OG variants archived; ten older manual items remain archived. Only account-level Misrepresentation remains; owner attestation and review request are not submitted. Full provider-UI ingestion evidence, readiness boundaries and owner action are recorded in the private operations handoff.
