@@ -2,6 +2,29 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { CATEGORIES, SMALL_GOODS, inCategory, inSmallCategory, sortCatalog, displayName, money } = require('../lib/storefront.cjs');
 
+test('the new drop leads featured order without changing other products or explicit sorting', () => {
+  const { FEATURED_PRODUCT_IDS } = require('../lib/storefront.cjs');
+  assert.deepEqual(FEATURED_PRODUCT_IDS, [471744647,471744585,471744477,471744283]);
+  const ids = [428982889,471744283,428851608,471744647,471744477,471744585];
+  const products = ids.map((id,index) => ({id:String(id),name:String(index),retail_price:String(index+20)}));
+  const before = JSON.stringify(products);
+  assert.deepEqual(sortCatalog(products,'curated').map(p=>Number(p.id)), [...FEATURED_PRODUCT_IDS,428982889,428851608]);
+  assert.equal(sortCatalog(products,'price-low')[0], products[0]);
+  assert.equal(sortCatalog(products,'price-high')[0], products[5]);
+  assert.equal(JSON.stringify(products),before);
+  assert.deepEqual(sortCatalog(products.filter(p=>!FEATURED_PRODUCT_IDS.includes(Number(p.id))),'curated').map(p=>Number(p.id)),[428982889,428851608]);
+});
+
+test('older tees use existing clean original primary images and preserve secondary views', () => {
+  const fs = require('node:fs');
+  const images = require('../lib/product-images.cjs');
+  for (const id of [428851513,428851608,428851698,428982889,429536493,429728777,429821634,430964873]) {
+    assert.equal(images[id][0], `/images/google/${id}.jpg`);
+    assert.ok(images[id].length > 1);
+    for (const image of images[id]) assert.ok(fs.existsSync(require('node:path').join(__dirname,'..','public',image)));
+  }
+});
+
 test('merchandise navigation includes permanent small-goods architecture', () => {
   assert.deepEqual(CATEGORIES.map(category => category.href), ['/tees','/hoodies','/hats','/stuff-nat']);
   assert.ok(SMALL_GOODS.includes('Keychains'));

@@ -9,7 +9,7 @@ import { getFeaturedProducts } from '../lib/featuredProducts';
 import { CATEGORIES, inCategory } from '../lib/storefront.cjs';
 
 const categoryImages = [
-  '/images/products/localjagoffkeystonetee-2.jpg',
+  '/images/google/428982889.jpg',
   '/images/products/Local-Jagoff-Keyverse-hoodie2.jpg',
   '/images/products/localjagoffhat003.jpg',
 ];
@@ -17,8 +17,7 @@ export default function Home() {
   const catalog = useCatalog();
   const hasSmallGoods = catalog.products.some(product => inCategory(product, 'stuff'));
   const featured = getFeaturedProducts(catalog.products);
-  const newDrop = catalog.products.some(product => Number(product.id) === 471744477);
-  const selected = [newDrop ? 471744477 : 429728777, 428851608, 428980566, 430964873].map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
+  const selected = [429728777, 428851608, 428980566, 430964873].map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
   return <div className="storefront">
     <Head>
       <title>Local Jagoff | Independent Pittsburgh Apparel</title>
@@ -36,7 +35,7 @@ export default function Home() {
       </section>
       <div className="brand-strip"><span>Pittsburgh roots.</span><span>Independent attitude.</span><span>Made to order.</span></div>
       <section className="store-section store-container" id="current-drop">
-        <div className="store-section-heading"><div><p className="store-eyebrow">The current rotation</p><h2>Local essentials.</h2></div><Link className="text-link" href="/tees">Explore the collection <ArrowRight size={18} /></Link></div>
+        <div className="store-section-heading"><div><p className="store-eyebrow">Four new tees</p><h2>The new drop.</h2></div><Link className="text-link" href="/tees">Explore the collection <ArrowRight size={18} /></Link></div>
         <CatalogStatus {...catalog} />
         {!catalog.loading && !catalog.error && <div className="featured-products">{featured.map(product => <ProductCard key={product.id} product={product} />)}</div>}
       </section>

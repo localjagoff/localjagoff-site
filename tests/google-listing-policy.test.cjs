@@ -51,6 +51,8 @@ test("Google presentation leaves authoritative identities, offers, Meta and othe
       size: "S", color: "Black", synced: true, is_ignored: false,
       availability_status: "active", currency: "USD", retail_price: "30.00" }],
   }, 430964873);
+  // Channel isolation still holds for a historical snapshot with promotional imagery.
+  p.images = ['/images/products/local-jagoff-keystone-724-1.jpg', '/images/products/local-jagoff-keystone-724-2.jpg'];
   const before = JSON.stringify(p);
   const base = googleRows([p])[0];
   const ai = openaiRows([p])[0];

@@ -54,7 +54,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .store-section-heading .store-eyebrow { color: var(--muted); margin-bottom: 10px; }
 .store-section-heading h2 { font-size: 42px; }
 .section-aside { color: var(--muted); font-size: 12px; }
-.featured-products { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+.featured-products { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; }
 .selected-products,.shop-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 36px 24px; }
 .shop-product { min-width: 0; }
 .product-card-link { display: block; height: 100%; }
