@@ -5,6 +5,18 @@ const {APPROVED_PRODUCT_IDS,getDisplayProductName}=require('../lib/commerce-poli
 const {loadProduct,curateProduct,metaRows}=require('../lib/catalog.cjs');
 const {resolveCart}=require('../lib/commerce.cjs');
 const {googleRows,openaiRows,productJsonLd}=require('../lib/discovery.cjs');
+test('one-size hats do not repeat the product name as their variant label',()=>{
+  const {variantLabel}=require('../lib/commerce-policy.cjs');
+  for(const id of [428851907,428980566]){
+    const name=PRODUCTS[id].name, variant={id:42,name,size:'One size',color:'Black',price:'30.00'};
+    const p=merchandiseProduct({id,name,variants:[variant]});
+    assert.equal(p.variants[0].name,'Black / One size');
+    assert.equal(variantLabel({name},variant),'Black / One size');
+    assert.equal(p.variants[0].id,42);
+    assert.equal(p.variants[0].price,'30.00');
+    assert.equal(variant.name,name);
+  }
+});
 test('exactly 13 current designs, eight verified tees and three verified hoodies',()=>{
   assert.deepEqual(Object.keys(PRODUCTS).map(Number).sort(),[...APPROVED_PRODUCT_IDS].sort());
   assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,8);

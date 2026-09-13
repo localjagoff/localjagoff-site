@@ -236,7 +236,7 @@ test('real generated OpenNext prewarms in workerd with guarded routes, request e
     const publicEnv={...env,PRINTFUL_API_KEY:'fixture-product'};
     const product=await request('/product/430964873',{invocationEnv:publicEnv});
     assert.equal(product.status,200);const productHtml=await product.text();
-    assert.match(productHtml,/Local Jagoff Keystone 724 Tee/);assert.match(productHtml,/ProductGroup/);
+    assert.match(productHtml,/Crowned 724 Tee/);assert.match(productHtml,/ProductGroup/);
     assert.equal(productReads,1);
     const parityDifferences=[];
     for(const method of ['HEAD','OPTIONS']){
