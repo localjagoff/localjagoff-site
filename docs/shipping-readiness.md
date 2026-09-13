@@ -1,5 +1,12 @@
 # Shipping Readiness - September 12, 2026
 
+Deployment verified September 13, 02:29 UTC (September 12 Eastern).
+Code c80e64cbfdf3c4f478598b75878ee3bedfc101a2, production Worker
+c2aebf63-1726-4178-b87c-b5eeaecf16fe, build 7y_t-iPhqlfsCVqwKRRKV.
+303 tests and 22 built-site smoke checks pass. Live product/policy/cart UI and
+one unpaid hosted Stripe Checkout show the new disclosure. No customer/payment
+details entered, no Pay action, cart restored empty.
+
 Current catalog: 14 Printful-made apparel/accessory products, 78 variants.
 No new merchandise, price, shipping-charge, availability or fulfillment changes.
 
@@ -64,3 +71,23 @@ Feed and item health do not establish account policy compliance. Do not submit
 the Misrepresentation attestation until shipping facts and actual owner business
 representations are confirmed. Preserve the existing 14/78 projections, claimed
 website, verified return policy, customer support and archived manual items.
+
+Live read-only scripts/verify-shipping-public.cjs verifies 14 landing pages,
+14 clean Google JPEGs and all 78 feed offers against current API and ProductGroup
+prices/availability. Google and Meta feed hashes remain unchanged across release:
+- Google: dabd3d01647a3fb83c7b8685a50df0f1682b283922143a56d7e35500099aa705
+- Meta: 1ea1d429386c27d909e23fb400da6abc2cfcd4c638353f2868389778b39c6786
+
+Merchant Center5794799922: source10728786854 still shows 78 updated, no file
+issues, all attributes recognized. Comprehensive diagnostics show only account
+Misrepresentation (78/78 blocked), with no item-level issues. Website remains
+Verified/Claimed, contact hello@localjagoff.com and /contact intact; return
+policy9310773509 remains Verified for78. All ten G-02857590 through G-02857599
+manual products remain archived. No feed refresh was necessary because the
+feed bytes did not change.
+
+The exact review modal remains Before you request a review, unchecked
+My account meets the policy requirements and disabled Request review. Up to
+three reviews/cooldown warning displayed. No attestation or review submitted.
+Not yet ready to recommend attestation until normal owner-release handling
+and the resulting Google settings are truthfully completed.
