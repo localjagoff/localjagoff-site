@@ -12,6 +12,26 @@ const fixture = (productId = id) => ({ sync_product: { id: productId, name: "Raw
     size: "S", color: "Black" }] });
 const response = data => ({ status: 200, ok: true, json: async () => ({ code: 200, ...data }) });
 
+test("owner-deleted tee cannot list or checkout; replacement has its own identity and Google remains held", async () => {
+  const retired = 471744477, replacement = 471950476;
+  const noProvider = async () => assert.fail("retired ID must be rejected before provider access");
+  assert.equal(curateProduct(fixture(retired), retired), null);
+  assert.equal(await loadProduct(retired, { apiKey: "fixture", fetchImpl: noProvider }), null);
+  await assert.rejects(resolveCart([{ id: retired, variant_id: variantId, quantity: 1 }],
+    { apiKey: "fixture", fetchImpl: noProvider }));
+  const product = curateProduct(fixture(replacement), replacement);
+  assert.equal(product.name, "Official Local Jagoff Tee");
+  assert.equal(product.category, "tees");
+  assert.deepEqual(product.images, ["/images/products/471950476/front.jpg", "/images/products/471950476/back.jpg"]);
+  assert.equal(product.variants[0].unit_amount, 3000);
+  assert.equal(require("../lib/shipping-policy.cjs").standardShippingCents([{ id: replacement, quantity: 1 }]), 495);
+  const google = require("../lib/google-listing-policy.cjs");
+  assert.equal(google.GOOGLE_APPROVED_PRODUCT_IDS.size, 13);
+  for (const id of [retired, replacement]) assert.equal(google.GOOGLE_APPROVED_PRODUCT_IDS.has(id), false);
+  assert.equal(google.GOOGLE_STAGED_PRODUCT_IDS.has(replacement), true);
+  assert.equal(google.GOOGLE_STAGED_PRODUCT_IDS.has(retired), false);
+});
+
 test("one sellability policy gates listing, feed and checkout", async () => {
   for (const [field, values] of Object.entries({ synced: [false, undefined], is_ignored: [true, undefined],
     availability_status: ["out_of_stock", "discontinued", undefined], currency: ["EUR", undefined, ""],

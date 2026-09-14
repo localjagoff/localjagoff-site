@@ -4,8 +4,8 @@ const { CATEGORIES, SMALL_GOODS, inCategory, inSmallCategory, sortCatalog, displ
 
 test('the new drop leads featured order without changing other products or explicit sorting', () => {
   const { FEATURED_PRODUCT_IDS } = require('../lib/storefront.cjs');
-  assert.deepEqual(FEATURED_PRODUCT_IDS, [471744647,471744585,471744477,471744283]);
-  const ids = [428982889,471744283,428851608,471744647,471744477,471744585];
+  assert.deepEqual(FEATURED_PRODUCT_IDS, [471744647,471744585,471950476,471744283]);
+  const ids = [428982889,471744283,428851608,471744647,471950476,471744585];
   const products = ids.map((id,index) => ({id:String(id),name:String(index),retail_price:String(index+20)}));
   const before = JSON.stringify(products);
   assert.deepEqual(sortCatalog(products,'curated').map(p=>Number(p.id)), [...FEATURED_PRODUCT_IDS,428982889,428851608]);
