@@ -31,7 +31,7 @@ export default function CatalogPage({ category }) {
         <CatalogStatus {...catalog} />
         {!catalog.loading && !catalog.error && (products.length ? <div className="shop-grid">{products.map(product => <ProductCard key={product.id} product={product} />)}</div> : <div className="small-goods-empty"><span className="store-eyebrow">{sub === 'All' ? 'Not on the shelf. Yet.' : sub}</span><h2>Good things.<br />Small packages.</h2><p>{category === 'stuff' ? "Stickers, keychains, magnets and the other things that don't belong on a hanger. Nothing available in this collection yet." : 'No products are available in this collection right now.'}</p><Link className="store-button" href="/tees">Shop the T-Shirts <ArrowRight size={18} /></Link><Link className="text-link" href="/contact">Got something in mind? Get in touch <ArrowRight size={17} /></Link></div>)}
       </section>
-      <div className="collection-service store-container"><span>Made to order.</span><span>Shipping calculated at checkout.</span><Link href="/contact">Questions? Talk to us <ArrowRight size={16} /></Link></div>
+      <div className="collection-service store-container"><span>Made to order.</span><Link href="/terms#shipping">Free US Standard shipping on orders $60+.</Link><Link href="/contact">Questions? Talk to us <ArrowRight size={16} /></Link></div>
     </main>
   </div>;
 }

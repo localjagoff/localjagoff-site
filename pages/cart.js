@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import { startCheckout } from "../lib/checkout";
-import { SHIPPING_CHARGE, CHECKOUT_DELIVERY, standardShippingCents } from "../lib/shipping-policy.cjs";
+import { SHIPPING_CHARGE, CHECKOUT_DELIVERY, shippingQuote } from "../lib/shipping-policy.cjs";
+import FreeShippingProgress from "../components/FreeShippingProgress";
 
 export default function CartPage({ transfer = null, transferError = null }) {
   const [cart, setCart] = useState(transfer?.items || []);
@@ -65,7 +66,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
     startCheckout(cart, transfer?.coupon);
   };
   let shipping = null;
-  try { shipping = standardShippingCents(cart) / 100; } catch {}
+  try { shipping = shippingQuote(cart, Math.round(total * 100)).amount / 100; } catch {}
 
   return (
     <div className="cart-page">
@@ -150,6 +151,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
 
             <aside className="summary-card">
               <p className="summary-kicker">ORDER SUMMARY</p>
+              <FreeShippingProgress items={cart} subtotal={total} />
 
               <div className="summary-row">
                 <span>Subtotal</span>
@@ -158,7 +160,7 @@ export default function CartPage({ transfer = null, transferError = null }) {
 
               <div className="summary-row">
                 <span>Standard Shipping</span>
-                <strong>{shipping === null ? 'Unavailable' : `$${shipping.toFixed(2)}`}</strong>
+                <strong>{shipping === null ? 'Unavailable' : shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</strong>
               </div>
               {shipping !== null && <div className="summary-row">
                 <span>Total before discounts</span>

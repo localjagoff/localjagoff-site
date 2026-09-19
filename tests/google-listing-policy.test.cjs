@@ -6,10 +6,10 @@ const { googleAttributes, products, GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_P
 const { googleRows, googleTsv, openaiRows } = require("../lib/discovery.cjs");
 const { curateProduct } = require("../lib/catalog.cjs");
 
-test("13 approved and four staged Google presentations use original mockups and reviewed attributes", () => {
-  assert.equal(Object.keys(products).length, 17);
+test("13 approved and five staged Google presentations use original mockups and reviewed attributes", () => {
+  assert.equal(Object.keys(products).length, 18);
   assert.equal(GOOGLE_APPROVED_PRODUCT_IDS.size,13);
-  assert.equal(GOOGLE_STAGED_PRODUCT_IDS.size,4);
+  assert.equal(GOOGLE_STAGED_PRODUCT_IDS.size,5);
   for (const id of Object.keys(products)) {
     const attrs = googleAttributes(id);
     assert.ok(["male", "unisex"].includes(attrs.gender));
@@ -35,6 +35,8 @@ test('Google single-offer shipping matches checkout and preserves business-day d
     assert.equal(attrs.shipping_handling_business_days,'Mon-Fri');
     assert.equal(attrs.shipping_transit_business_days,'Mon-Fri');
     assert.equal(attrs[GOOGLE_SHIPPING_FIELDS[3]],'US:"14:00":America/New_York');
+    assert.equal(attrs[GOOGLE_SHIPPING_FIELDS[4]],'US:60.00 USD');
+    assert.match(googleAttributes(id,6000)[GOOGLE_SHIPPING_FIELDS[0]],/Shipping:0.00 USD/);
   }
 });
 
@@ -46,7 +48,7 @@ test("storefront approval and staged Google metadata do not add offers to the re
   },id));
   const tsv=googleTsv(catalog);
   assert.equal(tsv.trim().split("\n").length,14);
-  assert.equal(openaiRows(catalog).length,17);
+  assert.equal(openaiRows(catalog).length,18);
   for(const id of GOOGLE_STAGED_PRODUCT_IDS){
     assert.ok(!GOOGLE_APPROVED_PRODUCT_IDS.has(id));
     assert.ok(!tsv.includes(String(id)));

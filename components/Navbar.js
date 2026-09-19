@@ -4,7 +4,8 @@ import { useRouter } from 'next/router';
 import { Menu, X, ShoppingBag, Plus, Minus, ArrowRight, Trash2 } from 'lucide-react';
 import { startCheckout } from '../lib/checkout';
 import { CATEGORIES, money } from '../lib/storefront.cjs';
-import { SHIPPING_CHARGE, standardShippingCents } from '../lib/shipping-policy.cjs';
+import { SHIPPING_CHARGE, FREE_SHIPPING_CALLOUT, shippingQuote } from '../lib/shipping-policy.cjs';
+import FreeShippingProgress from './FreeShippingProgress';
 
 function readCart() {
   try { const value = JSON.parse(localStorage.getItem('cart')); return Array.isArray(value) ? value : []; } catch { return []; }
@@ -20,7 +21,7 @@ export default function Navbar({ checkoutCoupon = null }) {
   const totalItems = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const total = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
   let shipping = null;
-  try { shipping = standardShippingCents(cart) / 100; } catch {}
+  try { shipping = shippingQuote(cart, Math.round(total * 100)).amount / 100; } catch {}
   useEffect(() => {
     setCart(readCart());
     const update = event => { setCart(readCart()); if (!event.detail?.silent) setOpen(true); };
@@ -59,6 +60,7 @@ export default function Navbar({ checkoutCoupon = null }) {
   }
   return <>
     <a className="skip-link" href="#main-content">Skip to content</a>
+    <Link href="/terms#shipping" className="shipping-announcement">{FREE_SHIPPING_CALLOUT}</Link>
     <header className="store-nav">
       <div className="store-nav-inner store-container">
         <button ref={menuButton} className="icon-button nav-menu-button" type="button" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={23} /> : <Menu size={23} />}</button>
@@ -74,8 +76,9 @@ export default function Navbar({ checkoutCoupon = null }) {
         <Link href={`/product/${item.id}`} onClick={() => setOpen(false)}><img src={item.image || '/placeholder.jpg'} alt={item.name} width="100" height="100" /></Link>
         <div><Link className="bag-item-name" href={`/product/${item.id}`} onClick={() => setOpen(false)}>{item.name}</Link><p>{item.variant_name}</p><strong>{money(Number(item.price) * item.quantity)}</strong><div className="bag-controls"><div className="quantity-control"><button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeQuantity(index, -1)}><Minus size={15} /></button><span>{item.quantity}</span><button type="button" aria-label={`Increase quantity of ${item.name}`} disabled={item.quantity >= 99} onClick={() => changeQuantity(index, 1)}><Plus size={15} /></button></div><button className="icon-button" title="Remove item" type="button" aria-label={`Remove ${item.name}`} onClick={() => updateCart(cart.filter((_, i) => i !== index))}><Trash2 size={18} /></button></div></div>
       </article>)}</div><div className="bag-summary">
+        <FreeShippingProgress items={cart} subtotal={total} />
         <div><span>Subtotal</span><strong>{money(total)}</strong></div>
-        <div><span>Standard Shipping</span><strong>{shipping === null ? 'Unavailable' : money(shipping)}</strong></div>
+        <div><span>Standard Shipping</span><strong>{shipping === null ? 'Unavailable' : shipping === 0 ? 'FREE' : money(shipping)}</strong></div>
         {shipping !== null && <div><span>Total before discounts</span><strong>{money(total + shipping)}</strong></div>}
         <p>{SHIPPING_CHARGE} <Link href="/terms#shipping" onClick={() => setOpen(false)}>Made-to-order delivery details</Link>.</p>
         <button className="store-button" disabled={checking || shipping === null} onClick={checkout}>{checking ? 'Opening secure checkout' : 'Checkout'}<ArrowRight size={18} /></button>

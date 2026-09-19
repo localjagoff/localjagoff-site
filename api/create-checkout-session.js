@@ -3,7 +3,7 @@ const { STORE_ID } = require("../lib/commerce-policy.cjs");
 const { CommerceError, resolveCart, encodeItems, siteOrigin, assertCheckoutEnvironment } = require("../lib/commerce.cjs");
 const { couponCode } = require("../lib/meta-checkout.cjs");
 const { receiptCookie, CLEAR_COOKIE } = require('../lib/checkout-receipt.cjs');
-const { standardShippingCents, SHIPPING_RATE_VERSION, CHECKOUT_DELIVERY } = require('../lib/shipping-policy.cjs');
+const { shippingQuote, SHIPPING_RATE_VERSION, CHECKOUT_DELIVERY } = require('../lib/shipping-policy.cjs');
 
 function createCheckoutHandler({env=process.env,stripeFactory=(key)=>new Stripe(key,
   {timeout:10000,maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient()}),fetchImpl}={}) {
@@ -19,7 +19,8 @@ return async function handler(req, res) {
     const coupon = couponCode(req.body?.coupon);
     const items = await resolveCart(req.body?.items, { apiKey: env.PRINTFUL_API_KEY,...(fetchImpl?{fetchImpl}:{}) });
     const metadataItems = encodeItems(items);
-    const shippingAmount = standardShippingCents(items);
+    const subtotalCents = items.reduce((sum, item) => sum + item.unit_amount * item.quantity, 0);
+    const shippingAmount = shippingQuote(items, subtotalCents).amount;
     const siteUrl = siteOrigin(env);
     let promotionId;
     if (coupon) {

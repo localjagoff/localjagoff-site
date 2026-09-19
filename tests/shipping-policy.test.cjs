@@ -43,7 +43,23 @@ test('every currently authorized product has an explicit shipping route; unknown
   for (const cart of [null,{},[{id:999999,quantity:1}], [tee(0)],[tee(-1)],[tee(1.5)],[tee(100)],Array(101).fill(tee())]) {
     assert.throws(()=>policy.standardShippingCents(cart),/Shipping unavailable/);
   }
-  assert.doesNotMatch(policy.SHIPPING_CHARGE,/Printful|\$5\.99|free shipping/i);
+  assert.doesNotMatch(policy.SHIPPING_CHARGE,/Printful|\$5\.99/i);
+  assert.match(policy.SHIPPING_CHARGE,/\$60 or more, before promo discounts, tax and shipping/);
+});
+
+test('owner-approved free shipping includes the exact $60 boundary and all current categories', () => {
+  for (const cart of [[tee()], [hoodie()], [hat()], [tee(),hat()]]) {
+    assert.equal(policy.shippingQuote(cart,5999).amount,policy.standardShippingCents(cart));
+    for (const subtotal of [6000,6001,12000]) {
+      assert.deepEqual(policy.shippingQuote(cart,subtotal),{amount:0,eligible:true,remaining:0});
+    }
+  }
+  assert.deepEqual(policy.shippingQuote([tee()],3000),{amount:495,eligible:false,remaining:3000});
+  assert.deepEqual(policy.shippingQuote([],0),{amount:0,eligible:false,remaining:6000});
+  for (const invalid of [undefined,NaN,Infinity,-1,1.5,'6000',0]) {
+    assert.throws(()=>policy.shippingQuote([tee()],invalid),/unavailable/i);
+  }
+  assert.throws(()=>policy.shippingQuote([{id:999,quantity:1}],6000),/unavailable/i);
 });
 
 test('product, policy and cart consume the same delivery wording without a new blanket window', () => {

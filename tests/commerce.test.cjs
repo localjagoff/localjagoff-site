@@ -53,8 +53,8 @@ test("actual checkout handler ignores altered client price/name and resolves aut
     assert.equal(session.line_items[0].price_data.product_data.name, "Crowned 724 Tee");
     assert.equal(session.line_items[0].quantity, 2);
     assert.equal(session.success_url, "https://www.localjagoff.com/success");
-    assert.equal(session.shipping_options[0].shipping_rate_data.fixed_amount.amount, 715);
-    assert.equal(res.body.shipping_amount, 715);
+    assert.equal(session.shipping_options[0].shipping_rate_data.fixed_amount.amount, 0);
+    assert.equal(res.body.shipping_amount, 0);
     assert.equal(session.shipping_options[0].shipping_rate_data.delivery_estimate, undefined);
     assert.equal(session.custom_text.shipping_address.message, require("../lib/shipping-policy.cjs").CHECKOUT_DELIVERY);
     assert.equal(session.allow_promotion_codes, true);
@@ -80,10 +80,10 @@ test("checkout rejects malformed product, variant and quantity without creating 
 test('deployed-handler shipping ignores client shipping/fulfillment claims and uses the resolved cart', async () => {
   const { createCheckoutHandler } = require('../api/create-checkout-session.js');
   const cases = [
-    [[[471744647,1]],495], [[[471744647,3]],935],
-    [[[471744647,1],[429208592,1]],1099],
-    [[[471744647,1],[428980566,1]],964],
-    [[[428980566,2]],669], [[[471744647,2],[429208592,2],[428980566,2]],2238],
+    [[[471744647,1]],495], [[[471744647,3]],0],
+    [[[471744647,1],[429208592,1]],0],
+    [[[471744647,1],[428980566,1]],0],
+    [[[428980566,2]],0], [[[471744647,2],[429208592,2],[428980566,2]],0],
   ];
   for (const [cart, expected] of cases) {
     const sessions=[], calls=[];
@@ -103,8 +103,19 @@ test('deployed-handler shipping ignores client shipping/fulfillment claims and u
     assert.equal(res.body.shipping_amount,expected);
     assert.equal(sessions[0].shipping_options[0].shipping_rate_data.fixed_amount.amount,expected);
     assert.equal(sessions[0].shipping_options[0].shipping_rate_data.display_name,'Standard Shipping');
-    assert.equal(sessions[0].metadata.shipping_rate_version,'us-standard-2026-09-13');
+    assert.equal(sessions[0].metadata.shipping_rate_version,'us-standard-free60-2026-09-19');
     assert.ok(calls.every(url=>url.includes('/sync/products/')));
+  }
+});
+
+test('free shipping cannot be forged with client price, subtotal, discount or unit_amount', async () => {
+  for (const [retail,quantity,expected] of [['59.99',1,495],['60.00',1,0],['30.00',2,0],['30.00',1,495]]) {
+    const product=detail();product.sync_variants[0].retail_price=retail;
+    const f=checkoutFixture(product);
+    const forged={...item,quantity,price:600,unit_amount:60000};
+    const result=await f.run([forged],{body:{items:[forged],subtotal:60000,free_shipping:true,discount:5999}});
+    assert.equal(result.code,200);
+    assert.equal(result.body.shipping_amount,expected);
   }
 });
 
