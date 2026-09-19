@@ -5,14 +5,24 @@ const { CATEGORIES, SMALL_GOODS, inCategory, inSmallCategory, sortCatalog, displ
 test('the new drop leads featured order without changing other products or explicit sorting', () => {
   const { FEATURED_PRODUCT_IDS } = require('../lib/storefront.cjs');
   assert.deepEqual(FEATURED_PRODUCT_IDS, [471744647,471744585,471950476,471744283]);
-  const ids = [428982889,471744283,428851608,471744647,471950476,471744585];
+  const ids = [428982889,471744283,428851608,471744647,471950476,471744585,473689891];
   const products = ids.map((id,index) => ({id:String(id),name:String(index),retail_price:String(index+20)}));
   const before = JSON.stringify(products);
-  assert.deepEqual(sortCatalog(products,'curated').map(p=>Number(p.id)), [...FEATURED_PRODUCT_IDS,428982889,428851608]);
+  assert.deepEqual(sortCatalog(products,'curated').map(p=>Number(p.id)), [...FEATURED_PRODUCT_IDS,473689891,428982889,428851608]);
   assert.equal(sortCatalog(products,'price-low')[0], products[0]);
-  assert.equal(sortCatalog(products,'price-high')[0], products[5]);
+  assert.equal(sortCatalog(products,'price-high')[0], products[6]);
   assert.equal(JSON.stringify(products),before);
-  assert.deepEqual(sortCatalog(products.filter(p=>!FEATURED_PRODUCT_IDS.includes(Number(p.id))),'curated').map(p=>Number(p.id)),[428982889,428851608]);
+  assert.deepEqual(sortCatalog(products.filter(p=>!FEATURED_PRODUCT_IDS.includes(Number(p.id))),'curated').map(p=>Number(p.id)),[473689891,428982889,428851608]);
+});
+
+test('the T-Shirts category tile uses the Script Tee primary without changing the four-card drop', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const home = fs.readFileSync(path.join(__dirname, '../pages/index.js'), 'utf8').replace(/\r\n/g, '\n');
+  const images = require('../lib/product-images.cjs');
+  assert.ok(home.includes(`const categoryImages = [\n  '${images[473689891][0]}'`));
+  assert.ok(home.includes('Black Pittsburgh Original Script Tee'));
+  assert.ok(fs.existsSync(path.join(__dirname, '../public', images[473689891][0])));
 });
 
 test('older tees use existing clean original primary images and preserve secondary views', () => {
