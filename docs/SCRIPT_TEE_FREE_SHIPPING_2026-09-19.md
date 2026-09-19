@@ -11,3 +11,15 @@
 - Shared announcement, cart drawer/cart-page progress, shipping policy/product disclosures and Google shipping threshold reflect the same rule.
 - Google feed adds free_shipping_threshold(country:price_threshold)=US:60.00 USD, and qualifying single variants receive zero shipping cost. No Google attestation or new offer publication.
 - This supersedes the earlier no-free-shipping recommendation by explicit owner direction. Detailed margin caveat and production evidence belong in private ops.
+
+## Production Verification
+
+- Deployed code: `967b937`; Cloudflare Worker version `8fc2d0b9-0757-44bc-b28b-7935c8395f12`; Next build `snTu8p3et5YLmc3nTAHJW`.
+- 320 tests and production build passed. Live catalog is 18 products / 102 variants; all 17 pre-existing products deep-equal the baseline.
+- Desktop product primary/gallery, collection, announcement, cart drawer and cart-page threshold transitions verified. Cart restored empty.
+- Actual unpaid Stripe Checkout: one $30 tee plus $4.95 shipping = $34.95; two tees = $60 with free shipping; three tees = $90 with free shipping. No payment/customer data entered, payment completed, order created or fulfillment performed.
+- Google existing source imported 72 updates / 0 new offers / no issues on September 19 at 2:24 PM Eastern. Existing reviewed products remain 13 groups / 72 offers; only shipping fields changed.
+- Meta existing source imported 102 updated-or-added / 0 removed / 0 failed / 0 issues at 2:29 PM Eastern (last-updated time 2:30 PM). This is feed acceptance, not independent native-mobile Shop verification.
+- Browser viewport override did not take effect in this session; mobile visual QA is not claimed. Desktop evidence and responsive CSS remain available.
+- Provider internal title still displayed its original wording after an attempted rename; public storefront, checkout and feed names are canonical through the existing merchandising layer.
+- No secrets, bindings, cron, Shop/Pixel configuration, Google approval set, product prices or artwork changed.
