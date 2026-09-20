@@ -2,6 +2,14 @@
 
 Live September 19, 2026 Eastern, by owner request.
 
+## Superseding White-only update
+
+Later September 19, the owner withdrew Black approval for Beanie473808622 and confirmed deleting exactly its six Black variants from Printful. It now retains White S-3XL only. Website gallery/spotlight/copy use White; snapshot reads filter out stale Black variants/images immediately; new checkout rejects any non-White variant for this product. White IDs/prices and all other19products, including Snapback473808088, remain unchanged.
+
+Live catalog is now20products/120variants; Google remains byte-identical13groups/72offers. Meta September19,9:51PMEastern import:120updated,6removed,0failed,0issues. Actual withdrawn Black checkout returns400/Variant is unavailable/no Checkout URL;325tests/buildPASS. No artwork edit or order/payment. Earlier12variant/Black approval below is historical and superseded.
+
+Update deployed source: `31f3b86c8f96dbbdd77cb9869fd69cdcef68ef62`; Worker `ddbf66a3-d891-44bd-94eb-77681746dc16`; build `of30dzs3qbEFHwrRIDdPe`.
+
 ## Products and presentation
 
 - 473808622: **412 Beanie Smiley Backprint Tee**.
