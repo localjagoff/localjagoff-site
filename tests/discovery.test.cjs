@@ -50,7 +50,7 @@ test("sitemap uses current canonical catalog IDs and meaningful existing categor
   const urls = d.sitemapUrls([p]);
   assert.ok(urls.includes(`${d.ORIGIN}/tees`));
   assert.ok(!urls.includes(`${d.ORIGIN}/hoodies`));
-  assert.ok(!urls.includes(`${d.ORIGIN}/724`));
+  assert.ok(urls.includes(`${d.ORIGIN}/724`));
   assert.ok(urls.includes(`${d.ORIGIN}/product/${p.id}`));
   assert.equal(urls.length, new Set(urls).size);
   const xml = d.sitemapXml([p]);

@@ -36,7 +36,7 @@ test('older tees use existing clean original primary images and preserve seconda
 });
 
 test('merchandise navigation includes permanent small-goods architecture', () => {
-  assert.deepEqual(CATEGORIES.map(category => category.href), ['/tees','/hoodies','/hats','/stuff-nat']);
+  assert.deepEqual(CATEGORIES.map(category => category.href), ['/tees','/hoodies','/hats','/724','/stuff-nat']);
   assert.ok(SMALL_GOODS.includes('Keychains'));
   assert.ok(SMALL_GOODS.includes('Bumper stickers'));
 });

@@ -12,7 +12,11 @@ const PHASES=Object.freeze({first_native:1,parse:2000,curate:2000,serialize:2000
   loader_parsed:500,loader_raw:500,cold_native:60,warm_native:500});
 
 function fixture(){
-  const ids=[...APPROVED_PRODUCT_IDS];
+  // Retain the historical 20-product benchmark workload. Production catalogs
+  // above 24 products use staged snapshots, not this bounded legacy loader.
+  const ids=[473808622,473834484,473689891,471744647,471744585,471950476,471744283,
+    430964873,429821634,429728777,429536493,429208592,428983169,428982889,428980566,
+    428851907,428851698,428851608,428851513,428821578].filter(id=>APPROVED_PRODUCT_IDS.has(id));
   if(ids.length>24)throw Error('Review fixture exceeds bounded catalog loader');
   const records=[{url:`https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100&offset=0`,
     raw:JSON.stringify({code:200,result:ids.map(id=>({id})),paging:{offset:0,total:ids.length}})}];

@@ -27,7 +27,7 @@ test('scheduled steps read exactly one product; only a complete snapshot is publ
     assert.equal(result.outcome,i===snapshot.IDS.length-1?'catalog_published':'catalog_product_refreshed');
     if(i<snapshot.IDS.length-1)await assert.rejects(snapshot.readSnapshot(env,{store}),/unavailable/);
   }
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,snapshot.IDS.length);
   assert.equal((await store.read()).cursor,0);
 });
 test('revoked Beanie Black variants and images cannot leak from an older valid snapshot',async()=>{
@@ -51,11 +51,11 @@ test('provider failure preserves the previous full snapshot and does not advance
   await assert.rejects(snapshot.refreshStep(env,{store,readProduct:async()=>{throw Error('fixture outage');}}),/outage/);
   const after=await store.read();assert.equal(after.version,before.version);assert.deepEqual(after.published,before.published);
   await cycle(async id=>id===snapshot.IDS[0]?null:require('../lib/product-merchandising.cjs').merchandiseProduct(product(id)));
-  const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,19);
+  const published=await snapshot.readSnapshot(env,{store});assert.equal(published.length,snapshot.IDS.length-1);
   assert.ok(!published.some(p=>p.id===snapshot.IDS[0]));
 });
 
-test('Snapback replacement preserves the other 19 until a complete cycle, without extending freshness',async()=>{
+test('six additions preserve the existing 20 until a complete cycle, without extending freshness',async()=>{
   await reset();await cycle();
   const before=await store.read();
   const previousIds=JSON.parse(snapshot.PREVIOUS_POLICY);
@@ -63,23 +63,23 @@ test('Snapback replacement preserves the other 19 until a complete cycle, withou
   db.prepare('UPDATE public_catalog_snapshot SET policy=?,published=?').run(snapshot.PREVIOUS_POLICY,
     JSON.stringify(previous));
   const migrated=await snapshot.readSnapshot(env,{store});
-  assert.equal(migrated.length,19);
+  assert.equal(migrated.length,20);
   assert.ok(!migrated.some(p=>p.id===471744477));
-  assert.deepEqual(migrated.map(p=>p.variants),previous.filter(p=>p.id!==473808088).map(p=>p.variants));
-  assert.equal(await snapshot.readProductSnapshot(env,473834484,{store}),null);
+  assert.deepEqual(migrated.map(p=>p.variants),previous.map(p=>p.variants));
+  assert.equal(await snapshot.readProductSnapshot(env,473981186,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,473808088,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,471744477,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,430697388,{store}),null);
   assert.equal((await snapshot.refreshStep(env,{store,readProduct:()=>assert.fail('reset must not access provider')})).outcome,'catalog_cycle_reset');
   assert.equal((await store.read()).published_source_at,before.published_source_at);
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,19);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
   assert.equal((await store.read()).policy,snapshot.POLICY);
   for(let i=0;i<snapshot.IDS.length-1;i++){
     await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
-    assert.equal((await snapshot.readSnapshot(env,{store})).length,19);
+    assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
   }
   await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,snapshot.IDS.length);
   db.exec("UPDATE public_catalog_snapshot SET published_source_at=strftime('%Y-%m-%dT%H:%M:%fZ','now','-151 minutes')");
   await assert.rejects(snapshot.readSnapshot(env,{store}),/unavailable/);
 });
@@ -100,7 +100,7 @@ test('idle initialization does not backdate freshly fetched products or expire b
   await cycle();
   const state=await store.read();
   assert.ok(Date.now()-Date.parse(state.published_source_at)<120000);
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,snapshot.IDS.length);
   // The start time must remain the oldest actual fetch, not move with every product.
   await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
   const first=(await store.read()).cycle_started_at;
