@@ -3,15 +3,15 @@ const assert=require('node:assert/strict');
 const profile=require('../scripts/profile-catalog.cjs');
 const {curateProduct}=require('../lib/catalog.cjs');
 
-test('benchmark uses 19 fixed synthetic raw responses and 18 complete six-variant products',()=>{
-  const records=profile.fixture();assert.equal(records.length,19);
-  assert.equal(JSON.parse(records[0].raw).paging.total,18);
+test('benchmark uses 21 fixed synthetic raw responses and 20 complete six-variant products',()=>{
+  const records=profile.fixture();assert.equal(records.length,21);
+  assert.equal(JSON.parse(records[0].raw).paging.total,20);
   const products=records.slice(1).map(record=>{
     const data=JSON.parse(record.raw).result;
     assert.equal(data.sync_variants.length,6);return curateProduct(data,data.sync_product.id);
   });
-  assert.equal(products.length,18);assert.equal(products.flatMap(product=>product.variants).length,108);
-  assert.equal(new Set(products.flatMap(product=>product.variants.map(v=>v.id))).size,108);
+  assert.equal(products.length,20);assert.equal(products.flatMap(product=>product.variants).length,120);
+  assert.equal(new Set(products.flatMap(product=>product.variants.map(v=>v.id))).size,120);
 });
 
 test('provider-shaped requests terminate locally and unknown URLs, IDs, credentials or writes fail closed',async()=>{
@@ -35,16 +35,16 @@ test('CPU attribution excludes idle and unclassified program samples rather than
 
 test('native workerd benchmark exercises the actual catalog and adapter with DevTools CPU sampling', {timeout:45000},async()=>{
   const {directory,report}=await profile.run({rounds:1,phases:{first_native:1,parse:200,curate:200,loader_parsed:2,loader_raw:2,cold_native:2,warm_native:2}});
-  assert.equal(report.external_provider_requests,0);assert.equal(report.local_fixture_requests,57);
+  assert.equal(report.external_provider_requests,0);assert.equal(report.local_fixture_requests,63);
   assert.equal(report.results.length,7);assert.ok(directory.includes('localjagoff-catalog-profile-'));
   for(const result of report.results){
-    assert.ok(result.sample_count>0);assert.equal(result.products,18);assert.equal(result.variants,108);
-    if(result.phase.startsWith('loader_'))assert.equal(result.localCalls,38);
+    assert.ok(result.sample_count>0);assert.equal(result.products,20);assert.equal(result.variants,120);
+    if(result.phase.startsWith('loader_'))assert.equal(result.localCalls,42);
   }
 });
 
 test('in-workerd fixture service also supports cold reads and warm hits without external transport', {timeout:45000},async()=>{
   const {report}=await profile.run({rounds:1,phases:{cold_native:2,warm_native:2},transportMode:'service'});
   assert.equal(report.transport,'service');assert.equal(report.external_provider_requests,0);
-  assert.equal(report.local_fixture_requests,38);assert.equal(report.results[1].nativeCalls,0);
+  assert.equal(report.local_fixture_requests,42);assert.equal(report.results[1].nativeCalls,0);
 });

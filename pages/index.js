@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Gamepad2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
+import ProductSpotlight from '../components/ProductSpotlight';
 import { CatalogStatus } from '../components/CatalogPage';
 import useCatalog from '../lib/useCatalog';
 import { getFeaturedProducts } from '../lib/featuredProducts';
-import { CATEGORIES, inCategory } from '../lib/storefront.cjs';
+import { CATEGORIES, SPOTLIGHT_PRODUCT_IDS, inCategory } from '../lib/storefront.cjs';
 
 const categoryImages = [
   '/images/products/473689891/front.jpg',
@@ -17,7 +18,7 @@ export default function Home() {
   const catalog = useCatalog();
   const hasSmallGoods = catalog.products.some(product => inCategory(product, 'stuff'));
   const featured = getFeaturedProducts(catalog.products);
-  const selected = [429728777, 428851608, 428980566, 430964873].map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
+  const spotlight = SPOTLIGHT_PRODUCT_IDS.map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
   return <div className="storefront">
     <Head>
       <title>Local Jagoff | Independent Pittsburgh Apparel</title>
@@ -34,13 +35,13 @@ export default function Home() {
         <Link className="hero-product-credit" href="/product/428821578"><span>In focus / Steel City 412 Crest Zip Hoodie</span><ArrowUpRight size={18} /></Link>
       </section>
       <div className="brand-strip"><span>Pittsburgh roots.</span><span>Independent attitude.</span><span>Made to order.</span></div>
+      <ProductSpotlight products={spotlight} />
       <section className="store-section store-container" id="current-drop">
         <div className="store-section-heading"><div><p className="store-eyebrow">Four new tees</p><h2>The new drop.</h2></div><Link className="text-link" href="/tees">Explore the collection <ArrowRight size={18} /></Link></div>
         <CatalogStatus {...catalog} />
         {!catalog.loading && !catalog.error && <div className="featured-products">{featured.map(product => <ProductCard key={product.id} product={product} />)}</div>}
       </section>
       <section className="category-band"><div className="store-container"><div className="store-section-heading"><div><p className="store-eyebrow">Find your uniform</p><h2>Everyday, your way.</h2></div><span className="section-aside">No occasion required.</span></div><div className="category-grid">{CATEGORIES.slice(0, 3).map((category, index) => <Link className="category-tile" key={category.key} href={category.href}><div><img src={categoryImages[index]} alt={category.label === 'T-Shirts' ? 'Black Pittsburgh Original Script Tee' : category.label === 'Hoodies' ? 'Black Local Jagoff zip hoodie' : 'Local Jagoff embroidered trucker hat'} width="600" height="600" loading="lazy" decoding="async" /></div><h3>{category.label}<ArrowUpRight size={23} /></h3></Link>)}</div></div></section>
-      <section className="store-section store-container"><div className="store-section-heading"><div><p className="store-eyebrow">A few more good choices</p><h2>Wear your side of town.</h2></div><span className="section-aside">412. 724. Same attitude.</span></div><div className="selected-products">{selected.map(product => <ProductCard key={product.id} product={product} />)}</div></section>
       <section className="brand-story"><div className="store-container story-grid"><p className="store-eyebrow">A term of endearment.<br />Mostly.</p><div><h2>YOU CAN LEAVE THE CITY.<br /><span>THE CITY DOESN'T<br />LEAVE YOU.</span></h2><p>Local Jagoff is for the sarcastic, stubborn, proud local in all of us. Pittsburgh is where it starts. Where you take it is up to you.</p><Link className="text-link" href="/whats-a-jagoff">So, what's a jagoff? <ArrowUpRight size={19} /></Link></div></div></section>
       <section className="small-goods-feature store-container"><div><p className="store-eyebrow">Beyond the hanger</p><h2>Stuff N'at<span>.</span></h2><p>The little things that go everywhere with you.<br />Stickers, keychains, magnets. Same Local Jagoff attitude.</p><Link className="store-button button-outline" href="/stuff-nat">Explore Stuff N'at <ArrowUpRight size={19} /></Link></div><div className="small-goods-index"><span>{hasSmallGoods ? 'Small things. Same attitude.' : 'On the horizon'}</span><Link href="/stuff-nat">01 / Stickers <ArrowUpRight size={18} /></Link><Link href="/stuff-nat">02 / Keychains <ArrowUpRight size={18} /></Link><Link href="/stuff-nat">03 / Magnets & more <ArrowUpRight size={18} /></Link><p>{hasSmallGoods ? 'Explore the current small-goods selection.' : 'Nothing available yet. Good things take a minute.'}</p></div></section>
       <section className="off-clock"><div className="store-container off-clock-grid"><div><Gamepad2 size={30} strokeWidth={1.5} /><p className="store-eyebrow">Off the clock</p><h2>A little local nonsense.</h2><p>Put your reflexes where your mouth is.</p><div className="arcade-links"><Link href="/jagoff-jump">Jagoff Jump <ArrowUpRight size={17} /></Link><Link href="/yinzer-invaders">Yinzer Invaders <ArrowUpRight size={17} /></Link></div><Link className="text-link" href="/arcade">Enter the arcade <ArrowRight size={18} /></Link></div><div><p className="store-eyebrow">Keep it local</p><h2>Got something to say?</h2><p>A product question, an idea for the next drop, or a little constructive jagoffery. There's a real person on the other end.</p><Link className="text-link" href="/contact">Get in touch <ArrowRight size={18} /></Link><a className="text-link" href="https://www.facebook.com/profile.php?id=61588908282648" target="_blank" rel="noreferrer">Find Local Jagoff on Facebook <ArrowUpRight size={18} /></a></div></div></section>

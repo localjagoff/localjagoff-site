@@ -12,6 +12,7 @@ import { getProductImages } from "../../lib/getProductImages";
 import { productJsonLd as buildProductJsonLd } from "../../lib/discovery.cjs";
 import { SHIPPING_CHARGE, PRINTFUL_DELIVERY, DELIVERY_NOTE } from "../../lib/shipping-policy.cjs";
 import { merchandising, merchandiseProduct } from '../../lib/product-merchandising.cjs';
+import { imagesForVariant } from '../../lib/variant-images.cjs';
 
 const SITE_URL = "https://www.localjagoff.com";
 
@@ -116,7 +117,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
   const productId = String(id || initialProductId || "");
 
   const [product, setProduct] = useState(initialProduct);
-  const [selectedImage, setSelectedImage] = useState(initialProduct?.images?.[0] || "");
+  const [selectedImage, setSelectedImage] = useState(imagesForVariant(initialProduct, initialProduct?.variants?.find(v => String(v.id) === String(initialVariantId)))[0] || "");
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId);
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
@@ -148,7 +149,7 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
   useEffect(() => {
     setProduct(initialProduct);
-    setSelectedImage(initialProduct?.images?.[0] || "");
+    setSelectedImage(imagesForVariant(initialProduct, initialProduct?.variants?.find(v => String(v.id) === String(initialVariantId)))[0] || "");
     setSelectedVariantId(initialVariantId);
     setQuantity(1);
   }, [initialProduct, initialVariantId]);
@@ -194,6 +195,14 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
 
   const displayedPrice =
     selectedVariant?.price || product?.retail_price || "0.00";
+
+  function selectVariant(value) {
+    const variant = product?.variants?.find(v => String(v.id) === String(value));
+    setSelectedVariantId(value);
+    if (variant?.color !== selectedVariant?.color) {
+      setSelectedImage(imagesForVariant(product, variant)[0] || "");
+    }
+  }
 
   const productJsonLd = buildProductJsonLd(product);
 
@@ -440,13 +449,13 @@ export default function ProductPage({ initialProductId, initialProduct, initialV
           {product.variants?.length > 0 && <>
             <div className="variant-label">
               <span>Size / Style{selectedVariant?.color ? ` / ${selectedVariant.color}` : ''}</span>
-              {product.variants.length > 12 && <select aria-label="Size / Style" value={selectedVariantId} onChange={event => setSelectedVariantId(event.target.value)}>
+              {product.variants.length > 12 && <select aria-label="Size / Style" value={selectedVariantId} onChange={event => selectVariant(event.target.value)}>
                 {!selectedVariant && <option value="">Select an available size / style</option>}
                 {product.variants.map(variant => <option key={variant.id} value={variant.id}>{getVariantLabel(product.name, variant.name)}</option>)}
               </select>}
             </div>
             {product.variants.length <= 12 && <div className="variant-pills" role="group" aria-label="Available sizes and styles">
-              {product.variants.map(variant => <button key={variant.id} type="button" aria-pressed={String(selectedVariantId) === String(variant.id)} onClick={() => setSelectedVariantId(String(variant.id))}>{getVariantLabel(product.name, variant.name)}</button>)}
+              {product.variants.map(variant => <button key={variant.id} type="button" aria-pressed={String(selectedVariantId) === String(variant.id)} onClick={() => selectVariant(String(variant.id))}>{getVariantLabel(product.name, variant.name)}</button>)}
             </div>}
           </>}
 
