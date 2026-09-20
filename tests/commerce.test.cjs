@@ -64,6 +64,14 @@ test("actual checkout handler ignores altered client price/name and resolves aut
   }
 });
 
+test("retired Snapback product is rejected before any provider or payment access", async () => {
+  const f = checkoutFixture();
+  const res = await f.run([{id:473808088,variant_id:5509940000,quantity:1}]);
+  assert.equal(res.code,400);
+  assert.equal(f.calls.length,0);
+  assert.equal(f.sessions.length,0);
+});
+
 test("checkout rejects malformed product, variant and quantity without creating a session", async () => {
   for (const field of ["id", "variant_id", "quantity"]) {
     for (const value of [null, undefined, 0, -1, 1.5, "1x", true, {}, Number.MAX_SAFE_INTEGER + 1]) {

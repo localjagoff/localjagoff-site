@@ -46,7 +46,7 @@ test('spotlight tees expose only owner-approved color galleries and offers',()=>
 });
 
 test('spotlight is independent of the previous featured four and Script Tee top five',()=>{
-  assert.deepEqual(SPOTLIGHT_PRODUCT_IDS,[473808622,473808088]);
+  assert.deepEqual(SPOTLIGHT_PRODUCT_IDS,[473808622,473834484]);
   const ids=[...SPOTLIGHT_PRODUCT_IDS,428982889,473689891,...FEATURED_PRODUCT_IDS];
   assert.deepEqual(sortCatalog(ids.map(id=>({id})),'curated').map(p=>p.id),
     [...FEATURED_PRODUCT_IDS,473689891,...SPOTLIGHT_PRODUCT_IDS,428982889]);

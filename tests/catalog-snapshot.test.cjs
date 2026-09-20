@@ -55,7 +55,7 @@ test('provider failure preserves the previous full snapshot and does not advance
   assert.ok(!published.some(p=>p.id===snapshot.IDS[0]));
 });
 
-test('spotlight approval preserves the existing 18 until a complete 20-product cycle, without extending freshness',async()=>{
+test('Snapback replacement preserves the other 19 until a complete cycle, without extending freshness',async()=>{
   await reset();await cycle();
   const before=await store.read();
   const previousIds=JSON.parse(snapshot.PREVIOUS_POLICY);
@@ -63,20 +63,20 @@ test('spotlight approval preserves the existing 18 until a complete 20-product c
   db.prepare('UPDATE public_catalog_snapshot SET policy=?,published=?').run(snapshot.PREVIOUS_POLICY,
     JSON.stringify(previous));
   const migrated=await snapshot.readSnapshot(env,{store});
-  assert.equal(migrated.length,18);
+  assert.equal(migrated.length,19);
   assert.ok(!migrated.some(p=>p.id===471744477));
-  assert.deepEqual(migrated.map(p=>p.variants),previous.filter(p=>p.id!==471744477).map(p=>p.variants));
-  assert.equal(await snapshot.readProductSnapshot(env,473808622,{store}),null);
+  assert.deepEqual(migrated.map(p=>p.variants),previous.filter(p=>p.id!==473808088).map(p=>p.variants));
+  assert.equal(await snapshot.readProductSnapshot(env,473834484,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,473808088,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,471744477,{store}),null);
   assert.equal(await snapshot.readProductSnapshot(env,430697388,{store}),null);
   assert.equal((await snapshot.refreshStep(env,{store,readProduct:()=>assert.fail('reset must not access provider')})).outcome,'catalog_cycle_reset');
   assert.equal((await store.read()).published_source_at,before.published_source_at);
-  assert.equal((await snapshot.readSnapshot(env,{store})).length,18);
+  assert.equal((await snapshot.readSnapshot(env,{store})).length,19);
   assert.equal((await store.read()).policy,snapshot.POLICY);
   for(let i=0;i<snapshot.IDS.length-1;i++){
     await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
-    assert.equal((await snapshot.readSnapshot(env,{store})).length,18);
+    assert.equal((await snapshot.readSnapshot(env,{store})).length,19);
   }
   await snapshot.refreshStep(env,{store,readProduct:async id=>product(id)});
   assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
