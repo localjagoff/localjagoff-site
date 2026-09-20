@@ -29,13 +29,14 @@ test('exactly 20 current designs, fifteen verified tees and three verified hoodi
 });
 test('presentation keeps all variant IDs and authoritative offers and titles agree across channels',()=>{
   for(const id of APPROVED_PRODUCT_IDS){
+    const color=id===473808622?'White':'Black';
     const p=curateProduct({sync_product:{id,name:'Provider name',is_ignored:false},sync_variants:[{
-      id:id+100,sync_product_id:id,name:'Provider name / Black / S',size:'S',color:'Black',synced:true,
+      id:id+100,sync_product_id:id,name:'Provider name / '+color+' / S',size:'S',color,synced:true,
       is_ignored:false,availability_status:'active',currency:'USD',retail_price:'30.00'}]},id);
     const before=JSON.stringify(p.variants),name=getDisplayProductName({id});
     assert.equal(p.name,name);
     assert.doesNotMatch(p.description,/printful/i);
-    const title=name+' - Black / S';
+    const title=name+' - '+color+' / S';
     assert.equal(metaRows([p],'https://www.localjagoff.com')[0].title,title);
     assert.equal(googleRows([p])[0].title,title);
     assert.equal(openaiRows([p])[0].title,title);

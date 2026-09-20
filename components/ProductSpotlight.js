@@ -11,7 +11,8 @@ export default function ProductSpotlight({ products }) {
       <p className="section-aside">Small up front. Big on the back.</p>
     </div>
     <div className="spotlight-grid">{products.map(product => {
-      const color = Number(product.id) === 473808088 ? 'White' : 'Black';
+      const color = 'White';
+      const colors = [...new Set(product.variants.map(v => v.color))].join(' & ');
       const images = imagesForVariant(product, { color });
       const variant = product.variants.find(v => v.color === color);
       return (
@@ -21,7 +22,7 @@ export default function ProductSpotlight({ products }) {
             <figure><img src={images[1]} alt={product.name + ', ' + color + ' back print'} width="880" height="880" loading="lazy" decoding="async" /><figcaption>Back</figcaption></figure>
             <figure><img src={images[0]} alt={product.name + ', ' + color + ' chest print'} width="880" height="880" loading="lazy" decoding="async" /><figcaption>Front</figcaption></figure>
           </div>
-          <div className="spotlight-meta"><div><h3>{product.name}</h3><p>Black &amp; White <span>/</span> S-3XL <span>/</span> From {money(product.retail_price)}</p></div><ArrowUpRight size={24} aria-hidden="true" /></div>
+          <div className="spotlight-meta"><div><h3>{product.name}</h3><p>{colors} <span>/</span> S-3XL <span>/</span> From {money(product.retail_price)}</p></div><ArrowUpRight size={24} aria-hidden="true" /></div>
         </Link>
       </article>);})}</div>
   </section>;

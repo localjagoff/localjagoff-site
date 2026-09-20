@@ -17,12 +17,17 @@ function product(id) {
     })))},id);
 }
 
-test('both spotlight tees have complete original color galleries and authoritative 12-variant offers',()=>{
+test('spotlight tees expose only owner-approved color galleries and offers',()=>{
   for(const id of SPOTLIGHT_PRODUCT_IDS) {
     const p=product(id);
     assert.equal(p.category,'tees');
-    assert.equal(p.variants.length,12);
-    assert.equal(p.images.length,4);
+    assert.equal(p.variants.length,id===473808622?6:12);
+    assert.equal(p.images.length,id===473808622?2:4);
+    if(id===473808622) {
+      assert.ok(p.variants.every(v=>v.color==='White'));
+      assert.ok(p.images.every(image=>image.includes('/white-')));
+      assert.ok(!p.description.includes('Black'));
+    }
     assert.match(p.description,/left-chest.*back/s);
     for(const image of p.images) assert.ok(fs.existsSync(path.join(__dirname,'../public',image)));
     for(const v of p.variants) {

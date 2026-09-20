@@ -135,6 +135,19 @@ test("Meta coupon is validated through Stripe and applied without trusting a cli
   assert.equal(malformed.sessions.length, 0);
 });
 
+test("Beanie Black is rejected before creating Stripe sessions even if provider still returns it", async () => {
+  for (const color of ['Black', 'White', undefined]) {
+    const data=detail();
+    data.sync_product.id=473808622;
+    data.sync_variants[0].sync_product_id=473808622;
+    data.sync_variants[0].color=color;
+    const f=checkoutFixture(data);
+    const result=await f.run([{...item,id:473808622}]);
+    assert.equal(result.code,color==='White'?200:400);
+    assert.equal(f.sessions.length,color==='White'?1:0);
+  }
+});
+
 test("checkout rejects removed, hidden, ignored, unsynced, inactive and wrong-parent variants", async () => {
   const excluded = checkoutFixture();
   assert.equal((await excluded.run([{ ...item, id: 430925200 }])).code, 400);

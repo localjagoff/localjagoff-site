@@ -14,7 +14,7 @@ before(async()=>{
 });
 after(async()=>db.close());
 function product(id){return {id,name:'Fixture '+id,description:'Synthetic product',images:['/images/fixture.jpg'],
-  variants:[{id:id+100,name:'M',price:'30.00',unit_amount:3000,currency:'USD',availability:'in stock'}]};}
+  variants:[{id:id+100,name:'M',color:'White',price:'30.00',unit_amount:3000,currency:'USD',availability:'in stock'}]};}
 async function reset(){await db.exec('DELETE FROM public_catalog_snapshot');await store.initialize();}
 async function cycle(readProduct=async id=>product(id)){
   for(let i=0;i<snapshot.IDS.length;i++)await snapshot.refreshStep(env,{store,readProduct});
@@ -30,6 +30,22 @@ test('scheduled steps read exactly one product; only a complete snapshot is publ
   assert.equal((await snapshot.readSnapshot(env,{store})).length,20);
   assert.equal((await store.read()).cursor,0);
 });
+test('revoked Beanie Black variants and images cannot leak from an older valid snapshot',async()=>{
+  await reset();await cycle();
+  const original=product(473808622);
+  original.images=['/images/products/473808622/black-front.jpg','/images/products/473808622/white-front.jpg'];
+  original.variants.push({...original.variants[0],id:999991,color:'Black'});
+  const published=(await store.read()).published.map(p=>p.id===original.id?original:p);
+  db.prepare('UPDATE public_catalog_snapshot SET published=?').run(JSON.stringify(published));
+  const all=await snapshot.readSnapshot(env,{store});
+  const single=await snapshot.readProductSnapshot(env,473808622,{store});
+  assert.deepEqual(single,all.find(p=>p.id===473808622));
+  assert.deepEqual(single.variants.map(v=>v.color),['White']);
+  assert.ok(single.images.every(image=>image.includes('/white-')));
+  assert.ok(!single.description.includes('Black'));
+  assert.deepEqual((await store.read()).published,published,'read filtering never rewrites source freshness/data');
+});
+
 test('provider failure preserves the previous full snapshot and does not advance',async()=>{
   await reset();await cycle();const before=await store.read();
   await assert.rejects(snapshot.refreshStep(env,{store,readProduct:async()=>{throw Error('fixture outage');}}),/outage/);

@@ -18,11 +18,12 @@ function fixture(){
     raw:JSON.stringify({code:200,result:ids.map(id=>({id})),paging:{offset:0,total:ids.length}})}];
   ids.forEach((id,index)=>{
     const name='Fixture tee '+index;
+    const color=id===473808622?'White':'Black';
     records.push({url:`https://api.printful.com/sync/products/${id}?store_id=${STORE_ID}`,
       raw:JSON.stringify({code:200,result:{sync_product:{id,name,is_ignored:false},
         sync_variants:['XS','S','M','L','XL','2XL'].map((size,i)=>({id:5292830954+index*6+i,
-          sync_product_id:id,name:name+' / Black / '+size,synced:true,is_ignored:false,
-          availability_status:'active',retail_price:'30.00',currency:'USD',size,color:'Black',sku:`fixture-${index}-${size}`}))}})});
+          sync_product_id:id,name:name+' / '+color+' / '+size,synced:true,is_ignored:false,
+          availability_status:'active',retail_price:'30.00',currency:'USD',size,color,sku:`fixture-${index}-${size}`}))}})});
   });
   return records;
 }
