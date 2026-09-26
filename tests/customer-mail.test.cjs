@@ -64,9 +64,13 @@ test("shipment wording is package-specific and supports split shipments", () => 
     estimated_delivery: { from_date: "2026-09-08", to_date: "2026-09-12" },
   });
   assert.match(result.text, /this package only/);
-  assert.match(result.text, /2026-09-12/);
+  assert.match(result.text, /Estimated delivery: 09\/08\/2026 \u2013 09\/12\/2026/);
+  assert.doesNotMatch(result.text, /2026-09-/);
   assert.match(result.text, /not a delivery confirmation/);
-  assert.match(result.text, /USPS: TEST/);
+  assert.match(result.text, /Order: LJ-test/);
+  assert.match(result.text, /Carrier: USPS/);
+  assert.match(result.text, /Tracking number: TEST/);
+  assert.match(result.html, /href="https:\/\/tools.usps.com\/go\/TrackConfirmAction\?tLabels=TEST">TRACK THIS PACKAGE<\/a>/);
   assert.match(result.text, /Test tee \| Qty 1/);
   assert.doesNotMatch(JSON.stringify(result), /printful/i);
 });
@@ -85,6 +89,28 @@ test("review copy is clear, optional, and not an upsell", () => {
   assert.match(review.text, /Still waiting/);
   assert.doesNotMatch(review.text, /discount|coupon|five.star/i);
   assert.doesNotMatch(JSON.stringify(review), /printful/i);
+});
+
+test("shipment dates handle single bounds, equal bounds and invalid calendar dates", () => {
+  for (const [eta, expected] of [
+    [{from_date:'2026-09-29'}, '09/29/2026'],
+    [{to_date:'2026-10-01'}, '10/01/2026'],
+    [{from_date:'2026-09-29',to_date:'2026-09-29'}, '09/29/2026'],
+    [{from_date:'2028-02-29'}, '02/29/2028'],
+    [{from_date:'2026-02-29',to_date:'not a date'}, null],
+    [{from_date:'2026-13-01'}, null],
+  ]) {
+    const shipment={id:84385841,carrier:'OnTrac Ground',tracking_number:'TEST',estimated_delivery:eta};
+    const original=JSON.stringify(shipment);
+    const result=mail.shipmentEmail({email:'buyer@example.com',reference:'LJ-test'},shipment);
+    for(const body of [result.html,result.text]) {
+      if(expected)assert.ok(body.includes(`Estimated delivery: ${expected}.`));
+      else assert.doesNotMatch(body,/Estimated delivery:/);
+      assert.doesNotMatch(body,/84385841/);
+      assert.match(body,/Carrier: OnTrac Ground/);
+    }
+    assert.equal(JSON.stringify(shipment),original);
+  }
 });
 test('only customer lifecycle email receives a hidden owner BCC',async()=>{
   const env={VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true',RESEND_API_KEY:'unit-test-only',CUSTOMER_EMAIL_BCC:'owner@example.com'};
