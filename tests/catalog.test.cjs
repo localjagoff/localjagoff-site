@@ -24,7 +24,8 @@ test('replacement rocker hoodie retires old checkout and uses its own imagery an
   const product=curateProduct(data,replacement);
   assert.equal(product.name,'Pittsburgh 412 Rocker Zip Hoodie');
   assert.equal(product.category,'hoodies');
-  assert.deepEqual(product.images,[data.sync_product.thumbnail_url]);
+  assert.deepEqual(product.images,['back','front','left','right','flat-back','flat-front'].map(view=>`/images/products/475168585/${view}.jpg`));
+  for(const image of product.images) assert.ok(fs.statSync(path.join(__dirname,'../public',image)).size>1000);
   assert.deepEqual(product.variants.map(v=>v.unit_amount),[5500,5500,5500,5500,5700,5900,6100,6300]);
   assert.equal(metaRows([product],'https://www.localjagoff.com').length,8);
   assert.equal(require('../lib/google-listing-policy.cjs').GOOGLE_APPROVED_PRODUCT_IDS.has(replacement),false);
