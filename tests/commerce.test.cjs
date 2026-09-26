@@ -249,6 +249,28 @@ test('durable paid notification is registered before Printful; linked callback r
   f.options.recordLinked=async({order})=>{assert.equal(order.status,'draft');linked++;};
   await f.run();assert.equal(recorded,1);assert.equal(linked,1);assert.equal(f.state.emails,0);assert.equal(f.state.posts.length,1);
 });
+test('durable create claim prevents a second Printful POST after an ambiguous provider failure',async()=>{
+  const f=fulfillmentFixture();let claimed=false;
+  f.options.claimCreate=async()=>{if(claimed)return false;claimed=true;return true;};
+  f.state.postStatus=500;await assert.rejects(f.run());
+  f.state.postStatus=200;await assert.rejects(f.run());
+  assert.equal(f.state.posts.length,1);assert.equal(f.state.orders.size,0);
+});
+test('legacy uncertain fulfillment metadata cannot trigger a second Printful POST',async()=>{
+  const f=fulfillmentFixture();f.options.claimCreate=async()=>assert.fail('creation claim must not run');
+  f.session.metadata.fulfillment_state='needs_retry_or_review';
+  await assert.rejects(f.run());assert.equal(f.state.posts.length,0);
+});
+test('a verified existing Printful order is linked before Stripe metadata persistence',async()=>{
+  const f=fulfillmentFixture();let linked=0;
+  f.options.recordPaid=async()=>{};
+  f.options.claimCreate=async()=>true;
+  f.options.recordLinked=async()=>{linked++;};
+  f.state.updateFailures=1;
+  await assert.rejects(f.run());
+  assert.equal(linked,1);assert.equal(f.state.posts.length,1);
+  await f.run();assert.equal(linked,2);assert.equal(f.state.posts.length,1);
+});
 test('durable notification persistence failure prevents a new Printful call; TEST skips both callbacks',async()=>{
   const f=fulfillmentFixture();f.options.recordPaid=async()=>{throw new Error('database unavailable');};
   await assert.rejects(f.run());assert.equal(f.state.fetches.length,0);

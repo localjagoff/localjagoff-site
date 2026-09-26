@@ -91,7 +91,7 @@ test('real SQL persists conservative final-package ETA plus seven days',async()=
   assert.equal((await row(`review/${reference}`)).next_attempt_at.getTime(),due);
 });
 
-test('removed hold resumes processing and shipment mail while keeping reviews suppressed',async()=>{
+test('removed hold resumes shipment mail but not processing mail while keeping reviews suppressed',async()=>{
   const f=await fixture(),shipments=f.shipments;
   f.order.status='onhold';f.shipments=[];
   await f.run();
@@ -101,7 +101,7 @@ test('removed hold resumes processing and shipment mail while keeping reviews su
 
   f.order.status='inprocess';await notify(lifecycle('order_remove_hold'));
   assert.equal((await f.run()).outcome,'reconciled');
-  assert.equal((await row(`processing/${reference}`)).status,'pending');
+  assert.equal(await row(`processing/${reference}`),undefined);
   assert.equal((await store.order(reference)).suppress_reviews,true);
   assert.equal((await store.order(reference)).lifecycle_complete,false);
 
@@ -111,7 +111,15 @@ test('removed hold resumes processing and shipment mail while keeping reviews su
   assert.equal(await row(`review/${reference}`),undefined);
   assert.equal((await store.order(reference)).suppress_reviews,true);
   assert.equal((await store.order(reference)).lifecycle_complete,true);
-  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_outbox')).rows[0].n,2);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_outbox')).rows[0].n,1);
+});
+test('real SQL grants exactly one durable Printful create attempt for an unlinked order',async()=>{
+  const f=await fixture();
+  await db.query('UPDATE comm_orders SET printful_id=NULL WHERE reference=$1',[reference]);
+  assert.equal(await f.service.claimCreate(reference),true);
+  assert.equal(await f.service.claimCreate(reference),false);
+  const rows=(await db.query("SELECT kind FROM comm_events WHERE identity=$1",[`fulfillment-create/${reference}`])).rows;
+  assert.deepEqual(rows.map(row=>row.kind),['fulfillment_create_attempt']);
 });
 
 test('missing review ETA still queues valid shipment mail once and alerts only for review timing',async()=>{

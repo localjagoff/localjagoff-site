@@ -23,6 +23,7 @@
     "SITE_URL": "https://www.localjagoff.com",
     "CHECKOUT_PAUSED": "false",
     "CUSTOMER_EMAIL_ENABLED": "true",
+    "CUSTOMER_EMAIL_BCC": "hello@localjagoff.com",
     "COMMUNICATIONS_ENABLED": "true",
     "CATALOG_SNAPSHOT_ENABLED": "true",
     "NATIVE_PRODUCT_ENABLED": "true",

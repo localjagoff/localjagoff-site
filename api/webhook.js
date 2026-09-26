@@ -257,7 +257,8 @@ export function createWebhookHandler(options = {}) {
       if (event.livemode === true && env.COMMUNICATIONS_ENABLED === "true" &&
         ['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type)) {
         const service = communications.createService({stripe:client,env});
-        notifications = {recordPaid:service.recordPaid,recordLinked:service.recordLinked,recordFailed:service.recordFailed};
+        notifications = {recordPaid:service.recordPaid,recordLinked:service.recordLinked,
+          recordFailed:service.recordFailed,claimCreate:service.claimCreate};
       }
       const result = await fulfillEvent(event, { sendEmail: sendOrderReceivedEmail, ...notifications, ...options, stripe: client, env });
       return res.status(200).json(result);

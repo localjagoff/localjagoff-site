@@ -143,9 +143,15 @@ test('split shipment reconciliation is GET-only and bulk-queues packages with st
   for(const {payload} of f.queued.values())assert.match(payload.text,/package only/);
   assert.equal(f.gets.length,6);assert.ok(f.queries.some(q=>q.sql.includes('WITH queued')));
 });
-test('processing requires actual inprocess; refund/return suppresses reviews before new notifications',async()=>{
-  const f=serviceFixture();f.order.status='inprocess';f.shipments.length=0;await f.service.reconcile(f.reference);assert.equal(f.queued.size,1);assert.equal([...f.queued.values()][0].kind,'processing');
+test('inprocess never creates customer mail; refund/return suppresses reviews before new notifications',async()=>{
+  const f=serviceFixture();f.order.status='inprocess';f.shipments.length=0;await f.service.reconcile(f.reference);assert.equal(f.queued.size,0);
   const g=serviceFixture();g.session.payment_intent.latest_charge.refunded=true;await g.service.reconcile(g.reference);assert.equal(g.queued.size,0);assert.ok(g.queries.some(q=>q.sql.includes("status='suppressed'")));
+});
+test('a previously queued processing email is suppressed without provider access',async()=>{
+  const f=queueFixture({key:'processing/LJfixture',kind:'processing'});
+  const result=await deliver(f.store,{...f.options,send:forbidden});
+  assert.equal(result.outcome,'processing_email_retired');
+  assert.equal(f.finishes[0][1],'suppressed');assert.equal(f.marked,0);
 });
 test('notification service refuses Preview before provider reads',async()=>{
   const service=createService({env:{VERCEL_ENV:'preview'},store:{order:forbidden},stripe:forbidden,fetchImpl:forbidden});await assert.rejects(service.reconcile('fixture'),/live_communication/);

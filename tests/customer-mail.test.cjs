@@ -17,6 +17,8 @@ test("paid confirmation has the full authoritative money breakdown and human rep
   for (const text of ["LJ-test-reference", "Test tee", "Qty 2", "Items: $56.00", "Discount: -$10.00", "Shipping: $5.99", "Tax: $3.00", "Total paid: $54.99", "Test address"]) assert.ok(result.text.includes(text), text);
   assert.match(result.html, /LOCAL JAGOFF/);
   assert.doesNotMatch(result.text, /Printful|draft/);
+  assert.match(result.text, /Payment received\. Your order is confirmed and being prepared\. We’ll send you another email as soon as your order ships with tracking information\./);
+  assert.doesNotMatch(result.text,/moves into production|in our queue to be prepared/);
 });
 
 test("unpaid, non-USD and inconsistent total confirmations fail closed", () => {
@@ -76,14 +78,27 @@ test("unsafe tracking and review links cannot become links in mail", () => {
   assert.throws(() => mail.reviewEmail({ email: "buyer@example.com" }, "https://www.localjagoff.com@attacker.example/review"));
 });
 
-test("processing and review copy is clear, optional, and not an upsell", () => {
+test("review copy is clear, optional, and not an upsell", () => {
   const order = { email: "buyer@example.com", reference: "LJ-test" };
-  assert.match(mail.processingEmail(order).text, /moved into production/);
   const review = mail.reviewEmail(order, "https://www.localjagoff.com/review#test-fixture");
   assert.match(review.text, /Leaving a review is optional/);
   assert.match(review.text, /Still waiting/);
   assert.doesNotMatch(review.text, /discount|coupon|five.star/i);
-  assert.doesNotMatch(JSON.stringify([mail.processingEmail(order),review]), /printful/i);
+  assert.doesNotMatch(JSON.stringify(review), /printful/i);
+});
+test('only customer lifecycle email receives a hidden owner BCC',async()=>{
+  const env={VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true',RESEND_API_KEY:'unit-test-only',CUSTOMER_EMAIL_BCC:'owner@example.com'};
+  const bodies=[];
+  const fetchImpl=async(url,options)=>{bodies.push(JSON.parse(options.body));return {ok:true,status:200,json:async()=>({id:'00000000-0000-0000-0000-000000000001'})};};
+  const order={email:'buyer@example.com',reference:'LJ-test'};
+  const customer=[['receipt/LJ-test',mail.orderConfirmation(paid())],
+    ['shipment/LJ-test/1',mail.shipmentEmail(order,{id:1,shipment_status:'shipped',carrier:'OnTrac',tracking_number:'TEST'})],
+    ['review/LJ-test',mail.reviewEmail(order,'https://www.localjagoff.com/review#test')]];
+  for(const [key,payload] of customer)await mail.sendViaResend(payload,key,{env,fetchImpl});
+  for(const body of bodies)assert.deepEqual(body.bcc,['owner@example.com']);
+  await mail.sendViaResend(mail.contactEmail({name:'Visitor',email:'visitor@example.com',topic:'other',message:'Hi'}),'contact/fixture',{env,fetchImpl});
+  await mail.sendViaResend({...customer[0][1],to:['hello@localjagoff.com']},'owner/LJ-test',{env,fetchImpl});
+  assert.equal(bodies[3].bcc,undefined);assert.equal(bodies[4].bcc,undefined);
 });
 
 test("transactional sending fails closed in TEST/Preview/disabled environments", async () => {
