@@ -17,9 +17,9 @@ test('one-size hats do not repeat the product name as their variant label',()=>{
     assert.equal(variant.name,name);
   }
 });
-test('26 current designs, sixteen verified tees and eight verified hoodies',()=>{
+test('30 current designs, sixteen verified tees and eight verified hoodies',()=>{
   assert.deepEqual(Object.keys(PRODUCTS).map(Number).sort(),[...APPROVED_PRODUCT_IDS].sort());
-  assert.equal(APPROVED_PRODUCT_IDS.size,26);
+  assert.equal(APPROVED_PRODUCT_IDS.size,30);
   assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,16);
   assert.equal(Object.values(PRODUCTS).filter(p=>['M2580','18600'].includes(p.garment)).length,8);
   assert.equal(merchandising(428983169).quality.model,'Cotton Heritage M2580');
