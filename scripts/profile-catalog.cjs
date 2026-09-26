@@ -15,7 +15,7 @@ function fixture(){
   // Retain the historical 20-product benchmark workload. Production catalogs
   // above 24 products use staged snapshots, not this bounded legacy loader.
   const ids=[473808622,473834484,473689891,471744647,471744585,471950476,471744283,
-    430964873,429821634,429728777,429536493,429208592,428983169,428982889,428980566,
+    430964873,429821634,429728777,429536493,475168585,428983169,428982889,428980566,
     428851907,428851698,428851608,428851513,428821578].filter(id=>APPROVED_PRODUCT_IDS.has(id));
   if(ids.length>24)throw Error('Review fixture exceeds bounded catalog loader');
   const records=[{url:`https://api.printful.com/sync/products?store_id=${STORE_ID}&limit=100&offset=0`,
@@ -24,7 +24,7 @@ function fixture(){
     const name='Fixture tee '+index;
     const color=id===473808622?'White':'Black';
     records.push({url:`https://api.printful.com/sync/products/${id}?store_id=${STORE_ID}`,
-      raw:JSON.stringify({code:200,result:{sync_product:{id,name,is_ignored:false},
+      raw:JSON.stringify({code:200,result:{sync_product:{id,name,is_ignored:false,thumbnail_url:'https://example.com/mockup.jpg'},
         sync_variants:['XS','S','M','L','XL','2XL'].map((size,i)=>({id:5292830954+index*6+i,
           sync_product_id:id,name:name+' / '+color+' / '+size,synced:true,is_ignored:false,
           availability_status:'active',retail_price:'30.00',currency:'USD',size,color,sku:`fixture-${index}-${size}`}))}})});

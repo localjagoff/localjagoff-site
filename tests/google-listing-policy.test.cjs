@@ -6,9 +6,9 @@ const { googleAttributes, products, GOOGLE_APPROVED_PRODUCT_IDS, GOOGLE_STAGED_P
 const { googleRows, googleTsv, openaiRows } = require("../lib/discovery.cjs");
 const { curateProduct } = require("../lib/catalog.cjs");
 
-test("13 approved and five staged Google presentations use original mockups and reviewed attributes", () => {
-  assert.equal(Object.keys(products).length, 18);
-  assert.equal(GOOGLE_APPROVED_PRODUCT_IDS.size,13);
+test("12 approved and five staged Google presentations use original mockups and reviewed attributes", () => {
+  assert.equal(Object.keys(products).length, 17);
+  assert.equal(GOOGLE_APPROVED_PRODUCT_IDS.size,12);
   assert.equal(GOOGLE_STAGED_PRODUCT_IDS.size,5);
   for (const id of Object.keys(products)) {
     const attrs = googleAttributes(id);
@@ -47,8 +47,8 @@ test("storefront approval and staged Google metadata do not add offers to the re
       is_ignored:false,availability_status:"active",currency:"USD",retail_price:"30.00"}]
   },id));
   const tsv=googleTsv(catalog);
-  assert.equal(tsv.trim().split("\n").length,14);
-  assert.equal(openaiRows(catalog).length,18);
+  assert.equal(tsv.trim().split("\n").length,13);
+  assert.equal(openaiRows(catalog).length,17);
   for(const id of GOOGLE_STAGED_PRODUCT_IDS){
     assert.ok(!GOOGLE_APPROVED_PRODUCT_IDS.has(id));
     assert.ok(!tsv.includes(String(id)));

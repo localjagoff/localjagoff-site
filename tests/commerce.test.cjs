@@ -89,9 +89,9 @@ test('deployed-handler shipping ignores client shipping/fulfillment claims and u
   const { createCheckoutHandler } = require('../api/create-checkout-session.js');
   const cases = [
     [[[471744647,1]],495], [[[471744647,3]],0],
-    [[[471744647,1],[429208592,1]],0],
+    [[[471744647,1],[475168585,1]],0],
     [[[471744647,1],[428980566,1]],0],
-    [[[428980566,2]],0], [[[471744647,2],[429208592,2],[428980566,2]],0],
+    [[[428980566,2]],0], [[[471744647,2],[475168585,2],[428980566,2]],0],
   ];
   for (const [cart, expected] of cases) {
     const sessions=[], calls=[];
@@ -587,3 +587,4 @@ test("public catalog failures do not expose upstream exception content", async (
     assert.equal(res.body.error, "Products temporarily unavailable");
     assert.doesNotMatch(JSON.stringify(logs), /PRIVATE_PROVIDER_DETAIL/);
 });
+

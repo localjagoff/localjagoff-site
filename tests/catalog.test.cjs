@@ -12,6 +12,24 @@ const fixture = (productId = id) => ({ sync_product: { id: productId, name: "Raw
     size: "S", color: "Black" }] });
 const response = data => ({ status: 200, ok: true, json: async () => ({ code: 200, ...data }) });
 
+test('replacement rocker hoodie retires old checkout and uses its own imagery and all approved prices',async()=>{
+  const retired=429208592,replacement=475168585;
+  const noProvider=async()=>assert.fail('retired product must not contact provider');
+  assert.equal(await loadProduct(retired,{apiKey:'fixture',fetchImpl:noProvider}),null);
+  await assert.rejects(resolveCart([{id:retired,variant_id:variantId,quantity:1}],{apiKey:'fixture',fetchImpl:noProvider}));
+  const data=fixture(replacement);
+  data.sync_product.thumbnail_url='https://example.com/new-rocker.jpg';
+  data.sync_variants=['S','M','L','XL','2XL','3XL','4XL','5XL'].map((size,i)=>({...data.sync_variants[0],
+    id:variantId+i,size,name:`Raw name / Black / ${size}`,retail_price:String([55,55,55,55,57,59,61,63][i])}));
+  const product=curateProduct(data,replacement);
+  assert.equal(product.name,'Pittsburgh 412 Rocker Zip Hoodie');
+  assert.equal(product.category,'hoodies');
+  assert.deepEqual(product.images,[data.sync_product.thumbnail_url]);
+  assert.deepEqual(product.variants.map(v=>v.unit_amount),[5500,5500,5500,5500,5700,5900,6100,6300]);
+  assert.equal(metaRows([product],'https://www.localjagoff.com').length,8);
+  assert.equal(require('../lib/google-listing-policy.cjs').GOOGLE_APPROVED_PRODUCT_IDS.has(replacement),false);
+});
+
 test("owner-deleted tee cannot list or checkout; replacement has its own identity and Google remains held", async () => {
   const retired = 471744477, replacement = 471950476;
   const noProvider = async () => assert.fail("retired ID must be rejected before provider access");
@@ -26,7 +44,7 @@ test("owner-deleted tee cannot list or checkout; replacement has its own identit
   assert.equal(product.variants[0].unit_amount, 3000);
   assert.equal(require("../lib/shipping-policy.cjs").standardShippingCents([{ id: replacement, quantity: 1 }]), 495);
   const google = require("../lib/google-listing-policy.cjs");
-  assert.equal(google.GOOGLE_APPROVED_PRODUCT_IDS.size, 13);
+  assert.equal(google.GOOGLE_APPROVED_PRODUCT_IDS.size, 12);
   for (const id of [retired, replacement]) assert.equal(google.GOOGLE_APPROVED_PRODUCT_IDS.has(id), false);
   assert.equal(google.GOOGLE_STAGED_PRODUCT_IDS.has(replacement), true);
   assert.equal(google.GOOGLE_STAGED_PRODUCT_IDS.has(retired), false);

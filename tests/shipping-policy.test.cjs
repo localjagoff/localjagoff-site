@@ -17,7 +17,7 @@ test('current Printful policy keeps production, transit and owner review separat
 });
 
 const tee = (quantity = 1) => ({ id: 471744647, quantity });
-const hoodie = (quantity = 1) => ({ id: 429208592, quantity });
+const hoodie = (quantity = 1) => ({ id: 475168585, quantity });
 const hat = (quantity = 1) => ({ id: 428980566, quantity });
 test('US Standard rates match the current category table without markup', () => {
   for (const [count, cents] of [[1,495],[2,715],[3,935],[5,1375],[10,2475]]) {
@@ -69,3 +69,4 @@ test('product, policy and cart consume the same delivery wording without a new b
   }
   assert.doesNotMatch(readFileSync(join(__dirname, '../api/create-checkout-session.js'), 'utf8'), /delivery_estimate/);
 });
+

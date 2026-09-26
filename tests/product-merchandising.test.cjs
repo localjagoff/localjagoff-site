@@ -23,7 +23,7 @@ test('26 current designs, sixteen verified tees and eight verified hoodies',()=>
   assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,16);
   assert.equal(Object.values(PRODUCTS).filter(p=>['M2580','18600'].includes(p.garment)).length,8);
   assert.equal(merchandising(428983169).quality.model,'Cotton Heritage M2580');
-  for(const id of [428821578,429208592]) assert.equal(merchandising(id).quality.model,'Gildan 18600 Heavy Blend');
+  for(const id of [428821578,475168585]) assert.equal(merchandising(id).quality.model,'Gildan 18600 Heavy Blend');
   for(const p of Object.values(PRODUCTS).filter(p=>p.garment==='MC1082')) {
     assert.doesNotMatch(p.name,/Hoodie/);
   }
@@ -32,7 +32,7 @@ test('26 current designs, sixteen verified tees and eight verified hoodies',()=>
 test('presentation keeps all variant IDs and authoritative offers and titles agree across channels',()=>{
   for(const id of APPROVED_PRODUCT_IDS){
     const color=id===473808622?'White':'Black';
-    const p=curateProduct({sync_product:{id,name:'Provider name',is_ignored:false},sync_variants:[{
+    const p=curateProduct({sync_product:{id,name:'Provider name',is_ignored:false,thumbnail_url:'https://example.com/mockup.jpg'},sync_variants:[{
       id:id+100,sync_product_id:id,name:'Provider name / '+color+' / S',size:'S',color,synced:true,
       is_ignored:false,availability_status:'active',currency:'USD',retail_price:'30.00'}]},id);
     const before=JSON.stringify(p.variants),name=getDisplayProductName({id});
