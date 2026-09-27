@@ -17,11 +17,12 @@ test('one-size hats do not repeat the product name as their variant label',()=>{
     assert.equal(variant.name,name);
   }
 });
-test('30 current designs, sixteen verified tees and eight verified hoodies',()=>{
+test('33 current designs, seventeen verified tees, nine hoodies and one crewneck',()=>{
   assert.deepEqual(Object.keys(PRODUCTS).map(Number).sort(),[...APPROVED_PRODUCT_IDS].sort());
-  assert.equal(APPROVED_PRODUCT_IDS.size,30);
-  assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,16);
-  assert.equal(Object.values(PRODUCTS).filter(p=>['M2580','18600'].includes(p.garment)).length,8);
+  assert.equal(APPROVED_PRODUCT_IDS.size,33);
+  assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='MC1082').length,17);
+  assert.equal(Object.values(PRODUCTS).filter(p=>['M2580','18600'].includes(p.garment)).length,9);
+  assert.equal(Object.values(PRODUCTS).filter(p=>p.garment==='562MR').length,1);
   assert.equal(merchandising(428983169).quality.model,'Cotton Heritage M2580');
   for(const id of [428821578,475168585]) assert.equal(merchandising(id).quality.model,'Gildan 18600 Heavy Blend');
   for(const p of Object.values(PRODUCTS).filter(p=>p.garment==='MC1082')) {
