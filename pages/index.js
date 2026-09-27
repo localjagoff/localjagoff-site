@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Gamepad2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
-import ProductSpotlight from '../components/ProductSpotlight';
+import MatchingFit from '../components/MatchingFit';
 import { CatalogStatus } from '../components/CatalogPage';
 import useCatalog from '../lib/useCatalog';
 import { getFeaturedProducts } from '../lib/featuredProducts';
-import { CATEGORIES, SPOTLIGHT_PRODUCT_IDS, inCategory } from '../lib/storefront.cjs';
+import { CATEGORIES, inCategory } from '../lib/storefront.cjs';
 
 const categoryImages = [
   '/images/products/473689891/front.jpg',
@@ -18,7 +18,6 @@ export default function Home() {
   const catalog = useCatalog();
   const hasSmallGoods = catalog.products.some(product => inCategory(product, 'stuff'));
   const featured = getFeaturedProducts(catalog.products);
-  const spotlight = SPOTLIGHT_PRODUCT_IDS.map(id => catalog.products.find(product => Number(product.id) === id)).filter(Boolean);
   return <div className="storefront">
     <Head>
       <title>Local Jagoff | Independent Pittsburgh Apparel</title>
@@ -35,7 +34,7 @@ export default function Home() {
         <Link className="hero-product-credit" href="/product/428821578"><span>In focus / Steel City 412 Crest Zip Hoodie</span><ArrowUpRight size={18} /></Link>
       </section>
       <div className="brand-strip"><span>Pittsburgh roots.</span><span>Independent attitude.</span><span>Made to order.</span></div>
-      <ProductSpotlight products={spotlight} />
+      <MatchingFit {...catalog} />
       <section className="store-section store-container" id="current-drop">
         <div className="store-section-heading"><div><p className="store-eyebrow">Four new tees</p><h2>The new drop.</h2></div><Link className="text-link" href="/tees">Explore the collection <ArrowRight size={18} /></Link></div>
         <CatalogStatus {...catalog} />
