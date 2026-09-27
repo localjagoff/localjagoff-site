@@ -1,7 +1,29 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
 const { LAYERS, BEANIES, availableVariants, fitItems, mergeFit } = require('../lib/matching-fit.cjs');
 const { shippingQuote } = require('../lib/shipping-policy.cjs');
+test('direct picker link opens once, preserves query, and cleans up its listener', () => {
+  const source = fs.readFileSync(require.resolve('../components/MatchingFit.js'), 'utf8');
+  const effect = source.match(/useEffect\(\(\) => \{\n    const openFromLink[\s\S]*?\n  \}, \[\]\);/)[0];
+  for (const hash of ['#build-your-fit', '#matching-fit', '']) {
+    let opens = 0, listener, cleanup, replacement;
+    const window = {
+      location: { pathname: '/', search: '?fbclid=test', hash },
+      history: { state: { kept: true }, replaceState(state, title, url) { replacement = url; assert.deepEqual(state, { kept: true }); window.location.hash = '#matching-fit'; } },
+      addEventListener(event, cb) { assert.equal(event, 'hashchange'); listener = cb; },
+      removeEventListener(event, cb) { assert.equal(event, 'hashchange'); assert.equal(cb, listener); listener = null; },
+    };
+    vm.runInNewContext(effect, { window, useEffect: cb => { cleanup = cb(); }, setMessage: () => {}, setOpen: value => { assert.equal(value, true); opens++; } });
+    assert.equal(opens, hash === '#build-your-fit' ? 1 : 0);
+    if (opens) assert.equal(replacement, '/?fbclid=test#matching-fit');
+    listener(); assert.equal(opens, hash === '#build-your-fit' ? 1 : 0);
+    window.location.hash = '#build-your-fit'; listener();
+    assert.equal(opens, hash === '#build-your-fit' ? 2 : 1);
+    cleanup(); assert.equal(listener, null);
+  }
+});
 const products = [
   [LAYERS[0], [['XS',5000],['S',5000],['M',5000],['L',5000],['XL',5000],['2XL',5200],['3XL',5400],['4XL',5600]]],
   [LAYERS[1], [['S',3999],['M',3999],['L',3999],['XL',3999],['2XL',4199]]],

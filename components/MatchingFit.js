@@ -33,6 +33,18 @@ export default function MatchingFit({ products, loading, error, retry }) {
     shipping = shippingQuote(items, total);
   } catch {}
   useEffect(() => {
+    const openFromLink = () => {
+      if (window.location.hash !== '#build-your-fit') return;
+      setMessage('');
+      setOpen(true);
+      // Consume the action while retaining the section anchor and tracking query.
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#matching-fit`);
+    };
+    openFromLink();
+    window.addEventListener('hashchange', openFromLink);
+    return () => window.removeEventListener('hashchange', openFromLink);
+  }, []);
+  useEffect(() => {
     if (!open) return;
     dialog.current?.showModal();
     const previous = document.body.style.overflow;
