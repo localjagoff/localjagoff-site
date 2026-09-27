@@ -65,3 +65,28 @@ test('quantity limit rejects entire pair without partial mutation', () => {
   const cart=[{...items[0],quantity:1},{...items[1],quantity:99}], before=JSON.stringify(cart);
   assert.throws(()=>mergeFit(cart,items),/adjust/);assert.equal(JSON.stringify(cart),before);
 });
+test('picker goes straight to checkout, preserves existing cart, and retries without duplicate pairs', async () => {
+  const source=fs.readFileSync(require.resolve('../components/MatchingFit.js'),'utf8');
+  const handler=source.slice(source.indexOf('  async function addPair()'),source.indexOf('  const photo ='));
+  const layerId=LAYERS[0],variantId=String(products[0].variants[1].id),beanieId=BEANIES[0];
+  const items=fitItems(products,layerId,variantId,beanieId);
+  let stored=JSON.stringify([{id:7,variant_id:8,quantity:1,price:10}]);
+  const checkouts=[],events=[],tracking=[];
+  const ctx={ products,layerId,variantId,beanieId,items,fitItems,mergeFit,URL,AbortController,setTimeout,clearTimeout,
+    adding:{current:false},preparedCheckout:{current:null},setBusy:()=>{},setMessage:()=>{},retry:()=>{},
+    photos:Object.fromEntries([...LAYERS,...BEANIES].map(id=>[id,'/photo.jpg'])),
+    fetch:async()=>({ok:true,json:async()=>products}),
+    localStorage:{getItem:()=>stored,setItem:(key,value)=>{stored=value;}},
+    window:{location:{origin:'https://www.localjagoff.com'},dispatchEvent:event=>events.push(event)},
+    CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}},
+    getTracker:()=>({addToCart:rows=>tracking.push(rows)}),
+    startCheckout:async cart=>checkouts.push(cart),
+  };
+  vm.createContext(ctx);vm.runInContext(handler,ctx);
+  await ctx.addPair();await ctx.addPair();
+  assert.equal(checkouts.length,2);assert.equal(checkouts[0].length,3);
+  assert.equal(checkouts[1][1].quantity,1);assert.equal(checkouts[1][2].quantity,1);
+  assert.equal(checkouts[1][0].id,7);assert.equal(tracking.length,1);
+  assert.ok(events.every(event=>event.type==='cartUpdated'&&event.detail.silent===true));
+  assert.match(source,/'Checkout now'/);assert.doesNotMatch(handler,/showModal|setOpen\(false\)/);
+});

@@ -5,6 +5,7 @@ import { LAYERS, BEANIES, availableVariants, fitItems, mergeFit } from '../lib/m
 import { money } from '../lib/storefront.cjs';
 import { shippingQuote } from '../lib/shipping-policy.cjs';
 import { getTracker } from '../lib/meta-pixel.cjs';
+import { startCheckout } from '../lib/checkout';
 import styles from '../styles/MatchingFit.module.css';
 
 const photos = {
@@ -24,6 +25,7 @@ export default function MatchingFit({ products, loading, error, retry }) {
   const dialog = useRef(null);
   const trigger = useRef(null);
   const adding = useRef(false);
+  const preparedCheckout = useRef(null);
   const layer = products.find(p => Number(p.id) === layerId);
   const variants = availableVariants(layer);
   let items = [], total = 0, shipping = null;
@@ -74,12 +76,16 @@ export default function MatchingFit({ products, loading, error, retry }) {
       let cart;
       try { cart = JSON.parse(localStorage.getItem('cart')); } catch { cart = []; }
       const withImages = current.map(item => ({ ...item, image: new URL(photos[item.id], window.location.origin).href }));
-      const next = mergeFit(cart, withImages);
+      const selection = JSON.stringify(withImages);
+      const stored = JSON.stringify(cart);
+      const retrying = preparedCheckout.current?.selection === selection && preparedCheckout.current?.cart === stored;
+      const next = retrying ? cart : mergeFit(cart, withImages);
       localStorage.setItem('cart', JSON.stringify(next));
-      // Close the chooser before opening the existing cart dialog.
-      dialog.current?.close(); setOpen(false);
-      window.dispatchEvent(new Event('cartUpdated'));
-      try { getTracker()?.addToCart(current.map(item => ({ id: item.id, variant_id: item.variant_id, quantity: 1, unit_amount: Math.round(item.price * 100) }))); } catch {}
+      preparedCheckout.current = { selection, cart: JSON.stringify(next) };
+      // Keep the picker visible on failure; refresh the cart badge without opening it.
+      window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { silent: true } }));
+      if (!retrying) try { getTracker()?.addToCart(current.map(item => ({ id: item.id, variant_id: item.variant_id, quantity: 1, unit_amount: Math.round(item.price * 100) }))); } catch {}
+      await startCheckout(next);
     } catch (e) { setMessage(e.name === 'AbortError' ? 'Availability check timed out. Please try again.' : e.message || 'Unable to add your fit. Please try again.'); }
     finally { clearTimeout(timeout); adding.current = false; setBusy(false); }
   }
@@ -104,7 +110,7 @@ export default function MatchingFit({ products, loading, error, retry }) {
           return <button key={id} type="button" aria-pressed={beanieId === id} disabled={!variant} onClick={() => { setBeanieId(id); setMessage(''); }}>{photo(id)}<span>{names[id]}</span><small>{variant ? `One size / ${money(variant.unit_amount / 100)}` : 'Currently unavailable'}</small>{beanieId === id && <Check size={18} className={styles.check} aria-hidden="true" />}</button>;
         })}</div></fieldset>
         <p className={styles.separate}>Made to order. Apparel and beanies may arrive separately.</p>
-        <div className={styles.summary}><div aria-live="polite"><span>Your matching fit</span><strong>{items.length ? money(total / 100) : 'Select a size'}</strong></div>{shipping && <p>US Standard Shipping: <strong>{shipping.eligible ? 'On us.' : money(shipping.amount / 100)}</strong></p>}<button className="store-button" type="button" disabled={busy || items.length !== 2} onClick={addPair}>{busy ? 'Checking your fit...' : 'Add both to cart'} <ShoppingBag size={19} aria-hidden="true" /></button><p className={styles.tax}>Taxes calculated at checkout.</p>{message && <p className={styles.error} role="alert">{message}</p>}</div>
+        <div className={styles.summary}><div aria-live="polite"><span>Your matching fit</span><strong>{items.length ? money(total / 100) : 'Select a size'}</strong></div>{shipping && <p>US Standard Shipping: <strong>{shipping.eligible ? 'On us.' : money(shipping.amount / 100)}</strong></p>}<button className="store-button" type="button" disabled={busy || items.length !== 2} onClick={addPair}>{busy ? 'Opening checkout...' : 'Checkout now'} <ShoppingBag size={19} aria-hidden="true" /></button><p className={styles.tax}>Any items already in your cart are included. Taxes calculated at checkout.</p>{message && <p className={styles.error} role="alert">{message}</p>}</div>
       </>}
     </dialog>
   </section>;
