@@ -4,7 +4,7 @@ const path=require('node:path');
 const PUBLIC_ROUTES=Object.freeze([
   '/', '/724', '/arcade', '/bridge-rage', '/cart', '/contact', '/fry-catcher', '/hats',
   '/hoodies', '/jagoff-jump', '/parking-chair-panic', '/pothole-patrol', '/privacy',
-  '/tees', '/terms', '/whats-a-jagoff', '/yinzer-invaders',
+  '/tees', '/sweatshirts', '/terms', '/whats-a-jagoff', '/yinzer-invaders',
 ]);
 
 function planStaticAssets(root){
