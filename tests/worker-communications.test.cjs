@@ -8,6 +8,7 @@ const {createService}=require('../lib/communications-service.cjs');
 const {deliver}=require('../lib/communications-queue.cjs');
 const {runCommunications}=require('../lib/communications-runner.cjs');
 const {createPrintfulNotificationHandler,catalogPreviewIdentity}=require('../lib/printful-notification-handler.cjs');
+const {createReviewsHandler}=require('../lib/reviews-handler.cjs');
 const {printfulEventIdentity}=require('../lib/customer-lifecycle.cjs');
 const {STORE_ID}=require('../lib/commerce-policy.cjs');
 const schema=require('../lib/communications-schema.cjs');
@@ -24,7 +25,7 @@ before(async()=>{
 });
 after(async()=>db.close());
 async function fixture(){
-  await db.exec('DELETE FROM comm_outbox; DELETE FROM comm_orders; DELETE FROM comm_events; DELETE FROM comm_preview_events; DELETE FROM comm_rate');
+  await db.exec('DELETE FROM comm_reviews; DELETE FROM comm_outbox; DELETE FROM comm_orders; DELETE FROM comm_events; DELETE FROM comm_preview_events; DELETE FROM comm_rate');
   queries=[];
   await db.query(`INSERT INTO comm_orders(reference,session_id,customer,items,printful_id,unresolved,reconcile_reason)
     VALUES($1,'cs_fixture',$2,$3,123,false,'event')`,[reference,JSON.stringify({email:'fixture@example.com'}),JSON.stringify([{productId:430697388,name:'Fixture'}])]);
@@ -68,10 +69,10 @@ async function notify(event,{preview=false,tamper=false,storeFactory=()=>store}=
 function catalog(){return {type:'catalog_stock_updated',occurred_at:new Date(Date.now()-3000).toISOString(),
   retries:0,store_id:Number(STORE_ID),data:[{catalog_product_id:71,catalog_variant_id:4011,techniques:['dtg'],availability:'in stock'}]};}
 
-test('real SQL persists seven-day delivery review, excludes terminal polling, and preserves token on replay',async()=>{
+test('real SQL persists four-day delivery review, excludes terminal polling, and preserves token on replay',async()=>{
   const f=await fixture();await f.run();
   const saved=await store.order(reference),job=await row(`review/${reference}`);
-  const due=Date.parse(f.shipments[0].delivered_at)+7*DAY;
+  const due=Date.parse(f.shipments[0].delivered_at)+4*DAY;
   assert.equal(saved.review_due_at.getTime(),due);assert.equal(job.next_attempt_at.getTime(),due);
   assert.equal(saved.lifecycle_complete,true);assert.equal(saved.next_due_at,null);
   assert.equal(await store.claimReconciliation('fallback'),undefined);
@@ -80,15 +81,58 @@ test('real SQL persists seven-day delivery review, excludes terminal polling, an
   assert.equal((await store.order(reference)).review_token_hash,saved.review_token_hash);
   assert.equal((await row(job.key)).payload_hash,job.payload_hash);
   assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='review'")).rows[0].n,1);
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='delivery'")).rows[0].n,1);
+  const delivered=await row(`delivery/${reference}/456`);
+  const reviewLink=job.payload.text.match(/https:\/\/www\.localjagoff\.com\/review#[a-f0-9]{64}/)[0];
+  assert.ok(delivered.payload.text.includes(reviewLink));
+  assert.equal(delivered.status,'pending');
 });
 
-test('real SQL persists conservative final-package ETA plus seven days',async()=>{
+test('fresh delivery check suppresses a returned package and preserves one provider send',async()=>{
+  const f=await fixture();await f.run();
+  const key=`delivery/${reference}/456`;let sends=0;
+  f.shipments[0].delivery_status='returned';
+  assert.equal((await deliver(store,{key,env,beforeDelivery:f.service.beforeDelivery,
+    send:async()=>{sends++;return {id:'fixture'};},logger})).outcome,'suppressed');
+  assert.equal(sends,0);
+  f.shipments[0].delivery_status='delivered';
+  assert.equal((await deliver(store,{key,env,beforeDelivery:f.service.beforeDelivery,
+    send:async()=>{sends++;return {id:'fixture'};},logger})).outcome,'no_due_job');
+  assert.equal(sends,0);
+  await db.query("UPDATE comm_outbox SET status='pending',last_error=NULL WHERE key=$1",[key]);
+  assert.equal((await deliver(store,{key,env,beforeDelivery:f.service.beforeDelivery,
+    send:async()=>{sends++;return {id:'00000000-0000-4000-8000-000000000001'};},logger})).outcome,'sent');
+  assert.equal((await deliver(store,{key,env,beforeDelivery:f.service.beforeDelivery,
+    send:async()=>{sends++;return {id:'fixture'};},logger})).outcome,'no_due_job');
+  assert.equal(sends,1);
+  assert.equal((await row(key)).provider_id,'00000000-0000-4000-8000-000000000001');
+});
+
+test('submitting the legitimate review suppresses the four-day reminder before it can send',async()=>{
+  const f=await fixture();await f.run();
+  const review=await row(`review/${reference}`);
+  const token=review.payload.text.match(/\/review#([a-f0-9]{64})/)[1];
+  const req={method:'POST',headers:{origin:'https://www.localjagoff.com','content-type':'application/json'},
+    socket:{remoteAddress:'192.0.2.1'},body:{action:'submit',token,productId:430697388,
+      rating:4,displayName:'Fixture',text:'The product arrived.'}};
+  const res={setHeader(){},status(code){this.code=code;return this;},json(body){this.body=body;return this;}};
+  await createReviewsHandler({env:{...env,SITE_URL:'https://www.localjagoff.com',
+    COMMUNICATIONS_SECRET:'fixture-only-'.repeat(4)},storeFactory:()=>store})(req,res);
+  assert.equal(res.code,201);
+  assert.equal((await row(review.key)).status,'suppressed');
+  assert.equal((await f.service.beforeReview(reference)).reason,'review_submitted');
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].n,1);
+  assert.equal((await deliver(store,{key:review.key,env,beforeReview:f.service.beforeReview,send:forbidden,logger})).outcome,'no_due_job');
+});
+
+test('real SQL persists conservative final-package ETA plus four days and keeps polling',async()=>{
   const f=await fixture();f.shipments[0].delivery_status='in_transit';delete f.shipments[0].delivered_at;
   const date=new Date(Date.now()+2*DAY).toISOString().slice(0,10);
   f.shipments[0].estimated_delivery={to_date:date};await f.run();
-  const due=Date.parse(date+'T23:59:59.999Z')+12*3600000+7*DAY;
+  const due=Date.parse(date+'T23:59:59.999Z')+12*3600000+4*DAY;
   assert.equal((await store.order(reference)).review_due_at.getTime(),due);
   assert.equal((await row(`review/${reference}`)).next_attempt_at.getTime(),due);
+  assert.equal((await store.order(reference)).lifecycle_complete,false);
 });
 
 test('removed hold resumes shipment mail but not processing mail while keeping reviews suppressed',async()=>{
@@ -111,7 +155,7 @@ test('removed hold resumes shipment mail but not processing mail while keeping r
   assert.equal(await row(`review/${reference}`),undefined);
   assert.equal((await store.order(reference)).suppress_reviews,true);
   assert.equal((await store.order(reference)).lifecycle_complete,true);
-  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_outbox')).rows[0].n,1);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_outbox')).rows[0].n,2);
 });
 test('real SQL grants exactly one durable Printful create attempt for an unlinked order',async()=>{
   const f=await fixture();
@@ -125,15 +169,15 @@ test('real SQL grants exactly one durable Printful create attempt for an unlinke
 test('missing review ETA still queues valid shipment mail once and alerts only for review timing',async()=>{
   const f=await fixture();f.shipments[0].delivery_status='in_transit';delete f.shipments[0].delivered_at;
   f.shipments[0].tracking_url='https://example.com/tracking';
-  assert.equal((await f.run()).outcome,'manual_review_required');
+  assert.equal((await f.run()).outcome,'reconciled');
   const shipment=await row(`shipment/${reference}/456`);
   assert.equal(shipment.status,'pending');
   assert.deepEqual(shipment.payload.to,['fixture@example.com']);
   assert.match(shipment.payload.text,/https:\/\/example.com\/tracking/);
   assert.equal(await row(`review/${reference}`),undefined);
   const saved=await store.order(reference);
-  assert.equal(saved.review_manual_reason,'no_trustworthy_delivery_date');
-  assert.equal(saved.lifecycle_complete,true);
+  assert.equal(saved.review_manual_reason,null);
+  assert.equal(saved.lifecycle_complete,false);
   assert.equal((await row(`lifecycle-alert/${reference}`)).kind,'owner_alert');
   await f.service.reconcile(reference);
   assert.equal((await row(shipment.key)).payload_hash,shipment.payload_hash);
@@ -154,9 +198,8 @@ test('transactional insert still rejects a cancellation arriving after the trust
   assert.equal((await store.order(reference)).lifecycle_complete,false);
 });
 
-test('fulfilled missing shipment payload, purchased items or email stops polling with one durable priority alert',async()=>{
+test('fulfilled missing purchased items or email stops polling with one durable priority alert',async()=>{
   for(const change of [
-    async f=>{f.shipments=[];},
     async()=>db.query("UPDATE comm_orders SET items='[]'"),
     async()=>db.query("UPDATE comm_orders SET customer='{}'"),
     async f=>{f.page=url=>url.pathname.endsWith('/shipments')?{data:null}:{data:url.pathname.endsWith('/order-items')?f.items:f.order,_links:{}};},
@@ -168,6 +211,14 @@ test('fulfilled missing shipment payload, purchased items or email stops polling
     await store.finish(alert,'sent',{providerId:'fixture-alert'});await f.service.reconcile(reference);
     assert.equal((await row(alert.key)).status,'sent');assert.equal(await store.claim(),undefined);
   }
+});
+
+test('missing shipments alert the owner but stay eligible for a later provider delivery',async()=>{
+  const f=await fixture();f.shipments=[];
+  assert.equal((await f.run()).outcome,'reconciled');
+  assert.equal((await store.order(reference)).lifecycle_complete,false);
+  assert.equal((await row(`lifecycle-alert/${reference}`)).kind,'owner_alert');
+  assert.equal(await row(`delivery/${reference}/456`),undefined);
 });
 
 test('pagination stops after two pages per collection and bulk shipment enqueue is one SQL statement',async()=>{
@@ -193,34 +244,35 @@ test('third-page requirement fails closed with durable alert and no partial ship
   assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind<>'owner_alert'")).rows[0].n,0);
 });
 
-test('large package lists persist four messages per pass and resume without dropped or duplicate packages',async()=>{
+test('large package lists persist shipment and delivery jobs in four-message batches without duplicates',async()=>{
   const f=await fixture();
   f.items=Array.from({length:9},(_,i)=>({id:i+1,quantity:1}));
   f.shipments=f.items.map(i=>({...f.shipments[0],id:100+i.id,shipment_items:[{order_item_id:i.id,quantity:1}]}));
-  for(const [index,expected] of ['reconciled_partial','reconciled_partial','reconciled'].entries()){
+  for(const [index,expected] of ['reconciled_partial','reconciled_partial','reconciled_partial','reconciled_partial','reconciled'].entries()){
     if(index)await db.query('UPDATE comm_orders SET next_due_at=now()-interval \'1 second\' WHERE reference=$1',[reference]);
     assert.equal((await f.run()).outcome,expected);
     const saved=await store.order(reference);
-    assert.equal(saved.lifecycle_complete,index===2);
-    if(index<2){assert.equal(saved.reconcile_reason,'event');assert.ok(Date.parse(saved.next_due_at)<Date.now()+20000);}
+    assert.equal(saved.lifecycle_complete,index===4);
+    if(index<4){assert.equal(saved.reconcile_reason,'event');assert.ok(Date.parse(saved.next_due_at)<Date.now()+20000);}
     assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='shipment'")).rows[0].n,Math.min(9,4*(index+1)));
   }
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='delivery'")).rows[0].n,9);
   assert.equal(await store.claimReconciliation(),undefined);
   const before=(await db.query('SELECT key,payload_hash FROM comm_outbox ORDER BY key')).rows;
   await f.service.reconcile(reference);
   assert.deepEqual((await db.query('SELECT key,payload_hash FROM comm_outbox ORDER BY key')).rows,before);
 });
 
-test('missing review date alerts once while all package batches continue before terminal manual review',async()=>{
+test('missing review date alerts once while all package batches continue polling',async()=>{
   const f=await fixture();f.items=[{id:1,quantity:6}];
   f.shipments=Array.from({length:6},(_,i)=>({...f.shipments[0],id:100+i,delivery_status:'in_transit',delivered_at:undefined}));
   assert.equal((await f.run()).outcome,'reconciled_partial');
   assert.equal((await row(`lifecycle-alert/${reference}`)).status,'pending');
   await db.query('UPDATE comm_orders SET next_due_at=now()-interval \'1 second\' WHERE reference=$1',[reference]);
-  assert.equal((await f.run()).outcome,'manual_review_required');
+  assert.equal((await f.run()).outcome,'reconciled');
   assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='shipment'")).rows[0].n,6);
   assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE kind='owner_alert'")).rows[0].n,1);
-  assert.equal((await store.order(reference)).lifecycle_complete,true);
+  assert.equal((await store.order(reference)).lifecycle_complete,false);
 });
 
 test('claimed order snapshot avoids a duplicate database read without weakening concurrent-event fences',async()=>{
@@ -312,11 +364,11 @@ test('atomic attempt preparation enforces the mail cap without marking a rejecte
   assert.equal((await db.query("SELECT count FROM comm_rate WHERE bucket='mail-attempts'")).rows[0].count,2);
 });
 
-test('review due time moves to fresh delivery plus seven days without changing immutable payload',async()=>{
+test('review due time moves to fresh delivery plus four days without changing immutable payload',async()=>{
   const f=await fixture();await dueReview(f);const before=await row(`review/${reference}`);
   f.shipments[0].delivered_at=new Date(Date.now()-DAY).toISOString();
   assert.equal((await deliver(store,{key:before.key,env,beforeReview:f.service.beforeReview,send:forbidden,logger})).outcome,'pending');
-  const after=await row(before.key),due=Date.parse(f.shipments[0].delivered_at)+7*DAY;
+  const after=await row(before.key),due=Date.parse(f.shipments[0].delivered_at)+4*DAY;
   assert.equal((await store.order(reference)).review_due_at.getTime(),due);
   assert.ok(Math.abs(after.next_attempt_at.getTime()-due)<1100);assert.equal(after.payload_hash,before.payload_hash);
 });

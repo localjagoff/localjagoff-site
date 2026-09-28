@@ -100,7 +100,7 @@ test('review link is private, purchase-bound, revoked on suppression, and always
   const store={query:async(sql,args)=>{queries.push(sql);
     if(sql.includes('comm_take_rate'))return [{allowed:true}];
     if(sql.includes('FROM comm_orders')){assert.match(sql,/suppress_reviews=false/);return revoked?[]:[{reference:'private-order',items:[{productId:430697388,name:'Fixture gear'}]}];}
-    if(sql.startsWith('INSERT'))return [{id:'fixture'}];return [];
+    if(sql.includes('INSERT INTO comm_reviews'))return [{id:'fixture'}];return [];
   }};
   const handler=createReviewsHandler({env,storeFactory:()=>store});
   let res=response();await handler(request({action:'open',token:'a'.repeat(64)}),res);assert.equal(res.code,200);assert.doesNotMatch(JSON.stringify(res.body),/private-order|email|token/);
@@ -137,10 +137,12 @@ function serviceFixture(){
   }});
   return {service,reference,queued,dispatched,queries,gets,session,order,shipments,saved};
 }
-test('split shipment reconciliation is GET-only and bulk-queues packages with stable keys without inline sends',async()=>{
+test('split shipment reconciliation is GET-only and queues shipment and delivery jobs without inline sends',async()=>{
   const f=serviceFixture();await f.service.reconcile(f.reference);await f.service.reconcile(f.reference);
-  assert.equal(f.queued.size,2);assert.equal(f.dispatched.length,0);
-  for(const {payload} of f.queued.values())assert.match(payload.text,/package only/);
+  assert.equal(f.queued.size,4);assert.equal(f.dispatched.length,0);
+  assert.equal([...f.queued.keys()].filter(k=>k.startsWith('shipment/')).length,2);
+  assert.equal([...f.queued.keys()].filter(k=>k.startsWith('delivery/')).length,2);
+  for(const [key,{payload}] of f.queued)assert.match(payload.text,key.startsWith('shipment/')?/package only/:/delivered on/);
   assert.equal(f.gets.length,6);assert.ok(f.queries.some(q=>q.sql.includes('WITH queued')));
 });
 test('inprocess never creates customer mail; refund/return suppresses reviews before new notifications',async()=>{

@@ -91,6 +91,21 @@ test("review copy is clear, optional, and not an upsell", () => {
   assert.doesNotMatch(JSON.stringify(review), /printful/i);
 });
 
+test("delivery mail uses confirmed carrier date and only the approved review link", () => {
+  const order={email:'buyer@example.com',reference:'LJ-test'};
+  const shipment={id:84385841,shipment_status:'shipped',delivery_status:'delivered',
+    shipped_at:'2026-09-25T06:53:00Z',delivered_at:'2026-09-28T16:04:00Z'};
+  const url='https://www.localjagoff.com/review#'+'a'.repeat(64);
+  const mailWithReview=mail.deliveryEmail(order,shipment,url);
+  assert.match(mailWithReview.text,/delivered on 09\/28\/2026/);
+  assert.match(mailWithReview.html,/REVIEW YOUR GEAR/);
+  assert.match(mailWithReview.text,/Review your gear: https:\/\/www\.localjagoff\.com\/review#/);
+  assert.doesNotMatch(JSON.stringify(mailWithReview),/84385841|printful/i);
+  assert.doesNotMatch(mail.deliveryEmail(order,shipment).html,/REVIEW YOUR GEAR/);
+  assert.throws(()=>mail.deliveryEmail(order,{...shipment,delivered_at:'2099-09-29T16:04:00Z'}),/delivery_not_confirmed/);
+  assert.throws(()=>mail.deliveryEmail(order,shipment,'https://attacker.example/review'),/invalid_review_destination/);
+});
+
 test("shipment dates handle single bounds, equal bounds and invalid calendar dates", () => {
   for (const [eta, expected] of [
     [{from_date:'2026-09-29'}, '09/29/2026'],
@@ -119,12 +134,14 @@ test('only customer lifecycle email receives a hidden owner BCC',async()=>{
   const order={email:'buyer@example.com',reference:'LJ-test'};
   const customer=[['receipt/LJ-test',mail.orderConfirmation(paid())],
     ['shipment/LJ-test/1',mail.shipmentEmail(order,{id:1,shipment_status:'shipped',carrier:'OnTrac',tracking_number:'TEST'})],
+    ['delivery/LJ-test/1',mail.deliveryEmail(order,{id:1,shipment_status:'shipped',delivery_status:'delivered',
+      shipped_at:'2026-09-25T06:53:00Z',delivered_at:'2026-09-28T16:04:00Z'})],
     ['review/LJ-test',mail.reviewEmail(order,'https://www.localjagoff.com/review#test')]];
   for(const [key,payload] of customer)await mail.sendViaResend(payload,key,{env,fetchImpl});
   for(const body of bodies)assert.deepEqual(body.bcc,['owner@example.com']);
   await mail.sendViaResend(mail.contactEmail({name:'Visitor',email:'visitor@example.com',topic:'other',message:'Hi'}),'contact/fixture',{env,fetchImpl});
   await mail.sendViaResend({...customer[0][1],to:['hello@localjagoff.com']},'owner/LJ-test',{env,fetchImpl});
-  assert.equal(bodies[3].bcc,undefined);assert.equal(bodies[4].bcc,undefined);
+  assert.equal(bodies[4].bcc,undefined);assert.equal(bodies[5].bcc,undefined);
 });
 
 test("transactional sending fails closed in TEST/Preview/disabled environments", async () => {

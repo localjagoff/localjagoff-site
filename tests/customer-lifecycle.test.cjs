@@ -34,10 +34,10 @@ test("processing means actually in production, never draft/pending/failed", () =
   for (const status of ["draft","pending","failed","inreview","onhold"]) assert.equal(lifecycle.isProcessing({status}),false);
 });
 
-test("review becomes due exactly seven days after actual whole-order delivery", () => {
+test("review becomes due exactly four days after actual whole-order delivery", () => {
   const state = snapshot();
-  assert.deepEqual(lifecycle.reviewEligibility(state,now), {eligible:true, reason:"due",dueAt:"2026-09-17T12:00:00.000Z",method:"whole_order_delivered_plus_7_days"});
-  const early = Date.parse("2026-09-17T11:59:59Z"); state.checkedAt = early;
+  assert.deepEqual(lifecycle.reviewEligibility(state,now), {eligible:true, reason:"due",dueAt:"2026-09-14T12:00:00.000Z",method:"whole_order_delivered_plus_4_days"});
+  const early = Date.parse("2026-09-14T11:59:59Z"); state.checkedAt = early;
   assert.equal(lifecycle.reviewEligibility(state,early).eligible,false);
 });
 
@@ -45,16 +45,16 @@ test("split shipments wait for the final package, not the first", () => {
   const state = snapshot(); state.shipments[0].shipment_items[0].quantity=1;
   state.shipments.push({...structuredClone(state.shipments[0]),id:2,delivered_at:"2026-09-18T12:00:00Z"});
   const result=lifecycle.reviewEligibility(state,now);
-  assert.equal(result.eligible,false); assert.equal(result.dueAt,"2026-09-25T12:00:00.000Z");
+  assert.equal(result.eligible,false); assert.equal(result.dueAt,"2026-09-22T12:00:00.000Z");
 });
 
-test("fallback waits through the latest ETA day in every timezone plus seven days", () => {
+test("fallback waits through the latest ETA day in every timezone plus four days", () => {
   const state = snapshot(); state.shipments[0].delivery_status="unknown"; state.shipments[0].delivered_at=null;
   state.shipments[0].estimated_delivery={from_date:"2026-09-09",to_date:"2026-09-12"};
   const result=lifecycle.reviewEligibility(state,now);
-  assert.equal(result.eligible,true); assert.equal(result.dueAt,"2026-09-20T11:59:59.999Z");
-  assert.equal(result.method,"latest_package_estimate_plus_7_days");
-  const early = Date.parse("2026-09-20T11:59:59Z");
+  assert.equal(result.eligible,true); assert.equal(result.dueAt,"2026-09-17T11:59:59.999Z");
+  assert.equal(result.method,"latest_package_estimate_plus_4_days");
+  const early = Date.parse("2026-09-17T11:59:59Z");
   state.checkedAt = early;
   assert.equal(lifecycle.reviewEligibility(state,early).eligible,false);
 });
