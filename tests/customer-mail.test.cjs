@@ -91,19 +91,45 @@ test("review copy is clear, optional, and not an upsell", () => {
   assert.doesNotMatch(JSON.stringify(review), /printful/i);
 });
 
-test("delivery mail uses confirmed carrier date and only the approved review link", () => {
+test("final delivery mail is upbeat, package-safe, and uses only the approved review link", () => {
   const order={email:'buyer@example.com',reference:'LJ-test'};
   const shipment={id:84385841,shipment_status:'shipped',delivery_status:'delivered',
     shipped_at:'2026-09-25T06:53:00Z',delivered_at:'2026-09-28T16:04:00Z'};
   const url='https://www.localjagoff.com/review#'+'a'.repeat(64);
-  const mailWithReview=mail.deliveryEmail(order,shipment,url);
-  assert.match(mailWithReview.text,/delivered on 09\/28\/2026/);
-  assert.match(mailWithReview.html,/REVIEW YOUR GEAR/);
-  assert.match(mailWithReview.text,/Review your gear: https:\/\/www\.localjagoff\.com\/review#/);
+  const mailWithReview=mail.deliveryEmail(order,shipment,url,true);
+  assert.equal(mailWithReview.subject,'Your Local Jagoff package has landed 🖤💛');
+  assert.equal(mailWithReview.reply_to,'hello@localjagoff.com');
+  for(const body of [mailWithReview.html,mailWithReview.text]) {
+    assert.match(body,/IT’S HERE, JAGOFF\./);
+    assert.match(body,/Order LJ-test/);
+    assert.match(body,/Your Local Jagoff package was delivered on 09\/28\/2026\./);
+    assert.match(body,/Time to crack it open\. We hope you love everything and it looks even better in person\./);
+    assert.match(body,/Once you’ve had a chance to check it out, we’d love to hear what you think\./);
+    assert.match(body,/LEAVE A REVIEW|Leave a review:/);
+    assert.match(body,/Questions about your order\? Just reply to this email\./);
+    assert.match(body,/localjagoff\.com/);
+    assert.doesNotMatch(body,/missing|damaged|not what you expected|Questions\? Reply to this email or contact/i);
+    assert.equal((body.match(/Questions about your order\?/g)||[]).length,1);
+  }
+  assert.match(mailWithReview.html,/>LEAVE A REVIEW<\/a>/);
+  assert.match(mailWithReview.text,/Leave a review: https:\/\/www\.localjagoff\.com\/review#/);
   assert.doesNotMatch(JSON.stringify(mailWithReview),/84385841|printful/i);
-  assert.doesNotMatch(mail.deliveryEmail(order,shipment).html,/REVIEW YOUR GEAR/);
+  const finalWithoutReview=mail.deliveryEmail(order,shipment,null,true);
+  assert.equal(finalWithoutReview.subject,mailWithReview.subject);
+  assert.match(finalWithoutReview.text,/Time to crack it open/);
+  assert.doesNotMatch(finalWithoutReview.html+finalWithoutReview.text,/LEAVE A REVIEW|review#/);
+  const partial=mail.deliveryEmail(order,shipment);
+  assert.equal(partial.subject,'A Local Jagoff package has landed 🖤💛');
+  for(const body of [partial.html,partial.text]) {
+    assert.match(body,/PACKAGE DELIVERED\./);
+    assert.match(body,/One of your Local Jagoff packages was delivered on 09\/28\/2026\./);
+    assert.match(body,/One down\. If the rest of your order is traveling separately, we’ll keep you posted as each package moves\./);
+    assert.match(body,/Questions about your order\? Just reply to this email\./);
+    assert.doesNotMatch(body,/everything|LEAVE A REVIEW|REVIEW YOUR GEAR|review#|Questions\? Reply to this email or contact/i);
+  }
+  assert.throws(()=>mail.deliveryEmail(order,shipment,url),/review_requires_whole_order_delivery/);
   assert.throws(()=>mail.deliveryEmail(order,{...shipment,delivered_at:'2099-09-29T16:04:00Z'}),/delivery_not_confirmed/);
-  assert.throws(()=>mail.deliveryEmail(order,shipment,'https://attacker.example/review'),/invalid_review_destination/);
+  assert.throws(()=>mail.deliveryEmail(order,shipment,'https://attacker.example/review',true),/invalid_review_destination/);
 });
 
 test("shipment dates handle single bounds, equal bounds and invalid calendar dates", () => {
@@ -138,10 +164,17 @@ test('only customer lifecycle email receives a hidden owner BCC',async()=>{
       shipped_at:'2026-09-25T06:53:00Z',delivered_at:'2026-09-28T16:04:00Z'})],
     ['review/LJ-test',mail.reviewEmail(order,'https://www.localjagoff.com/review#test')]];
   for(const [key,payload] of customer)await mail.sendViaResend(payload,key,{env,fetchImpl});
-  for(const body of bodies)assert.deepEqual(body.bcc,['owner@example.com']);
+  for(const body of bodies){
+    assert.deepEqual(body.bcc,['owner@example.com']);
+    assert.deepEqual(body.to,['buyer@example.com']);
+    assert.equal(body.cc,undefined);
+  }
+  const fallbackEnv={...env};delete fallbackEnv.CUSTOMER_EMAIL_BCC;
+  for(const [key,payload] of customer)await mail.sendViaResend(payload,key,{env:fallbackEnv,fetchImpl});
+  for(const body of bodies.slice(4))assert.deepEqual(body.bcc,['hello@localjagoff.com']);
   await mail.sendViaResend(mail.contactEmail({name:'Visitor',email:'visitor@example.com',topic:'other',message:'Hi'}),'contact/fixture',{env,fetchImpl});
   await mail.sendViaResend({...customer[0][1],to:['hello@localjagoff.com']},'owner/LJ-test',{env,fetchImpl});
-  assert.equal(bodies[4].bcc,undefined);assert.equal(bodies[5].bcc,undefined);
+  assert.equal(bodies[8].bcc,undefined);assert.equal(bodies[9].bcc,undefined);
 });
 
 test("transactional sending fails closed in TEST/Preview/disabled environments", async () => {

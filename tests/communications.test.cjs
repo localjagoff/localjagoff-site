@@ -175,6 +175,9 @@ test('split shipment reconciliation is GET-only and queues shipment and delivery
   assert.equal([...f.queued.keys()].filter(k=>k.startsWith('shipment/')).length,2);
   assert.equal([...f.queued.keys()].filter(k=>k.startsWith('delivery/')).length,2);
   for(const [key,{payload}] of f.queued)assert.match(payload.text,key.startsWith('shipment/')?/package only/:/delivered on/);
+  assert.match(f.queued.get(`delivery/${f.reference}/1`).payload.text,/One of your Local Jagoff packages was delivered/);
+  assert.doesNotMatch(f.queued.get(`delivery/${f.reference}/1`).payload.text,/everything|Leave a review:/);
+  assert.match(f.queued.get(`delivery/${f.reference}/2`).payload.text,/Time to crack it open/);
   assert.equal(f.gets.length,6);assert.ok(f.queries.some(q=>q.sql.includes('WITH queued')));
 });
 test('inprocess never creates customer mail; refund/return suppresses reviews before new notifications',async()=>{
