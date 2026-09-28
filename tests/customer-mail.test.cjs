@@ -132,6 +132,55 @@ test("final delivery mail is upbeat, package-safe, and uses only the approved re
   assert.throws(()=>mail.deliveryEmail(order,shipment,'https://attacker.example/review',true),/invalid_review_destination/);
 });
 
+test('future final and partial delivery mail uses only a safe provider delivery-details URL',()=>{
+  const order={email:'buyer@example.com',reference:'LJ-test'};
+  const shipment={shipment_status:'shipped',delivery_status:'delivered',
+    shipped_at:'2026-09-25T06:53:00Z',delivered_at:'2026-09-28T16:04:00Z',
+    carrier:'OnTrac Ground',tracking_number:'PRIVATE-TRACKING-NUMBER',
+    tracking_url:'https://tracking.example.test/package?id=42&view=delivery'};
+  const reviewUrl='https://www.localjagoff.com/review#'+'a'.repeat(64);
+  for(const [result,final] of [[mail.deliveryEmail(order,shipment,reviewUrl,true),true],
+    [mail.deliveryEmail(order,shipment),false]]){
+    assert.match(result.html,/Delivered by OnTrac Ground/);
+    assert.match(result.text,/Delivered by OnTrac Ground/);
+    assert.match(result.html,/VIEW DELIVERY DETAILS<\/a>/);
+    assert.match(result.html,/href="https:\/\/tracking\.example\.test\/package\?id=42&amp;view=delivery"/);
+    assert.match(result.text,/Delivery details: https:\/\/tracking\.example\.test\/package\?id=42&view=delivery/);
+    assert.doesNotMatch(result.html,/PRIVATE-TRACKING-NUMBER/);
+    assert.equal(result.html.includes('LEAVE A REVIEW'),final);
+  }
+  for(const tracking_url of ['http://tracking.example.test/package','javascript:alert(1)',undefined]){
+    const result=mail.deliveryEmail(order,{...shipment,tracking_url,carrier:null});
+    assert.doesNotMatch(result.html,/VIEW DELIVERY DETAILS|Delivered by|tracking\.example\.test/);
+    assert.doesNotMatch(result.text,/Delivery details:|Delivered by|tracking\.example\.test/);
+  }
+});
+
+test('owner review mail is private, escaped, and does not add a BCC',async()=>{
+  const payload=mail.ownerReviewEmail({displayName:'Fixture Owner',rating:2,text:'Needs <work> & care.',
+    socialShareConsent:false},'Actual Purchased Tee');
+  assert.equal(payload.subject,'New Local Jagoff review awaiting approval');
+  assert.deepEqual(payload.to,['hello@localjagoff.com']);
+  assert.match(payload.html,/NEW REVIEW TO CHECK OUT/);
+  assert.match(payload.html,/Fixture Owner left a 2\/5 review/);
+  assert.match(payload.html,/Actual Purchased Tee/);
+  assert.match(payload.html,/Needs &lt;work&gt; &amp; care/);
+  assert.match(payload.html,/Social media permission: No/);
+  assert.match(payload.html,/REVIEW &amp; MODERATE/);
+  assert.match(payload.html,/href="https:\/\/www\.localjagoff\.com\/admin\/reviews"/);
+  assert.doesNotMatch(JSON.stringify(payload),/buyer@example|shipping address|review#|stripe|payment/i);
+  assert.match(mail.ownerReviewEmail({displayName:'Fixture',rating:5,text:'',socialShareConsent:true},
+    'Actual Mug').text,/Review: Rating only[\s\S]*Social media permission: Yes/);
+  let envelope;
+  await mail.sendViaResend(payload,'owner-review/00000000-0000-4000-8000-000000000001',{
+    env:{VERCEL_ENV:'production',CUSTOMER_EMAIL_ENABLED:'true',RESEND_API_KEY:'fixture',
+      CUSTOMER_EMAIL_BCC:'hello@localjagoff.com'},
+    fetchImpl:async(_url,options)=>{envelope=JSON.parse(options.body);return {ok:true,status:200,
+      json:async()=>({id:'00000000-0000-4000-8000-000000000002'})};}});
+  assert.deepEqual(envelope.to,['hello@localjagoff.com']);
+  assert.equal(envelope.bcc,undefined);
+});
+
 test("shipment dates handle single bounds, equal bounds and invalid calendar dates", () => {
   for (const [eta, expected] of [
     [{from_date:'2026-09-29'}, '09/29/2026'],

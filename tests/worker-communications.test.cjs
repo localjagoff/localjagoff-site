@@ -48,6 +48,16 @@ async function fixture(){
   return f;
 }
 async function row(key){return (await db.query('SELECT * FROM comm_outbox WHERE key=$1',[key])).rows[0];}
+test('owner review notifications yield to urgent owner alerts and receipts',async()=>{
+  await fixture();
+  for(const [key,kind] of [['owner-review/fixture','owner_alert'],['receipt/fixture','receipt'],
+    ['owner/fixture','owner_alert'],['contact/fixture','contact']]){
+    await store.enqueue(key,kind,reference,{to:['hello@localjagoff.com']});
+  }
+  const claimed=[];
+  for(let i=0;i<4;i++)claimed.push((await store.claim()).key);
+  assert.deepEqual(claimed,['owner/fixture','receipt/fixture','contact/fixture','owner-review/fixture']);
+});
 async function dueReview(f){
   f.shipments[0].shipped_at=new Date(Date.now()-20*DAY).toISOString();
   f.shipments[0].delivered_at=new Date(Date.now()-10*DAY).toISOString();
@@ -88,6 +98,24 @@ test('real SQL persists four-day delivery review, excludes terminal polling, and
   assert.equal(delivered.status,'pending');
 });
 
+test('delivery job gets provider details once and replay cannot rewrite its payload',async()=>{
+  const f=await fixture();
+  f.shipments[0].carrier='OnTrac Ground';
+  f.shipments[0].tracking_number='PRIVATE-NUMBER';
+  f.shipments[0].tracking_url='https://tracking.example.test/delivery';
+  await f.run();
+  const key=`delivery/${reference}/456`,original=await row(key);
+  assert.match(original.payload.html,/Delivered by OnTrac Ground/);
+  assert.match(original.payload.html,/VIEW DELIVERY DETAILS/);
+  assert.match(original.payload.text,/Delivery details: https:\/\/tracking\.example\.test\/delivery/);
+  assert.doesNotMatch(original.payload.html,/PRIVATE-NUMBER/);
+  f.shipments[0].tracking_url='https://tracking.example.test/changed';
+  await f.service.reconcile(reference);
+  const replay=await row(key);
+  assert.equal(replay.payload_hash,original.payload_hash);
+  assert.deepEqual(replay.payload,original.payload);
+});
+
 test('fresh delivery check suppresses a returned package and preserves one provider send',async()=>{
   const f=await fixture();await f.run();
   const key=`delivery/${reference}/456`;let sends=0;
@@ -123,7 +151,53 @@ test('submitting the legitimate review suppresses the four-day reminder before i
   assert.equal((await f.service.beforeReview(reference)).reason,'review_submitted');
   assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].n,1);
   assert.equal((await db.query('SELECT social_share_consent FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].social_share_consent,false);
+  const ownerJobs=(await db.query("SELECT key,kind,payload,payload_hash FROM comm_outbox WHERE kind='owner_alert' AND key LIKE 'owner-review/%'")).rows;
+  assert.equal(ownerJobs.length,1);
+  const newReview=(await db.query('SELECT id FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0];
+  assert.equal(ownerJobs[0].key,`owner-review/${newReview.id}`);
+  assert.equal(ownerJobs[0].payload_hash,hash(ownerJobs[0].payload));
+  assert.deepEqual(ownerJobs[0].payload.to,['hello@localjagoff.com']);
+  assert.equal(ownerJobs[0].payload.bcc,undefined);
+  assert.equal(ownerJobs[0].payload.subject,'New Local Jagoff review awaiting approval');
+  assert.match(ownerJobs[0].payload.text,/Fixture left a 4\/5 review/);
+  assert.match(ownerJobs[0].payload.text,/Product: Fixture/);
+  assert.match(ownerJobs[0].payload.text,/Review: The product arrived/);
+  assert.match(ownerJobs[0].payload.text,/Social media permission: No/);
+  assert.match(ownerJobs[0].payload.text,/https:\/\/www\.localjagoff\.com\/admin\/reviews/);
+  assert.doesNotMatch(JSON.stringify(ownerJobs[0].payload),/fixture@example\.com|\/review#|cs_fixture|shipping address/);
+  const duplicate={setHeader(){},status(code){this.code=code;return this;},json(body){this.body=body;return this;}};
+  await createReviewsHandler({env:{...env,SITE_URL:'https://www.localjagoff.com',
+    COMMUNICATIONS_SECRET:'fixture-only-'.repeat(4)},storeFactory:()=>store})(req,duplicate);
+  assert.equal(duplicate.code,200);
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM comm_outbox WHERE key LIKE 'owner-review/%'")).rows[0].n,1);
+  const sent=await deliver(store,{key:ownerJobs[0].key,env,send:async()=>({id:'00000000-0000-4000-8000-000000000010'}),logger});
+  assert.equal(sent.outcome,'sent');
+  assert.equal((await deliver(store,{key:ownerJobs[0].key,env,send:forbidden,logger})).outcome,'no_due_job');
   assert.equal((await deliver(store,{key:review.key,env,beforeReview:f.service.beforeReview,send:forbidden,logger})).outcome,'no_due_job');
+});
+
+test('review and owner alert insert roll back together if alert persistence fails',async()=>{
+  const f=await fixture();await f.run();
+  const token=(await row(`review/${reference}`)).payload.text.match(/\/review#([a-f0-9]{64})/)[1];
+  await db.exec(`CREATE FUNCTION reject_owner_review_alert() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN IF NEW.key LIKE 'owner-review/%' THEN RAISE EXCEPTION 'fixture_alert_failure'; END IF;
+    RETURN NEW; END $$`);
+  await db.exec(`CREATE TRIGGER reject_owner_review_alert BEFORE INSERT ON comm_outbox
+    FOR EACH ROW EXECUTE FUNCTION reject_owner_review_alert()`);
+  try {
+    const req={method:'POST',headers:{origin:'https://www.localjagoff.com','content-type':'application/json'},
+      socket:{remoteAddress:'192.0.2.1'},body:{action:'submit',token,productId:430697388,
+        rating:5,displayName:'Fixture',text:''}};
+    const res={setHeader(){},status(code){this.code=code;return this;},json(body){this.body=body;return this;}};
+    await createReviewsHandler({env:{...env,SITE_URL:'https://www.localjagoff.com',
+      COMMUNICATIONS_SECRET:'fixture-only-'.repeat(4)},storeFactory:()=>store})(req,res);
+    assert.equal(res.code,503);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews')).rows[0].n,0);
+    assert.equal((await row(`review/${reference}`)).status,'pending');
+  } finally {
+    await db.exec('DROP TRIGGER reject_owner_review_alert ON comm_outbox');
+    await db.exec('DROP FUNCTION reject_owner_review_alert()');
+  }
 });
 
 test('social-use consent persists for an honest low rating but is private in public review output',async()=>{
@@ -169,6 +243,12 @@ test('first product review cancels the reminder without invalidating the second 
     rating:5,displayName:'Fixture',text:'Second item.',socialShareConsent:true}},res);
   assert.equal(res.code,201);
   assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].n,2);
+  const ownerJobs=(await db.query("SELECT key,payload FROM comm_outbox WHERE key LIKE 'owner-review/%' ORDER BY created_at")).rows;
+  assert.equal(ownerJobs.length,2);
+  assert.equal(new Set(ownerJobs.map(j=>j.key)).size,2);
+  assert.ok(ownerJobs.some(j=>j.payload.text.includes('Product: First item')));
+  assert.ok(ownerJobs.some(j=>j.payload.text.includes('Product: Second item')));
+  assert.equal(ownerJobs.some(j=>j.payload.text.includes('Review: Rating only')),false);
   assert.equal((await store.order(reference)).review_token_hash,originalHash);
 });
 
