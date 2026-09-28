@@ -55,6 +55,12 @@
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .reviewItem { padding: 24px 0; border-bottom: 1px solid #333; overflow-wrap: anywhere; }
 .reviewItem h2 { font-size: 22px; }
+.formArea .socialConsent { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.formArea .socialConsent input { width: 20px; min-width: 20px; height: 20px; padding: 0; margin: 2px 0 0; accent-color: #ffe600; }
+.formArea .socialConsent span { color: #f7f7f5; font-size: 14px; line-height: 1.5; }
+.socialConsent small { display: block; color: #aaa; font-size: 12px; font-weight: 400; margin-top: 4px; }
+.facebookLink { display: inline-flex; align-items: center; gap: 8px; color: #ffe600; font-weight: 700; min-height: 44px; }
+.socialBadge { display: inline-block; margin-left: 8px; padding: 3px 6px; border: 1px solid #ffe600; color: #ffe600; font-size: 11px; font-weight: 700; vertical-align: middle; }
 .actions { display: flex; gap: 16px; }
 .actions button { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 16px; color: #fff; background: #202020; border: 1px solid #555; border-radius: 4px; }
 .contactPage { background: var(--ink); }

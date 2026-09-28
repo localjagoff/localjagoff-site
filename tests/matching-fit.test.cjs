@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { LAYERS, BEANIES, availableVariants, fitItems, mergeFit } = require('../lib/matching-fit.cjs');
 const { shippingQuote } = require('../lib/shipping-policy.cjs');
 test('direct picker link opens once, preserves query, and cleans up its listener', () => {
-  const source = fs.readFileSync(require.resolve('../components/MatchingFit.js'), 'utf8');
+  const source = fs.readFileSync(require.resolve('../components/MatchingFit.js'), 'utf8').replace(/\r\n/g, '\n');
   const effect = source.match(/useEffect\(\(\) => \{\n    const openFromLink[\s\S]*?\n  \}, \[\]\);/)[0];
   for (const hash of ['#build-your-fit', '#matching-fit', '']) {
     let opens = 0, listener, cleanup, replacement;

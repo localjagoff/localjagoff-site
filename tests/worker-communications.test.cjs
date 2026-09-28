@@ -122,7 +122,54 @@ test('submitting the legitimate review suppresses the four-day reminder before i
   assert.equal((await row(review.key)).status,'suppressed');
   assert.equal((await f.service.beforeReview(reference)).reason,'review_submitted');
   assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].n,1);
+  assert.equal((await db.query('SELECT social_share_consent FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].social_share_consent,false);
   assert.equal((await deliver(store,{key:review.key,env,beforeReview:f.service.beforeReview,send:forbidden,logger})).outcome,'no_due_job');
+});
+
+test('social-use consent persists for an honest low rating but is private in public review output',async()=>{
+  const f=await fixture();await f.run();
+  const token=(await row(`review/${reference}`)).payload.text.match(/\/review#([a-f0-9]{64})/)[1];
+  const handler=createReviewsHandler({env:{...env,SITE_URL:'https://www.localjagoff.com',
+    COMMUNICATIONS_SECRET:'fixture-only-'.repeat(4)},storeFactory:()=>store});
+  const response=()=>({setHeader(){},status(code){this.code=code;return this;},json(body){this.body=body;return this;}});
+  const req={method:'POST',headers:{origin:'https://www.localjagoff.com','content-type':'application/json'},
+    socket:{remoteAddress:'192.0.2.1'},body:{action:'submit',token,productId:430697388,
+      rating:1,displayName:'Fixture',text:'Needs work.',socialShareConsent:true}};
+  const submitted=response();await handler(req,submitted);assert.equal(submitted.code,201);
+  const saved=(await db.query('SELECT rating,social_share_consent,status FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0];
+  assert.deepEqual(saved,{rating:1,social_share_consent:true,status:'pending'});
+  await db.query("UPDATE comm_reviews SET status='approved' WHERE order_ref=$1",[reference]);
+  const publicResponse=response();await handler({...req,method:'GET',query:{productId:'430697388'}},publicResponse);
+  assert.equal(publicResponse.code,200);assert.equal(publicResponse.body.reviews.length,1);
+  assert.equal(publicResponse.body.reviews[0].rating,1);
+  assert.equal('social_share_consent' in publicResponse.body.reviews[0],false);
+  assert.equal('order_ref' in publicResponse.body.reviews[0],false);
+});
+
+test('first product review cancels the reminder without invalidating the second product invitation',async()=>{
+  const f=await fixture();
+  f.items.push({id:2,quantity:1});
+  f.shipments[0].shipment_items.push({order_item_id:2,quantity:1});
+  await db.query('UPDATE comm_orders SET items=$2 WHERE reference=$1',[reference,JSON.stringify([
+    {productId:430697388,name:'First item'},{productId:430697389,name:'Second item'}])]);
+  await f.run();
+  const token=(await row(`review/${reference}`)).payload.text.match(/\/review#([a-f0-9]{64})/)[1];
+  const originalHash=(await store.order(reference)).review_token_hash;
+  const handler=createReviewsHandler({env:{...env,SITE_URL:'https://www.localjagoff.com',
+    COMMUNICATIONS_SECRET:'fixture-only-'.repeat(4)},storeFactory:()=>store});
+  const response=()=>({setHeader(){},status(code){this.code=code;return this;},json(body){this.body=body;return this;}});
+  const req={method:'POST',headers:{origin:'https://www.localjagoff.com','content-type':'application/json'},
+    socket:{remoteAddress:'192.0.2.1'}};
+  let res=response();await handler({...req,body:{action:'submit',token,productId:430697388,
+    rating:1,displayName:'Fixture',text:'First item.',socialShareConsent:false}},res);
+  assert.equal(res.code,201);assert.equal((await row(`review/${reference}`)).status,'suppressed');
+  res=response();await handler({...req,body:{action:'open',token}},res);
+  assert.equal(res.code,200);assert.deepEqual(res.body.products.map(p=>p.submitted),[true,false]);
+  res=response();await handler({...req,body:{action:'submit',token,productId:430697389,
+    rating:5,displayName:'Fixture',text:'Second item.',socialShareConsent:true}},res);
+  assert.equal(res.code,201);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM comm_reviews WHERE order_ref=$1',[reference])).rows[0].n,2);
+  assert.equal((await store.order(reference)).review_token_hash,originalHash);
 });
 
 test('real SQL persists conservative final-package ETA plus four days and keeps polling',async()=>{

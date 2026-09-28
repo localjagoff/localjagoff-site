@@ -1,6 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
+const fs=require('node:fs');
 const {Readable}=require('node:stream');
 const {createContactHandler}=require('../lib/contact-handler.cjs');
 const {challenge}=require('../lib/contact-security.cjs');
@@ -93,7 +94,38 @@ test('review mail rechecks live eligibility and suppresses refund or defers wait
 test('review input binds numeric purchased products and rejects rating/name injection',()=>{
   const valid={productId:430697388,rating:1,displayName:'Fixture',text:'Honest negative review.'};
   assert.equal(reviewInput(valid).rating,1);
-  for(const update of [{rating:0},{rating:6},{productId:'430697388'},{displayName:'<script>'},{displayName:'a\r\nb'},{text:'x'.repeat(2001)}])assert.throws(()=>reviewInput({...valid,...update}));
+  assert.equal(reviewInput(valid).socialShareConsent,false);
+  assert.equal(reviewInput({...valid,socialShareConsent:true}).socialShareConsent,true);
+  for(const update of [{rating:0},{rating:6},{productId:'430697388'},{displayName:'<script>'},{displayName:'a\r\nb'},{text:'x'.repeat(2001)},{socialShareConsent:'on'}])assert.throws(()=>reviewInput({...valid,...update}));
+});
+test('all ratings can submit independent optional social-use consent',async()=>{
+  const inserts=[];
+  const store={query:async(sql,args)=>{
+    if(sql.includes('comm_take_rate'))return [{allowed:true}];
+    if(sql.includes('FROM comm_orders'))return [{reference:'private-order',items:[{productId:430697388,name:'Fixture gear'}]}];
+    if(sql.includes('INSERT INTO comm_reviews')){inserts.push({sql,args});return [{id:'fixture'}];}
+    return [];
+  }};
+  const handler=createReviewsHandler({env,storeFactory:()=>store});
+  for(const rating of [1,2,3,4,5])for(const consent of [false,true]){
+    const res=response();await handler(request({action:'submit',token:'a'.repeat(64),productId:430697388,
+      rating,displayName:'Fixture',text:'Honest review.',socialShareConsent:consent}),res);
+    assert.equal(res.code,201);assert.equal(res.body.status,'pending_moderation');
+  }
+  assert.equal(inserts.length,10);
+  for(const {sql,args} of inserts){assert.match(sql,/social_share_consent/);assert.equal(args[6],Boolean(args[6]));}
+  assert.deepEqual(inserts.map(({args})=>[args[3],args[6]]),[1,2,3,4,5].flatMap(r=>[[r,false],[r,true]]));
+});
+test('review success always offers the verified Facebook Page and consent starts unchecked',()=>{
+  const source=fs.readFileSync(require.resolve('../pages/review.js'),'utf8');
+  const success=source.split("status==='sent'?")[1]?.split(':<>')[0];
+  assert.ok(success);
+  assert.match(success,/APPRECIATE THE HONESTY/);
+  assert.match(success,/https:\/\/www\.facebook\.com\/profile\.php\?id=61588908282648/);
+  assert.doesNotMatch(success,/rating\s*[=!<>]/);
+  assert.match(source,/<input type="checkbox" name="socialShareConsent"\/>/);
+  assert.match(source,/socialShareConsent:data\.socialShareConsent==='on'/);
+  assert.doesNotMatch(source,/facebook\.com\/sharer|graph\.facebook\.com/);
 });
 test('review link is private, purchase-bound, revoked on suppression, and always pending moderation',async()=>{
   const queries=[];let revoked=false;
@@ -110,7 +142,7 @@ test('review link is private, purchase-bound, revoked on suppression, and always
 });
 test('public reviews query approved rows only, rate limits apply, and CSRF cannot consume an invite',async()=>{
   let sql;const store={query:async q=>{if(q.includes('comm_take_rate'))return [{allowed:true}];sql=q;return [];}};
-  let res=response();await createReviewsHandler({env,storeFactory:()=>store})({...request(),method:'GET',query:{productId:'430697388'}},res);assert.equal(res.code,200);assert.match(sql,/status='approved'/);assert.doesNotMatch(sql,/email|order_ref/);
+  let res=response();await createReviewsHandler({env,storeFactory:()=>store})({...request(),method:'GET',query:{productId:'430697388'}},res);assert.equal(res.code,200);assert.match(sql,/status='approved'/);assert.doesNotMatch(sql,/email|order_ref|social_share_consent/);
   res=response();await createReviewsHandler({env,storeFactory:()=>({query:async()=>[{allowed:false}]})})(request({}),res);assert.equal(res.code,429);
   const req=request({});req.headers.origin='https://attacker.test';res=response();await createReviewsHandler({env,storeFactory:forbidden})(req,res);assert.equal(res.code,403);
 });

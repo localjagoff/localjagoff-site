@@ -11,7 +11,11 @@ export default async function handler(req,res) {
   try {
     // Authenticated moderation remains available while customer sending is paused.
     const store=storage.createStore({...process.env,COMMUNICATIONS_ENABLED:'true'});
-    if(req.method==='GET')return res.status(200).json({reviews:await store.query("SELECT id,product_id,rating,display_name,body,created_at FROM comm_reviews WHERE status='pending' ORDER BY created_at LIMIT 50")});
+    if(req.method==='GET'){
+      const reviews=await store.query("SELECT id,product_id,rating,display_name,body,created_at,social_share_consent FROM comm_reviews WHERE status='pending' ORDER BY created_at LIMIT 50");
+      const socialReady=await store.query("SELECT id,product_id,rating,display_name,body,created_at FROM comm_reviews WHERE status='approved' AND social_share_consent=true ORDER BY moderated_at DESC LIMIT 50");
+      return res.status(200).json({reviews,socialReady});
+    }
     if(!/^[a-f0-9-]{36}$/.test(req.body?.id||'')||!['approved','rejected'].includes(req.body?.status))return res.status(400).json({error:'Invalid moderation action.'});
     await store.query("UPDATE comm_reviews SET status=$2,moderated_at=now() WHERE id=$1 AND status='pending'",[req.body.id,req.body.status]);
     return res.status(200).json({ok:true});

@@ -1,6 +1,6 @@
 # Durable Customer Communications
 
-Implemented on `fix/customer-communications`; **not activated in Production**. Provider-delivery and deployment gates remain in the private operations record. Do not merge merely because unit tests pass.
+Historical implementation notes from `fix/customer-communications`. Production now runs on Cloudflare Worker and Neon; this document's activation, scheduler, processing-notice, and seven-day review descriptions are superseded by [the current production runbook](customer-communications-production.md). Do not use the historical instructions below to operate Production.
 
 ## Architecture
 

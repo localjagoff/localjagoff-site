@@ -49,11 +49,14 @@ test('authorized moderation can read the queue while customer communications sta
   const prior=Object.fromEntries(names.map(n=>[n,process.env[n]]));
   try{
     process.env.PROMO_ADMIN_USERNAME='fixture-owner';process.env.PROMO_ADMIN_PASSWORD='fixture-password';process.env.COMMUNICATIONS_ENABLED='false';
-    let reads=0;storage.createStore=env=>{assert.equal(env.COMMUNICATIONS_ENABLED,'true');return {query:async sql=>{assert.match(sql,/^SELECT .*comm_reviews.*status='pending'/);reads++;return [];}};};
+    let reads=0;storage.createStore=env=>{assert.equal(env.COMMUNICATIONS_ENABLED,'true');return {query:async sql=>{
+      assert.match(sql,reads===0?/^SELECT .*comm_reviews.*status='pending'/:/^SELECT .*comm_reviews.*status='approved' AND social_share_consent=true/);
+      reads++;return [];
+    }};};
     const handler=(await import('../pages/api/reviews/moderation.js')).default;
     const res={setHeader(){},status(v){this.code=v;return this;},json(v){this.body=v;return this;}};
     await handler({method:'GET',headers:{authorization:'Basic '+Buffer.from('fixture-owner:fixture-password').toString('base64')}},res);
-    assert.equal(res.code,200);assert.deepEqual(res.body,{reviews:[]});assert.equal(reads,1);
+    assert.equal(res.code,200);assert.deepEqual(res.body,{reviews:[],socialReady:[]});assert.equal(reads,2);
     assert.equal(process.env.COMMUNICATIONS_ENABLED,'false');
   }finally{storage.createStore=original;for(const name of names){if(prior[name]===undefined)delete process.env[name];else process.env[name]=prior[name];}}
 });
